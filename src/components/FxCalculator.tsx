@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { ArrowLeftRight, RefreshCw, WifiOff } from 'lucide-react';
 
 // Live EUR to USD converter. Rates come from Frankfurter, the free ECB-backed
@@ -43,17 +43,17 @@ export default function FxCalculator() {
   const to = direction === 'eur-usd' ? 'USD' : 'EUR';
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-[#111318] p-6 lg:p-8">
+    <div className="rounded-2xl border border-black/8 bg-white p-6 lg:p-8">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-[#2F6BFF]/12 flex items-center justify-center">
             <ArrowLeftRight size={16} className="text-[#2F6BFF]" />
           </div>
-          <h3 className="font-display font-700 text-base text-white">Live currency converter</h3>
+          <h3 className="font-display font-700 text-base text-[#0A0B0D]">Live currency converter</h3>
         </div>
         <button
           onClick={fetchRate}
-          className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors"
+          className="w-9 h-9 rounded-lg bg-black/5 flex items-center justify-center text-black/40 hover:text-black hover:bg-black/10 transition-colors"
           aria-label="Refresh rate"
         >
           <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -62,24 +62,24 @@ export default function FxCalculator() {
 
       <div className="grid sm:grid-cols-[1fr_auto_1fr] gap-3 items-center mb-5">
         <div>
-          <label className="text-xs text-white/40 mb-1.5 block">{from} amount</label>
+          <label className="text-xs text-black/40 mb-1.5 block">{from} amount</label>
           <input
             value={amount}
             onChange={e => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
             inputMode="decimal"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-mono text-white text-lg focus:outline-none focus:border-[#2F6BFF]"
+            className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 font-mono text-[#0A0B0D] text-lg focus:outline-none focus:border-[#2F6BFF]"
             placeholder="0.00"
           />
         </div>
         <button
           onClick={() => setDirection(d => (d === 'eur-usd' ? 'usd-eur' : 'eur-usd'))}
-          className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-[#2F6BFF] hover:bg-[#2F6BFF]/10 transition-colors mx-auto"
+          className="w-10 h-10 rounded-full bg-black/5 border border-black/10 flex items-center justify-center text-[#2F6BFF] hover:bg-[#2F6BFF]/10 transition-colors mx-auto"
           aria-label="Swap direction"
         >
           <ArrowLeftRight size={16} />
         </button>
         <div>
-          <label className="text-xs text-white/40 mb-1.5 block">{to} you get</label>
+          <label className="text-xs text-black/40 mb-1.5 block">{to} you get</label>
           <div className="w-full bg-[#2F6BFF]/8 border border-[#2F6BFF]/25 rounded-xl px-4 py-3 font-mono text-[#2F6BFF] text-lg font-600 truncate">
             {fmt(converted)}
           </div>
@@ -92,13 +92,13 @@ export default function FxCalculator() {
             <WifiOff size={12} /> Offline, showing cached rate
           </span>
         ) : (
-          <span className="flex items-center gap-1.5 text-white/40">
+          <span className="flex items-center gap-1.5 text-black/40">
             <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
             Live rate, updated {updated || 'just now'}
           </span>
         )}
-        <span className="font-mono text-white/60">1 EUR = {effectiveRate.toFixed(4)} USD</span>
-        <span className="text-white/25">Source, European Central Bank</span>
+        <span className="font-mono text-black/60">1 EUR = {effectiveRate.toFixed(4)} USD</span>
+        <span className="text-black/25">Source, European Central Bank</span>
       </div>
     </div>
   );

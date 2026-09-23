@@ -1,4 +1,4 @@
-// Mock data for IndySolutions platform
+﻿// Mock data for IndySolutions platform
 
 export const mockNFTs = [
   { id: 'nft-1', name: 'Quantum Orchid #042', collection: 'Digital Bloom', price: 4.2, currency: 'ETH', usd: 14700, change: 12.4, image: 'photo-1634193295627-1cdddf751ebf', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Deep Space' }, { trait: 'Style', value: 'Chromatic' }, { trait: 'Edition', value: '1 of 10' }] },
@@ -129,12 +129,12 @@ export const tickerItems = [
 ];
 
 export const languages = [
-  { code: 'en', name: 'English', script: 'English', flag: '🇺🇸' },
-  { code: 'es', name: 'Español', script: 'Español', flag: '🇪🇸' },
-  { code: 'fr', name: 'Français', script: 'Français', flag: '🇫🇷' },
-  { code: 'pt', name: 'Português', script: 'Português', flag: '🇧🇷' },
-  { code: 'de', name: 'Deutsch', script: 'Deutsch', flag: '🇩🇪' },
-  { code: 'ar', name: 'Arabic', script: 'العربية', flag: '🇦🇪' },
+  { code: 'en', name: 'English', script: 'English', flag: 'ðŸ‡ºðŸ‡¸' },
+  { code: 'es', name: 'EspaÃ±ol', script: 'EspaÃ±ol', flag: 'ðŸ‡ªðŸ‡¸' },
+  { code: 'fr', name: 'FranÃ§ais', script: 'FranÃ§ais', flag: 'ðŸ‡«ðŸ‡·' },
+  { code: 'pt', name: 'PortuguÃªs', script: 'PortuguÃªs', flag: 'ðŸ‡§ðŸ‡·' },
+  { code: 'de', name: 'Deutsch', script: 'Deutsch', flag: 'ðŸ‡©ðŸ‡ª' },
+  { code: 'ar', name: 'Arabic', script: 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©', flag: 'ðŸ‡¦ðŸ‡ª' },
 ];
 
 export const kycStatuses = {
@@ -147,14 +147,14 @@ export const kycStatuses = {
 export const adminUsers = [
   { id: 'u-001', name: 'Marcus Chen', email: 'marcus@example.com', kyc: 'verified', balance: 67850, signupDate: '2025-03-14', country: 'US' },
   { id: 'u-002', name: 'Amara Osei', email: 'amara@example.com', kyc: 'pending', balance: 12400, signupDate: '2026-07-08', country: 'GH' },
-  { id: 'u-003', name: 'Lena Müller', email: 'lena@example.com', kyc: 'verified', balance: 204000, signupDate: '2025-11-22', country: 'DE' },
+  { id: 'u-003', name: 'Lena Muller', email: 'lena@example.com', kyc: 'verified', balance: 204000, signupDate: '2025-11-22', country: 'DE' },
   { id: 'u-004', name: 'Raj Krishnamurthy', email: 'raj@example.com', kyc: 'rejected', balance: 0, signupDate: '2026-09-01', country: 'IN' },
   { id: 'u-005', name: 'Sofia Andrade', email: 'sofia@example.com', kyc: 'verified', balance: 38600, signupDate: '2026-01-15', country: 'BR' },
 ];
 
 export const auditLog = [
   { id: 'al-001', admin: 'admin@indysolutions.com', action: 'KYC Approved', target: 'Marcus Chen', before: 'pending', after: 'verified', date: '2026-09-20T10:32:00Z' },
-  { id: 'al-002', admin: 'admin@indysolutions.com', action: 'Balance Adjustment', target: 'Lena Müller', before: '$198,000', after: '$204,000', date: '2026-09-19T15:14:00Z' },
+  { id: 'al-002', admin: 'admin@indysolutions.com', action: 'Balance Adjustment', target: 'Lena Muller', before: '$198,000', after: '$204,000', date: '2026-09-19T15:14:00Z' },
   { id: 'al-003', admin: 'super@indysolutions.com', action: 'KYC Rejected', target: 'Raj Krishnamurthy', before: 'pending', after: 'rejected', date: '2026-09-18T09:05:00Z' },
   { id: 'al-004', admin: 'admin@indysolutions.com', action: 'User Email Updated', target: 'Sofia Andrade', before: 'old@example.com', after: 'sofia@example.com', date: '2026-09-17T11:22:00Z' },
   { id: 'al-005', admin: 'super@indysolutions.com', action: 'Withdrawal Approved', target: 'Marcus Chen', before: 'pending', after: 'processing', date: '2026-09-17T09:00:00Z' },

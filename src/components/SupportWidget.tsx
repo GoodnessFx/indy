@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 type Tab = 'chat' | 'tickets' | 'help';
@@ -50,7 +50,7 @@ export default function SupportWidget() {
     {
       category: 'Identity Verification',
       questions: [
-        { q: 'Why was my KYC rejected?', a: 'Common reasons: blurry document photo, expired ID, or mismatched name. Check the rejection reason in Settings › Verification.' },
+        { q: 'Why was my KYC rejected?', a: 'Common reasons: blurry document photo, expired ID, or mismatched name. Check the rejection reason in Settings > Verification.' },
       ],
     },
   ];
@@ -112,44 +112,44 @@ export default function SupportWidget() {
       >
         {open ? <X size={20} /> : <MessageCircle size={20} />}
         {!open && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#EF4444] rounded-full flex items-center justify-center text-[10px] font-bold text-white">3</span>
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#EF4444] rounded-full flex items-center justify-center text-[10px] font-bold text-[#0A0B0D]">3</span>
         )}
       </button>
 
       {/* Widget panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] glass rounded-2xl border border-white/8 shadow-2xl overflow-hidden slide-in-right flex flex-col" style={{ maxHeight: '520px' }}>
+        <div className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] glass rounded-2xl border border-black/8 shadow-2xl overflow-hidden slide-in-right flex flex-col" style={{ maxHeight: '520px' }}>
           {/* Header */}
-          <div className="px-4 py-3 border-b border-white/8 flex items-center justify-between bg-gradient-to-r from-[#111318] to-[#0d1020]">
+          <div className="px-4 py-3 border-b border-black/8 flex items-center justify-between bg-gradient-to-r from-[#ffffff] to-[#0d1020]">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-[#2F6BFF] flex items-center justify-center">
-                <MessageCircle size={14} className="text-white" />
+                <MessageCircle size={14} className="text-[#0A0B0D]" />
               </div>
               <div>
-                <p className="font-display font-600 text-sm text-white">IndySolutions Support</p>
+                <p className="font-display font-600 text-sm text-[#0A0B0D]">IndySolutions Support</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
-                  <span className="text-[10px] text-white/40">Online · Avg. reply 3 min</span>
+                  <span className="text-[10px] text-black/40">Online, Avg. reply 3 min</span>
                 </div>
               </div>
             </div>
-            <button onClick={() => setOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
+            <button onClick={() => setOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg text-black/40 hover:text-black hover:bg-black/5 transition-colors">
               <X size={14} />
             </button>
           </div>
 
           {/* Tabs */}
-          <div className="flex border-b border-white/8">
+          <div className="flex border-b border-black/8">
             {(['chat', 'tickets', 'help'] as Tab[]).map(t => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={`flex-1 py-2.5 text-xs font-medium capitalize transition-colors ${
-                  tab === t ? 'text-[#2F6BFF] border-b-2 border-[#2F6BFF]' : 'text-white/40 hover:text-white/70'
+                  tab === t ? 'text-[#2F6BFF] border-b-2 border-[#2F6BFF]' : 'text-black/40 hover:text-black/70'
                 }`}
               >
                 {t === 'tickets' ? 'My Tickets' : t === 'help' ? 'Help Center' : 'Chat'}
-                {t === 'tickets' && <span className="ml-1 text-[10px] bg-white/10 px-1.5 py-0.5 rounded-full">3</span>}
+                {t === 'tickets' && <span className="ml-1 text-[10px] bg-black/10 px-1.5 py-0.5 rounded-full">3</span>}
               </button>
             ))}
           </div>
@@ -161,16 +161,16 @@ export default function SupportWidget() {
                 {messages.map(msg => (
                   <div key={msg.id} className={`flex ${msg.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                     <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                      msg.from === 'user' ? 'bg-[#2F6BFF] text-white rounded-br-md' : 'bg-white/8 text-white/85 rounded-bl-md'
+                      msg.from === 'user' ? 'bg-[#2F6BFF] text-white rounded-br-md' : 'bg-black/8 text-black/85 rounded-bl-md'
                     }`}>
                       <p>{msg.text}</p>
-                      <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-white/60' : 'text-white/30'}`}>{msg.time}</p>
+                      <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-black/60' : 'text-black/30'}`}>{msg.time}</p>
                     </div>
                   </div>
                 ))}
                 {humanRequested && (
                   <div className="text-center">
-                    <div className="inline-flex items-center gap-2 text-xs text-white/40 bg-white/5 px-3 py-1.5 rounded-full">
+                    <div className="inline-flex items-center gap-2 text-xs text-black/40 bg-black/5 px-3 py-1.5 rounded-full">
                       <Clock size={11} /> Connecting to human agent...
                     </div>
                   </div>
@@ -183,7 +183,7 @@ export default function SupportWidget() {
                       <button
                         key={qr}
                         onClick={() => sendMessage(qr)}
-                        className="text-xs px-3 py-1.5 rounded-full border border-white/15 text-white/60 hover:border-[#2F6BFF] hover:text-[#2F6BFF] transition-colors"
+                        className="text-xs px-3 py-1.5 rounded-full border border-black/15 text-black/60 hover:border-[#2F6BFF] hover:text-[#2F6BFF] transition-colors"
                       >
                         {qr}
                       </button>
@@ -191,18 +191,18 @@ export default function SupportWidget() {
                   </div>
                 )}
               </div>
-              <div className="p-3 border-t border-white/8">
-                <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2">
+              <div className="p-3 border-t border-black/8">
+                <div className="flex items-center gap-2 bg-black/5 rounded-xl px-3 py-2">
                   <input
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
                     placeholder="Type a message..."
-                    className="flex-1 bg-transparent text-sm text-white placeholder-white/25 outline-none"
+                    className="flex-1 bg-transparent text-sm text-[#0A0B0D] placeholder-black/25 outline-none"
                   />
-                  <button className="text-white/30 hover:text-white/60 transition-colors"><Paperclip size={14} /></button>
+                  <button className="text-black/30 hover:text-black/60 transition-colors"><Paperclip size={14} /></button>
                   <button onClick={() => sendMessage(input)} className="w-7 h-7 bg-[#2F6BFF] rounded-lg flex items-center justify-center hover:bg-[#4F82FF] transition-colors">
-                    <Send size={12} className="text-white" />
+                    <Send size={12} className="text-[#0A0B0D]" />
                   </button>
                 </div>
               </div>
@@ -213,11 +213,11 @@ export default function SupportWidget() {
           {tab === 'tickets' && (
             <div className="flex-1 overflow-y-auto" style={{ maxHeight: '340px' }}>
               {tickets.map(ticket => (
-                <div key={ticket.id} className="px-4 py-3 border-b border-white/5 hover:bg-white/3 transition-colors cursor-pointer">
+                <div key={ticket.id} className="px-4 py-3 border-b border-black/5 hover:bg-black/3 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white/80 truncate">{ticket.subject}</p>
-                      <p className="text-xs text-white/30 mt-0.5">{ticket.id} · Updated {ticket.updated}</p>
+                      <p className="text-sm text-black/80 truncate">{ticket.subject}</p>
+                      <p className="text-xs text-black/30 mt-0.5">{ticket.id}, Updated {ticket.updated}</p>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {ticketStatusIcon(ticket.status)}
@@ -227,7 +227,7 @@ export default function SupportWidget() {
                 </div>
               ))}
               <div className="p-4">
-                <button className="w-full text-center text-xs text-white/30 py-2 bg-white/3 rounded-xl hover:bg-white/5 transition-colors">
+                <button className="w-full text-center text-xs text-black/30 py-2 bg-black/3 rounded-xl hover:bg-black/5 transition-colors">
                   + New support request
                 </button>
               </div>
@@ -237,35 +237,35 @@ export default function SupportWidget() {
           {/* Help tab */}
           {tab === 'help' && (
             <div className="flex flex-col flex-1 min-h-0">
-              <div className="p-3 border-b border-white/8">
-                <div className="flex items-center gap-2 bg-white/5 rounded-xl px-3 py-2">
-                  <Search size={13} className="text-white/30" />
+              <div className="p-3 border-b border-black/8">
+                <div className="flex items-center gap-2 bg-black/5 rounded-xl px-3 py-2">
+                  <Search size={13} className="text-black/30" />
                   <input
                     value={helpSearch}
                     onChange={e => setHelpSearch(e.target.value)}
                     placeholder="Search help articles..."
-                    className="flex-1 bg-transparent text-sm text-white placeholder-white/25 outline-none"
+                    className="flex-1 bg-transparent text-sm text-[#0A0B0D] placeholder-black/25 outline-none"
                   />
                 </div>
               </div>
               <div className="flex-1 overflow-y-auto" style={{ maxHeight: '310px' }}>
                 {filteredHelp.map(topic => (
                   <div key={topic.category}>
-                    <div className="px-4 py-2 bg-white/3">
-                      <p className="text-[10px] font-600 text-white/40 uppercase tracking-wider font-display">{topic.category}</p>
+                    <div className="px-4 py-2 bg-black/3">
+                      <p className="text-[10px] font-600 text-black/40 uppercase tracking-wider font-display">{topic.category}</p>
                     </div>
                     {topic.questions.map(qa => (
-                      <div key={qa.q} className="border-b border-white/5">
+                      <div key={qa.q} className="border-b border-black/5">
                         <button
                           onClick={() => setOpenAccordion(openAccordion === qa.q ? null : qa.q)}
-                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-white/3 transition-colors"
+                          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-black/3 transition-colors"
                         >
-                          <span className="text-sm text-white/70">{qa.q}</span>
-                          <ChevronDown size={13} className={`text-white/30 shrink-0 transition-transform ${openAccordion === qa.q ? 'rotate-180' : ''}`} />
+                          <span className="text-sm text-black/70">{qa.q}</span>
+                          <ChevronDown size={13} className={`text-black/30 shrink-0 transition-transform ${openAccordion === qa.q ? 'rotate-180' : ''}`} />
                         </button>
                         {openAccordion === qa.q && (
                           <div className="px-4 pb-3">
-                            <p className="text-xs text-white/40 leading-relaxed">{qa.a}</p>
+                            <p className="text-xs text-black/40 leading-relaxed">{qa.a}</p>
                           </div>
                         )}
                       </div>

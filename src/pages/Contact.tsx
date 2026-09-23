@@ -1,10 +1,10 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Mail, Phone, MapPin, Clock, Send, Check, MessageCircle } from 'lucide-react';
 
 const regions = [
-  { region: 'London (HQ)', email: 'support@indysolutions.com', phone: '+44 20 1234 5678', hours: 'Mon–Fri 09:00–18:00 GMT' },
-  { region: 'Dubai', email: 'mena@indysolutions.com', phone: '+971 4 123 4567', hours: 'Sun–Thu 09:00–17:00 GST' },
-  { region: 'São Paulo', email: 'latam@indysolutions.com', phone: '+55 11 1234-5678', hours: 'Mon–Fri 09:00–18:00 BRT' },
+  { region: 'London (HQ)', email: 'support@indysolutions.com', phone: '+44 20 1234 5678', hours: 'Mon to Fri 09:00 to 18:00 GMT' },
+  { region: 'Dubai', email: 'mena@indysolutions.com', phone: '+971 4 123 4567', hours: 'Sun to Thu 09:00 to 17:00 GST' },
+  { region: 'Sao Paulo', email: 'latam@indysolutions.com', phone: '+55 11 1234-5678', hours: 'Mon to Fri 09:00 to 18:00 BRT' },
 ];
 
 export default function Contact() {
@@ -19,11 +19,11 @@ export default function Contact() {
 
   return (
     <div className="bg-[#F7F7F5] min-h-screen">
-      <div className="pt-32 pb-16 px-6 bg-[#0A0B0D]">
+      <div className="pt-32 pb-16 px-6 bg-[#F7F7F5]">
         <div className="max-w-[1200px] mx-auto">
           <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-4">Get in touch</p>
-          <h1 className="font-display font-800 text-5xl lg:text-6xl text-white mb-6">Contact us</h1>
-          <p className="text-white/40 text-base max-w-lg">We respond to every message. Support tickets typically receive a reply within 3 hours during business hours.</p>
+          <h1 className="font-display font-800 text-5xl lg:text-6xl text-[#0A0B0D] mb-6">Contact us</h1>
+          <p className="text-black/40 text-base max-w-lg">We respond to every message. Support tickets typically receive a reply within 3 hours during business hours.</p>
         </div>
       </div>
 
@@ -82,20 +82,20 @@ export default function Contact() {
           {/* Contact info */}
           <div className="space-y-8">
             {/* Live chat entry */}
-            <div id="chat" className="bg-[#0A0B0D] rounded-2xl p-6">
+            <div id="chat" className="bg-[#F7F7F5] rounded-2xl p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-[#2F6BFF]/15 flex items-center justify-center">
                   <MessageCircle size={18} className="text-[#2F6BFF]" />
                 </div>
                 <div>
-                  <p className="font-display font-600 text-base text-white">Live chat support</p>
+                  <p className="font-display font-600 text-base text-[#0A0B0D]">Live chat support</p>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
-                    <span className="text-xs text-[#22C55E]">Online now · 3 min wait</span>
+                    <span className="text-xs text-[#22C55E]">Online now, 3 min wait</span>
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-white/40 mb-4">Start a live chat for immediate assistance. Available during business hours.</p>
+              <p className="text-sm text-black/40 mb-4">Start a live chat for immediate assistance. Available during business hours.</p>
               <button className="btn-primary px-5 py-3 rounded-xl text-sm w-full">Open live chat</button>
             </div>
 

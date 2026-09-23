@@ -1,25 +1,24 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 
 interface LogoProps {
   size?: number;
   className?: string;
 }
 
-// Brand logo. Drop your logo file at `public/logo.png` and it appears here,
-// in the nav, footer, auth screens, admin, and the favicon. Until then a clean
-// monogram fallback renders so nothing ever looks broken.
+// Brand logo, sourced from indylogo.jpeg in the project root (mascot on white).
+// Also used as the favicon. Falls back to a monogram if the file is missing.
 export default function Logo({ size = 36, className = '' }: LogoProps) {
   const [failed, setFailed] = useState(false);
 
   if (!failed) {
     return (
       <img
-        src="/logo.png"
+        src="/indylogo.jpeg"
         alt="Indy"
         width={size}
         height={size}
         onError={() => setFailed(true)}
-        className={`rounded-lg object-cover ${className}`}
+        className={`rounded-lg object-cover object-left ${className}`}
         style={{ width: size, height: size }}
       />
     );
@@ -35,3 +34,4 @@ export default function Logo({ size = 36, className = '' }: LogoProps) {
     </div>
   );
 }
+

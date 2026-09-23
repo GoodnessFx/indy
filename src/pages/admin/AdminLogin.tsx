@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Lock } from 'lucide-react';
 
@@ -29,22 +29,22 @@ export default function AdminLogin() {
           <div className="w-10 h-10 rounded-xl bg-[#2F6BFF]/20 border border-[#2F6BFF]/30 flex items-center justify-center mx-auto mb-4">
             <Lock size={18} className="text-[#2F6BFF]" />
           </div>
-          <h1 className="font-mono font-700 text-lg text-[#C5C8D0]">Admin Console</h1>
-          <p className="text-xs text-[#C5C8D0]/30 mt-1">IndySolutions · Restricted access</p>
+          <h1 className="font-mono font-700 text-lg text-[#0A0B0D]">Admin Console</h1>
+          <p className="text-xs text-black/30 mt-1">IndySolutions, Restricted access</p>
         </div>
 
-        <div className="bg-[#0d0f1a] border border-white/5 rounded-xl p-6">
+        <div className="bg-white border border-black/5 rounded-xl p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs text-[#C5C8D0]/40 mb-2 font-mono">USERNAME</label>
+              <label className="block text-xs text-black/40 mb-2 font-mono">USERNAME</label>
               <input type="text" value={username} onChange={e => setUsername(e.target.value)}
-                className="w-full bg-white/3 border border-white/8 rounded-lg px-4 py-2.5 text-sm text-[#C5C8D0] outline-none focus:border-[#2F6BFF]/50 transition-colors font-mono"
+                className="w-full bg-black/3 border border-black/8 rounded-lg px-4 py-2.5 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF]/50 transition-colors font-mono"
                 autoComplete="off" />
             </div>
             <div>
-              <label className="block text-xs text-[#C5C8D0]/40 mb-2 font-mono">PASSWORD</label>
+              <label className="block text-xs text-black/40 mb-2 font-mono">PASSWORD</label>
               <input type="password" value={password} onChange={e => setPassword(e.target.value)}
-                className="w-full bg-white/3 border border-white/8 rounded-lg px-4 py-2.5 text-sm text-[#C5C8D0] outline-none focus:border-[#2F6BFF]/50 transition-colors font-mono"
+                className="w-full bg-black/3 border border-black/8 rounded-lg px-4 py-2.5 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF]/50 transition-colors font-mono"
                 autoComplete="off" />
             </div>
             {error && (
@@ -58,7 +58,7 @@ export default function AdminLogin() {
             </button>
           </form>
         </div>
-        <p className="text-center text-[10px] text-[#C5C8D0]/15 mt-6 font-mono">ACCESS ATTEMPT WILL BE LOGGED</p>
+        <p className="text-center text-[10px] text-black/15 mt-6 font-mono">ACCESS ATTEMPT WILL BE LOGGED</p>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Check, X, ChevronDown } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 
@@ -24,17 +24,17 @@ export default function AdminKYC() {
   return (
     <AdminLayout>
       <div className="max-w-4xl">
-        <h1 className="font-mono font-700 text-xl text-[#C5C8D0] mb-2">KYC Review Queue</h1>
-        <p className="text-xs text-[#C5C8D0]/30 font-mono mb-6">{pending.length} submissions pending review</p>
+        <h1 className="font-mono font-700 text-xl text-[#0A0B0D] mb-2">KYC Review Queue</h1>
+        <p className="text-xs text-black/30 font-mono mb-6">{pending.length} submissions pending review</p>
 
         <div className="space-y-3">
           {pending.map(sub => {
             const decision = decisions[sub.id];
             return (
-              <div key={sub.id} className={`bg-[#0d0f1a] border rounded-xl overflow-hidden transition-colors ${
+              <div key={sub.id} className={`bg-white border rounded-xl overflow-hidden transition-colors ${
                 decision === 'approved' ? 'border-[#22C55E]/20' :
                 decision === 'rejected' ? 'border-[#EF4444]/20' :
-                'border-white/5'
+                'border-black/5'
               }`}>
                 <button
                   onClick={() => setExpanded(expanded === sub.id ? null : sub.id)}
@@ -42,12 +42,12 @@ export default function AdminKYC() {
                 >
                   <div className="flex items-center gap-4">
                     <div className="text-left">
-                      <p className="font-mono text-sm text-[#C5C8D0]/80">{sub.name}</p>
-                      <p className="font-mono text-xs text-[#C5C8D0]/30">{sub.email} · {sub.country} · {sub.docType}</p>
+                      <p className="font-mono text-sm text-black/80">{sub.name}</p>
+                      <p className="font-mono text-xs text-black/30">{sub.email}, {sub.country}, {sub.docType}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-mono text-[10px] text-[#C5C8D0]/20">{sub.submitted}</span>
+                    <span className="font-mono text-[10px] text-black/20">{sub.submitted}</span>
                     {decision ? (
                       <span className={`text-[10px] px-2.5 py-1 rounded-full font-mono ${decision === 'approved' ? 'chip-gain' : 'chip-loss'}`}>
                         {decision}
@@ -55,15 +55,15 @@ export default function AdminKYC() {
                     ) : (
                       <span className="text-[10px] chip-warning px-2.5 py-1 rounded-full font-mono">pending</span>
                     )}
-                    <ChevronDown size={13} className={`text-[#C5C8D0]/25 transition-transform ${expanded === sub.id ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={13} className={`text-black/25 transition-transform ${expanded === sub.id ? 'rotate-180' : ''}`} />
                   </div>
                 </button>
 
                 {expanded === sub.id && (
-                  <div className="px-5 pb-5 border-t border-white/5">
+                  <div className="px-5 pb-5 border-t border-black/5">
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 mb-5">
                       {sub.docs.map((doc, i) => (
-                        <div key={i} className="rounded-lg overflow-hidden aspect-video bg-black">
+                        <div key={i} className="rounded-lg overflow-hidden aspect-video bg-black/5">
                           <img src={`https://images.unsplash.com/${doc}?w=200&h=120&fit=crop&auto=format`} alt={`Document ${i + 1}`} className="w-full h-full object-cover opacity-80" />
                         </div>
                       ))}
@@ -82,7 +82,7 @@ export default function AdminKYC() {
                                 value={rejectReason[sub.id] || ''}
                                 onChange={e => setRejectReason(p => ({ ...p, [sub.id]: e.target.value }))}
                                 placeholder="Required: reason for rejection (sent to user)"
-                                className="w-full bg-white/3 border border-white/8 rounded-lg px-3 py-2 text-xs text-[#C5C8D0] font-mono outline-none resize-none"
+                                className="w-full bg-black/3 border border-black/8 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none resize-none"
                                 rows={2}
                               />
                               <div className="flex gap-2">
@@ -91,7 +91,7 @@ export default function AdminKYC() {
                                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#EF4444]/15 text-xs text-[#EF4444] font-mono disabled:opacity-30 hover:bg-[#EF4444]/25 transition-colors">
                                   <X size={12} /> Reject
                                 </button>
-                                <button onClick={() => setRejectOpen(null)} className="text-xs text-[#C5C8D0]/30 font-mono">Cancel</button>
+                                <button onClick={() => setRejectOpen(null)} className="text-xs text-black/30 font-mono">Cancel</button>
                               </div>
                             </div>
                           ) : (

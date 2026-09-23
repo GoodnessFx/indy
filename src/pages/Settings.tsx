@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff } from 'lucide-react';
 import { languages } from '../data/mock';
 
@@ -35,9 +35,9 @@ export default function Settings() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0A0B0D] pt-20">
+    <div className="min-h-screen bg-[#F7F7F5] pt-20">
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-10">
-        <h1 className="font-display font-700 text-3xl text-white mb-8">Settings</h1>
+        <h1 className="font-display font-700 text-3xl text-[#0A0B0D] mb-8">Settings</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-8">
           {/* Tab list */}
@@ -49,7 +49,7 @@ export default function Settings() {
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors whitespace-nowrap shrink-0 lg:w-full ${
                   tab === id
                     ? id === 'danger' ? 'bg-[#EF4444]/10 text-[#EF4444]' : 'bg-[#2F6BFF]/10 text-[#2F6BFF]'
-                    : id === 'danger' ? 'text-[#EF4444]/60 hover:text-[#EF4444] hover:bg-[#EF4444]/5' : 'text-white/50 hover:text-white hover:bg-white/5'
+                    : id === 'danger' ? 'text-[#EF4444]/60 hover:text-[#EF4444] hover:bg-[#EF4444]/5' : 'text-black/50 hover:text-black hover:bg-black/5'
                 }`}
               >
                 <Icon size={15} />
@@ -59,21 +59,21 @@ export default function Settings() {
           </div>
 
           {/* Content */}
-          <div className="glass rounded-2xl border border-white/8 p-8">
+          <div className="glass rounded-2xl border border-black/8 p-8">
             {tab === 'profile' && (
               <div>
-                <h2 className="font-display font-600 text-xl text-white mb-6">Profile</h2>
+                <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Profile</h2>
                 {/* Avatar */}
                 <div className="flex items-center gap-5 mb-8">
                   <div className="relative">
                     <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Profile" className="w-20 h-20 rounded-2xl object-cover" />
                     <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors">
-                      <Upload size={12} className="text-white" />
+                      <Upload size={12} className="text-[#0A0B0D]" />
                     </button>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">Profile photo</p>
-                    <p className="text-xs text-white/30 mt-1">JPG or PNG, max 4MB. Circular crop applied.</p>
+                    <p className="text-sm font-medium text-[#0A0B0D]">Profile photo</p>
+                    <p className="text-xs text-black/30 mt-1">JPG or PNG, max 4MB. Circular crop applied.</p>
                   </div>
                 </div>
 
@@ -85,15 +85,15 @@ export default function Settings() {
                     { label: 'Email address', value: 'marcus@example.com', type: 'email' },
                   ].map(field => (
                     <div key={field.label}>
-                      <label className="block text-xs text-white/40 mb-2">{field.label}</label>
+                      <label className="block text-xs text-black/40 mb-2">{field.label}</label>
                       <input type={field.type} defaultValue={field.value}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#2F6BFF] transition-colors" />
+                        className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF] transition-colors" />
                     </div>
                   ))}
                   <div className="md:col-span-2">
-                    <label className="block text-xs text-white/40 mb-2">Country</label>
-                    <select className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#2F6BFF] transition-colors">
-                      <option className="bg-[#111318]">United States</option>
+                    <label className="block text-xs text-black/40 mb-2">Country</label>
+                    <select className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF] transition-colors">
+                      <option className="bg-white">United States</option>
                     </select>
                   </div>
                 </div>
@@ -106,22 +106,22 @@ export default function Settings() {
 
             {tab === 'security' && (
               <div>
-                <h2 className="font-display font-600 text-xl text-white mb-6">Security</h2>
+                <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Security</h2>
 
                 {/* Password change */}
-                <div className="mb-8 p-6 rounded-xl bg-white/3 border border-white/8">
-                  <h3 className="font-display font-600 text-base text-white mb-5">Change password</h3>
+                <div className="mb-8 p-6 rounded-xl bg-black/3 border border-black/8">
+                  <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-5">Change password</h3>
                   <div className="space-y-4">
                     {[
                       { label: 'Current password', show: showCurrentPw, setShow: setShowCurrentPw },
                     ].map(f => (
                       <div key={f.label}>
-                        <label className="block text-xs text-white/40 mb-2">{f.label}</label>
+                        <label className="block text-xs text-black/40 mb-2">{f.label}</label>
                         <div className="relative">
-                          <input type={f.show ? 'text' : 'password'} placeholder="••••••••"
-                            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-sm text-white outline-none focus:border-[#2F6BFF] transition-colors" />
+                          <input type={f.show ? 'text' : 'password'} placeholder="********"
+                            className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 pr-12 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF] transition-colors" />
                           <button type="button" onClick={() => f.setShow(!f.show)}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60">
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-black/30 hover:text-black/60">
                             {f.show ? <EyeOff size={15} /> : <Eye size={15} />}
                           </button>
                         </div>
@@ -129,12 +129,12 @@ export default function Settings() {
                     ))}
                     {[
                       { label: 'New password', placeholder: 'Min. 8 characters' },
-                      { label: 'Confirm new password', placeholder: '••••••••' },
+                      { label: 'Confirm new password', placeholder: '********' },
                     ].map(f => (
                       <div key={f.label}>
-                        <label className="block text-xs text-white/40 mb-2">{f.label}</label>
+                        <label className="block text-xs text-black/40 mb-2">{f.label}</label>
                         <input type="password" placeholder={f.placeholder}
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-[#2F6BFF] transition-colors" />
+                          className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF] transition-colors" />
                       </div>
                     ))}
                     <button className="btn-primary px-5 py-2.5 rounded-xl text-sm">Update password</button>
@@ -142,15 +142,15 @@ export default function Settings() {
                 </div>
 
                 {/* 2FA */}
-                <div className="mb-8 p-6 rounded-xl bg-white/3 border border-white/8">
+                <div className="mb-8 p-6 rounded-xl bg-black/3 border border-black/8">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="font-display font-600 text-base text-white">Two-factor authentication</h3>
-                      <p className="text-xs text-white/30 mt-1">Authenticator app + SMS backup</p>
+                      <h3 className="font-display font-600 text-base text-[#0A0B0D]">Two-factor authentication</h3>
+                      <p className="text-xs text-black/30 mt-1">Authenticator app + SMS backup</p>
                     </div>
                     <button
                       onClick={() => setTwoFaEnabled(!twoFaEnabled)}
-                      className={`w-12 h-6 rounded-full transition-all relative ${twoFaEnabled ? 'bg-[#22C55E]' : 'bg-white/10'}`}
+                      className={`w-12 h-6 rounded-full transition-all relative ${twoFaEnabled ? 'bg-[#22C55E]' : 'bg-black/10'}`}
                     >
                       <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${twoFaEnabled ? 'left-7' : 'left-1'}`} />
                     </button>
@@ -164,14 +164,14 @@ export default function Settings() {
                 </div>
 
                 {/* Sessions */}
-                <div className="p-6 rounded-xl bg-white/3 border border-white/8">
-                  <h3 className="font-display font-600 text-base text-white mb-5">Active sessions</h3>
+                <div className="p-6 rounded-xl bg-black/3 border border-black/8">
+                  <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-5">Active sessions</h3>
                   <div className="space-y-3">
                     {sessions.map(s => (
-                      <div key={s.device} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                      <div key={s.device} className="flex items-center justify-between py-3 border-b border-black/5 last:border-0">
                         <div>
-                          <p className="text-sm text-white/80">{s.device}</p>
-                          <p className="text-xs text-white/30 mt-0.5">{s.location} · {s.time}</p>
+                          <p className="text-sm text-black/80">{s.device}</p>
+                          <p className="text-xs text-black/30 mt-0.5">{s.location}, {s.time}</p>
                         </div>
                         {s.current ? (
                           <span className="text-xs chip-gain px-2.5 py-1 rounded-full">Current</span>
@@ -187,27 +187,27 @@ export default function Settings() {
 
             {tab === 'preferences' && (
               <div>
-                <h2 className="font-display font-600 text-xl text-white mb-6">Preferences</h2>
+                <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Preferences</h2>
 
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between py-4 border-b border-white/5">
+                  <div className="flex items-center justify-between py-4 border-b border-black/5">
                     <div>
-                      <p className="text-sm font-medium text-white">Dark mode</p>
-                      <p className="text-xs text-white/30 mt-0.5">Toggle between dark and light theme</p>
+                      <p className="text-sm font-medium text-[#0A0B0D]">Dark mode</p>
+                      <p className="text-xs text-black/30 mt-0.5">Toggle between dark and light theme</p>
                     </div>
                     <button onClick={() => setDarkMode(!darkMode)}
-                      className={`w-12 h-6 rounded-full transition-all relative ${darkMode ? 'bg-[#2F6BFF]' : 'bg-white/10'}`}>
+                      className={`w-12 h-6 rounded-full transition-all relative ${darkMode ? 'bg-[#2F6BFF]' : 'bg-black/10'}`}>
                       <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${darkMode ? 'left-7' : 'left-1'}`} />
                     </button>
                   </div>
 
-                  <div className="py-4 border-b border-white/5">
-                    <p className="text-sm font-medium text-white mb-3">Display currency</p>
+                  <div className="py-4 border-b border-black/5">
+                    <p className="text-sm font-medium text-[#0A0B0D] mb-3">Display currency</p>
                     <div className="grid grid-cols-4 gap-2">
                       {['USD', 'EUR', 'GBP', 'AED'].map(c => (
                         <button key={c} onClick={() => setCurrency(c)}
                           className={`py-2.5 rounded-xl text-sm font-mono font-600 transition-colors ${
-                            currency === c ? 'bg-[#2F6BFF] text-white' : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                            currency === c ? 'bg-[#2F6BFF] text-white' : 'bg-black/5 text-black/40 hover:text-black hover:bg-black/10'
                           }`}>
                           {c}
                         </button>
@@ -215,13 +215,13 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  <div className="py-4 border-b border-white/5">
-                    <p className="text-sm font-medium text-white mb-3">Language</p>
+                  <div className="py-4 border-b border-black/5">
+                    <p className="text-sm font-medium text-[#0A0B0D] mb-3">Language</p>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {languages.map(lang => (
                         <button key={lang.code} onClick={() => setLanguage(lang.code)}
                           className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                            language === lang.code ? 'bg-[#2F6BFF]/15 text-[#2F6BFF] border border-[#2F6BFF]/30' : 'bg-white/5 text-white/50 border border-transparent hover:text-white hover:bg-white/10'
+                            language === lang.code ? 'bg-[#2F6BFF]/15 text-[#2F6BFF] border border-[#2F6BFF]/30' : 'bg-black/5 text-black/50 border border-transparent hover:text-black hover:bg-black/10'
                           }`}>
                           <span>{lang.flag}</span>
                           <span>{lang.script}</span>
@@ -231,7 +231,7 @@ export default function Settings() {
                   </div>
 
                   <div className="py-4">
-                    <p className="text-sm font-medium text-white mb-4">Notifications</p>
+                    <p className="text-sm font-medium text-[#0A0B0D] mb-4">Notifications</p>
                     <div className="space-y-3">
                       {[
                         { key: 'emailDeposit', label: 'Email: Deposit received' },
@@ -242,10 +242,10 @@ export default function Settings() {
                         { key: 'pushSecurity', label: 'Push: Security alerts' },
                       ].map(n => (
                         <div key={n.key} className="flex items-center justify-between">
-                          <p className="text-sm text-white/60">{n.label}</p>
+                          <p className="text-sm text-black/60">{n.label}</p>
                           <button
                             onClick={() => setNotifications(p => ({ ...p, [n.key]: !p[n.key as keyof typeof p] }))}
-                            className={`w-10 h-5 rounded-full transition-all relative ${notifications[n.key as keyof typeof notifications] ? 'bg-[#2F6BFF]' : 'bg-white/10'}`}
+                            className={`w-10 h-5 rounded-full transition-all relative ${notifications[n.key as keyof typeof notifications] ? 'bg-[#2F6BFF]' : 'bg-black/10'}`}
                           >
                             <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${notifications[n.key as keyof typeof notifications] ? 'left-5.5' : 'left-0.5'}`} style={{ left: notifications[n.key as keyof typeof notifications] ? '22px' : '2px' }} />
                           </button>
@@ -259,20 +259,20 @@ export default function Settings() {
 
             {tab === 'payments' && (
               <div>
-                <h2 className="font-display font-600 text-xl text-white mb-6">Payment Methods</h2>
+                <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Payment Methods</h2>
                 <div className="space-y-3 mb-6">
                   {[
                     { label: 'Barclays Business', last4: '4521', type: 'bank', currency: 'GBP', default: true },
                     { label: 'Revolut Debit', last4: '8834', type: 'card', currency: 'EUR', default: false },
                   ].map(acc => (
-                    <div key={acc.label} className="flex items-center justify-between p-4 rounded-xl border border-white/8 bg-white/3">
+                    <div key={acc.label} className="flex items-center justify-between p-4 rounded-xl border border-black/8 bg-black/3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-                          <CreditCard size={16} className="text-white/40" />
+                        <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center">
+                          <CreditCard size={16} className="text-black/40" />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-white">{acc.label} ••••{acc.last4}</p>
-                          <p className="text-xs text-white/30 mt-0.5">{acc.type === 'bank' ? 'Bank account' : 'Debit card'} · {acc.currency}</p>
+                          <p className="text-sm font-medium text-[#0A0B0D]">{acc.label} ****{acc.last4}</p>
+                          <p className="text-xs text-black/30 mt-0.5">{acc.type === 'bank' ? 'Bank account' : 'Debit card'}, {acc.currency}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -282,7 +282,7 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
-                <button className="flex items-center gap-2 border border-dashed border-white/15 rounded-xl px-5 py-3 text-sm text-white/40 hover:text-white/70 hover:border-white/30 transition-colors">
+                <button className="flex items-center gap-2 border border-dashed border-black/15 rounded-xl px-5 py-3 text-sm text-black/40 hover:text-black/70 hover:border-black/30 transition-colors">
                   + Add payment method
                 </button>
               </div>
@@ -290,13 +290,13 @@ export default function Settings() {
 
             {tab === 'verification' && (
               <div>
-                <h2 className="font-display font-600 text-xl text-white mb-6">Identity Verification</h2>
+                <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Identity Verification</h2>
                 <div className="flex items-center gap-4 p-5 rounded-2xl bg-[#22C55E]/8 border border-[#22C55E]/20 mb-8">
                   <div className="w-12 h-12 rounded-xl bg-[#22C55E]/15 flex items-center justify-center">
                     <BadgeCheck size={22} className="text-[#22C55E]" />
                   </div>
                   <div>
-                    <p className="font-display font-600 text-base text-white">Identity verified</p>
+                    <p className="font-display font-600 text-base text-[#0A0B0D]">Identity verified</p>
                     <p className="text-xs text-[#22C55E]/70 mt-0.5">Your account is fully KYC verified and in good standing.</p>
                   </div>
                 </div>
@@ -306,10 +306,10 @@ export default function Settings() {
                     { label: 'Selfie verification', status: 'verified', date: 'Submitted Mar 14, 2025' },
                     { label: 'Address proof', status: 'pending', date: 'Submitted Sep 15, 2026' },
                   ].map(doc => (
-                    <div key={doc.label} className="flex items-center justify-between p-4 rounded-xl border border-white/8 bg-white/3">
+                    <div key={doc.label} className="flex items-center justify-between p-4 rounded-xl border border-black/8 bg-black/3">
                       <div>
-                        <p className="text-sm font-medium text-white">{doc.label}</p>
-                        <p className="text-xs text-white/30 mt-0.5">{doc.date}</p>
+                        <p className="text-sm font-medium text-[#0A0B0D]">{doc.label}</p>
+                        <p className="text-xs text-black/30 mt-0.5">{doc.date}</p>
                       </div>
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${doc.status === 'verified' ? 'chip-gain' : 'chip-warning'}`}>
                         {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
@@ -325,23 +325,23 @@ export default function Settings() {
                 <h2 className="font-display font-600 text-xl text-[#EF4444] mb-6">Danger Zone</h2>
                 <div className="space-y-4">
                   <div className="p-5 rounded-2xl border border-[#EF4444]/20 bg-[#EF4444]/5">
-                    <h3 className="font-display font-600 text-base text-white mb-2">Download my data</h3>
-                    <p className="text-xs text-white/40 mb-4">Export all your account data including transactions, profile, and investment history.</p>
-                    <button className="px-5 py-2.5 rounded-xl border border-white/15 text-sm text-white/70 hover:text-white hover:border-white/30 transition-colors">
+                    <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-2">Download my data</h3>
+                    <p className="text-xs text-black/40 mb-4">Export all your account data including transactions, profile, and investment history.</p>
+                    <button className="px-5 py-2.5 rounded-xl border border-black/15 text-sm text-black/70 hover:text-black hover:border-black/30 transition-colors">
                       Request data export
                     </button>
                   </div>
                   <div className="p-5 rounded-2xl border border-[#EF4444]/20 bg-[#EF4444]/5">
-                    <h3 className="font-display font-600 text-base text-white mb-2">Deactivate account</h3>
-                    <p className="text-xs text-white/40 mb-4">Temporarily disable your account. You can reactivate at any time.</p>
+                    <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-2">Deactivate account</h3>
+                    <p className="text-xs text-black/40 mb-4">Temporarily disable your account. You can reactivate at any time.</p>
                     <button className="px-5 py-2.5 rounded-xl bg-[#EF4444]/20 border border-[#EF4444]/30 text-sm text-[#EF4444] hover:bg-[#EF4444]/30 transition-colors">
                       Deactivate account
                     </button>
                   </div>
                   <div className="p-5 rounded-2xl border border-[#EF4444]/40 bg-[#EF4444]/8">
                     <h3 className="font-display font-600 text-base text-[#EF4444] mb-2">Close account permanently</h3>
-                    <p className="text-xs text-white/40 mb-4">This action is irreversible. All your data will be deleted after the mandatory 30-day retention period.</p>
-                    <button className="px-5 py-2.5 rounded-xl bg-[#EF4444] text-sm text-white hover:bg-[#DC2626] transition-colors">
+                    <p className="text-xs text-black/40 mb-4">This action is irreversible. All your data will be deleted after the mandatory 30-day retention period.</p>
+                    <button className="px-5 py-2.5 rounded-xl bg-[#EF4444] text-sm text-[#0A0B0D] hover:bg-[#DC2626] transition-colors">
                       Close account
                     </button>
                   </div>

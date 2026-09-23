@@ -1,16 +1,16 @@
-import { TrendingUp, TrendingDown } from 'lucide-react';
+﻿import { TrendingUp, TrendingDown } from 'lucide-react';
 import { tickerItems } from '../data/mock';
 
 export default function TickerStrip() {
   const doubled = [...tickerItems, ...tickerItems];
 
   return (
-    <div className="bg-[#060810] border-y border-white/5 py-3 overflow-hidden relative">
+    <div className="bg-white border-y border-black/5 py-3 overflow-hidden relative">
       <div className="flex ticker-track" style={{ width: 'max-content' }}>
         {doubled.map((item, i) => (
-          <div key={i} className="flex items-center gap-2 px-6 shrink-0 border-r border-white/5 last:border-r-0">
-            <span className="font-mono text-[11px] font-500 text-white/50 tracking-wider">{item.symbol}</span>
-            <span className="font-mono text-[12px] font-600 text-white tabular-nums">{item.price}</span>
+          <div key={i} className="flex items-center gap-2 px-6 shrink-0 border-r border-black/5 last:border-r-0">
+            <span className="font-mono text-[11px] font-500 text-black/50 tracking-wider">{item.symbol}</span>
+            <span className="font-mono text-[12px] font-600 text-[#0A0B0D] tabular-nums">{item.price}</span>
             <span className={`flex items-center gap-0.5 font-mono text-[11px] font-500 ${item.positive ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
               {item.positive ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
               {item.change}

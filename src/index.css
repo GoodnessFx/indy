@@ -8,21 +8,21 @@
   --font-body: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  --color-bg-primary: #0A0B0D;
-  --color-bg-secondary: #F7F7F5;
-  --color-bg-card: #111318;
+  --color-bg-primary: #F7F7F5;
+  --color-bg-secondary: #FFFFFF;
+  --color-bg-card: #FFFFFF;
   --color-bg-card-light: #EDEDEB;
   --color-accent: #2F6BFF;
   --color-accent-hover: #4F82FF;
   --color-accent-muted: rgba(47,107,255,0.12);
-  --color-accent-gain: #22C55E;
-  --color-accent-loss: #EF4444;
-  --color-accent-warning: #F59E0B;
-  --color-text-primary-dark: #F7F7F5;
+  --color-accent-gain: #16A34A;
+  --color-accent-loss: #DC2626;
+  --color-accent-warning: #D97706;
+  --color-text-primary-dark: #0A0B0D;
   --color-text-muted-dark: #6B7280;
   --color-text-primary-light: #0A0B0D;
   --color-text-muted-light: #6B7280;
-  --color-border-dark: rgba(255,255,255,0.08);
+  --color-border-dark: rgba(0,0,0,0.08);
   --color-border-light: rgba(0,0,0,0.08);
 }
 
@@ -36,8 +36,8 @@ html {
 
 body {
   font-family: 'Inter', sans-serif;
-  background: #0A0B0D;
-  color: #F7F7F5;
+  background: #F7F7F5;
+  color: #0A0B0D;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -115,10 +115,10 @@ body {
 
 /* Glassmorphism */
 .glass {
-  background: rgba(17, 19, 24, 0.8);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(0,0,0,0.06);
 }
 .glass-light {
   background: rgba(247, 247, 245, 0.85);
@@ -157,8 +157,8 @@ body {
 
 .btn-ghost {
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #F7F7F5;
+  border: 1px solid rgba(0,0,0,0.15);
+  color: #0A0B0D;
   font-family: 'Outfit', sans-serif;
   font-weight: 500;
   transition: all 0.2s ease;
@@ -226,7 +226,7 @@ body {
   100% { background-position: 200% 0; }
 }
 .skeleton {
-  background: linear-gradient(90deg, #1a1c22 25%, #222530 50%, #1a1c22 75%);
+  background: linear-gradient(90deg, #e5e5e3 25%, #d5d5d3 50%, #e5e5e3 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: 4px;
@@ -270,10 +270,10 @@ body {
   background: linear-gradient(90deg, #2F6BFF, #4CFFB3);
 }
 
-/* Admin surface - colder feel */
+/* Admin surface, same light tokens as the rest of the site */
 .admin-surface {
-  background: #070810;
-  color: #C5C8D0;
+  background: #F7F7F5;
+  color: #0A0B0D;
 }
 
 /* RTL support */

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -18,8 +18,8 @@ export default function Dashboard() {
   const holdings = [
     { id: 'nft-1', type: 'NFT', name: 'Quantum Orchid #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'photo-1634193295627-1cdddf751ebf', status: 'active' },
     { id: 'nft-2', type: 'NFT', name: 'Void Walker #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'photo-1618005182384-a83a8bd57fbe', status: 'active' },
-    { id: 'NVDA', type: 'Stock', name: 'NVDA · NVIDIA Corp.', value: 4376, cost: 3160, gain: 1216, gainPct: 38.5, image: null, status: 'active' },
-    { id: 'ASTS', type: 'Stock', name: 'ASTS · AST SpaceMobile', value: 2109, cost: 1750, gain: 359, gainPct: 20.5, image: null, status: 'active' },
+    { id: 'NVDA', type: 'Stock', name: 'NVDA, NVIDIA Corp.', value: 4376, cost: 3160, gain: 1216, gainPct: 38.5, image: null, status: 'active' },
+    { id: 'ASTS', type: 'Stock', name: 'ASTS, AST SpaceMobile', value: 2109, cost: 1750, gain: 359, gainPct: 20.5, image: null, status: 'active' },
     { id: 'inv-1', type: 'Other', name: 'Manhattan Luxury Tower', value: 5200, cost: 5000, gain: 200, gainPct: 4.0, image: null, status: 'active' },
     { id: 'inv-2', type: 'Other', name: 'Gold Reserve Series IV', value: 2100, cost: 2000, gain: 100, gainPct: 5.0, image: null, status: 'active' },
   ];
@@ -41,21 +41,21 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0B0D] pt-20">
+    <div className="min-h-screen bg-[#F7F7F5] pt-20">
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-10">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-10 flex-col md:flex-row gap-6">
           <div>
-            <p className="text-white/40 text-sm mb-2">Good morning, Marcus</p>
+            <p className="text-black/40 text-sm mb-2">Good morning, Marcus</p>
             <div className="flex items-end gap-4">
               <div>
-                <p className="text-xs text-white/30 mb-1 font-mono">TOTAL PORTFOLIO VALUE</p>
+                <p className="text-xs text-black/30 mb-1 font-mono">TOTAL PORTFOLIO VALUE</p>
                 <div className="flex items-center gap-3">
-                  <span className="font-display font-800 text-4xl lg:text-5xl text-white tabular-nums">
-                    {hideBalance ? '••••••' : `$${totalBalance.toLocaleString()}`}
+                  <span className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] tabular-nums">
+                    {hideBalance ? '******' : `$${totalBalance.toLocaleString()}`}
                   </span>
-                  <button onClick={() => setHideBalance(!hideBalance)} className="text-white/30 hover:text-white/60 transition-colors mt-1">
+                  <button onClick={() => setHideBalance(!hideBalance)} className="text-black/30 hover:text-black/60 transition-colors mt-1">
                     {hideBalance ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
@@ -63,9 +63,9 @@ export default function Dashboard() {
               <div className={`flex items-center gap-1.5 pb-2 ${totalGain >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
                 {totalGain >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 <span className="font-mono text-sm font-600">
-                  {hideBalance ? '••••' : `${totalGain >= 0 ? '+' : ''}$${Math.abs(totalGain).toLocaleString()} (${totalGain >= 0 ? '+' : ''}${totalGainPct}%)`}
+                  {hideBalance ? '****' : `${totalGain >= 0 ? '+' : ''}$${Math.abs(totalGain).toLocaleString()} (${totalGain >= 0 ? '+' : ''}${totalGainPct}%)`}
                 </span>
-                <span className="text-white/30 text-xs">all time</span>
+                <span className="text-black/30 text-xs">all time</span>
               </div>
             </div>
           </div>
@@ -75,7 +75,7 @@ export default function Dashboard() {
             {[
               { label: 'Deposit', icon: ArrowDownLeft, to: '/deposit', color: 'text-[#22C55E]', bg: 'bg-[#22C55E]/10 hover:bg-[#22C55E]/20' },
               { label: 'Withdraw', icon: ArrowUpRight, to: '/withdraw', color: 'text-[#2F6BFF]', bg: 'bg-[#2F6BFF]/10 hover:bg-[#2F6BFF]/20' },
-              { label: 'Support', icon: MessageCircle, to: '#support', color: 'text-white/60', bg: 'bg-white/5 hover:bg-white/10' },
+              { label: 'Support', icon: MessageCircle, to: '#support', color: 'text-black/60', bg: 'bg-black/5 hover:bg-black/10' },
             ].map(({ label, icon: Icon, to, color, bg }) => (
               <Link
                 key={label}
@@ -83,7 +83,7 @@ export default function Dashboard() {
                 className={`flex flex-col items-center gap-1.5 w-20 py-3 rounded-xl ${bg} transition-colors`}
               >
                 <Icon size={18} className={color} />
-                <span className="text-xs text-white/50">{label}</span>
+                <span className="text-xs text-black/50">{label}</span>
               </Link>
             ))}
           </div>
@@ -93,14 +93,14 @@ export default function Dashboard() {
         <div className="mb-8"><FxCalculator /></div>
 
         {/* Performance chart */}
-        <div className="glass rounded-2xl border border-white/8 p-6 mb-8">
+        <div className="glass rounded-2xl border border-black/8 p-6 mb-8">
           <div className="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
-            <h3 className="font-display font-600 text-lg text-white">Portfolio Performance</h3>
-            <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+            <h3 className="font-display font-600 text-lg text-[#0A0B0D]">Portfolio Performance</h3>
+            <div className="flex items-center gap-1 bg-black/5 rounded-xl p-1">
               {timeRanges.map(r => (
                 <button key={r} onClick={() => setTimeRange(r)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-mono font-600 transition-all ${
-                    timeRange === r ? 'bg-[#2F6BFF] text-white' : 'text-white/40 hover:text-white/70'
+                    timeRange === r ? 'bg-[#2F6BFF] text-white' : 'text-black/40 hover:text-black/70'
                   }`}>
                   {r}
                 </button>
@@ -115,10 +115,10 @@ export default function Dashboard() {
                   <stop offset="100%" stopColor="#2F6BFF" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <XAxis dataKey="date" tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 11, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+              <XAxis dataKey="date" tick={{ fill: 'rgba(0,0,0,0.45)', fontSize: 11, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fill: 'rgba(0,0,0,0.45)', fontSize: 11, fontFamily: 'JetBrains Mono' }} axisLine={false} tickLine={false} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
               <Tooltip
-                contentStyle={{ background: '#111318', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', color: '#F7F7F5' }}
+                contentStyle={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: '12px', color: '#F7F7F5' }}
                 formatter={(val: unknown) => [`$${Number(val).toLocaleString()}`, 'Value']}
               />
               <Area type="monotone" dataKey="value" stroke="#2F6BFF" strokeWidth={2} fill="url(#portfolioGrad)" dot={false} activeDot={{ r: 4, fill: '#2F6BFF' }} />
@@ -127,14 +127,14 @@ export default function Dashboard() {
         </div>
 
         {/* Holdings */}
-        <div className="glass rounded-2xl border border-white/8 overflow-hidden">
-          <div className="flex items-center justify-between p-6 border-b border-white/5">
-            <h3 className="font-display font-600 text-lg text-white">Holdings</h3>
-            <div className="flex items-center gap-1 bg-white/5 rounded-xl p-1">
+        <div className="glass rounded-2xl border border-black/8 overflow-hidden">
+          <div className="flex items-center justify-between p-6 border-b border-black/5">
+            <h3 className="font-display font-600 text-lg text-[#0A0B0D]">Holdings</h3>
+            <div className="flex items-center gap-1 bg-black/5 rounded-xl p-1">
               {(['All', 'NFTs', 'Stocks', 'Other'] as const).map(s => (
                 <button key={s} onClick={() => setSegment(s)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    segment === s ? 'bg-[#2F6BFF] text-white' : 'text-white/40 hover:text-white/70'
+                    segment === s ? 'bg-[#2F6BFF] text-white' : 'text-black/40 hover:text-black/70'
                   }`}>
                   {s}
                 </button>
@@ -157,18 +157,18 @@ export default function Dashboard() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="p-16 text-center">
-              <Wallet size={32} className="text-white/20 mx-auto mb-4" />
-              <p className="text-sm text-white/40 mb-4">No {segment !== 'All' ? segment.toLowerCase() : 'holdings'} yet</p>
+              <Wallet size={32} className="text-black/20 mx-auto mb-4" />
+              <p className="text-sm text-black/40 mb-4">No {segment !== 'All' ? segment.toLowerCase() : 'holdings'} yet</p>
               <Link to={segment === 'NFTs' ? '/nfts' : segment === 'Stocks' ? '/stocks' : '/investments'} className="btn-primary px-5 py-2.5 rounded-xl text-sm">
                 Browse assets
               </Link>
             </div>
           ) : (
             <div>
-              {/* Table header — desktop only */}
-              <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr] px-6 py-3 bg-white/2 border-b border-white/5">
+              {/* Table header, desktop only */}
+              <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr] px-6 py-3 bg-black/2 border-b border-black/5">
                 {['Asset', 'Value', 'Cost basis', 'Gain/Loss'].map(h => (
-                  <span key={h} className="text-xs text-white/30 font-medium font-mono">{h}</span>
+                  <span key={h} className="text-xs text-black/30 font-medium font-mono">{h}</span>
                 ))}
               </div>
 
@@ -176,7 +176,7 @@ export default function Dashboard() {
                 <Link
                   key={holding.id}
                   to={typeToPath(holding.type, holding.id)}
-                  className="flex items-center gap-4 px-6 py-4 border-b border-white/5 hover:bg-white/3 transition-colors group"
+                  className="flex items-center gap-4 px-6 py-4 border-b border-black/5 hover:bg-black/3 transition-colors group"
                 >
                   {/* Asset info */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -188,19 +188,19 @@ export default function Dashboard() {
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white truncate group-hover:text-[#2F6BFF] transition-colors">{holding.name}</p>
-                      <p className="text-xs text-white/30 mt-0.5">{holding.type}</p>
+                      <p className="text-sm font-medium text-[#0A0B0D] truncate group-hover:text-[#2F6BFF] transition-colors">{holding.name}</p>
+                      <p className="text-xs text-black/30 mt-0.5">{holding.type}</p>
                     </div>
                   </div>
 
                   {/* Value */}
                   <div className="text-right md:text-left min-w-[80px]">
-                    <p className="font-mono text-sm text-white font-600">${holding.value.toLocaleString()}</p>
+                    <p className="font-mono text-sm text-[#0A0B0D] font-600">${holding.value.toLocaleString()}</p>
                   </div>
 
                   {/* Cost */}
                   <div className="hidden md:block min-w-[80px]">
-                    <p className="font-mono text-sm text-white/40">${holding.cost.toLocaleString()}</p>
+                    <p className="font-mono text-sm text-black/40">${holding.cost.toLocaleString()}</p>
                   </div>
 
                   {/* Gain */}
@@ -226,8 +226,8 @@ export default function Dashboard() {
 
           {filtered.length > 0 && (
             <div className="p-4 flex items-center justify-between">
-              <p className="text-xs text-white/30">{filtered.length} positions</p>
-              <div className="flex items-center gap-2 text-xs text-white/30">
+              <p className="text-xs text-black/30">{filtered.length} positions</p>
+              <div className="flex items-center gap-2 text-xs text-black/30">
                 <RefreshCw size={11} />
                 <span>Updated just now</span>
               </div>
@@ -237,10 +237,10 @@ export default function Dashboard() {
 
         {/* Bottom row */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Link to="/transactions" className="glass rounded-2xl border border-white/8 p-5 hover:border-[#2F6BFF]/30 transition-all group">
+          <Link to="/transactions" className="glass rounded-2xl border border-black/8 p-5 hover:border-[#2F6BFF]/30 transition-all group">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs text-white/40 font-medium">Recent transactions</span>
-              <ArrowUpRight size={14} className="text-white/20 group-hover:text-[#2F6BFF] transition-colors" />
+              <span className="text-xs text-black/40 font-medium">Recent transactions</span>
+              <ArrowUpRight size={14} className="text-black/20 group-hover:text-[#2F6BFF] transition-colors" />
             </div>
             <div className="space-y-2.5">
               {[
@@ -250,10 +250,10 @@ export default function Dashboard() {
               ].map(tx => (
                 <div key={tx.label} className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs text-white/60">{tx.label}</p>
-                    <p className="text-[10px] text-white/25">{tx.date}</p>
+                    <p className="text-xs text-black/60">{tx.label}</p>
+                    <p className="text-[10px] text-black/25">{tx.date}</p>
                   </div>
-                  <span className={`font-mono text-xs font-600 ${tx.type === 'in' ? 'text-[#22C55E]' : tx.type === 'pending' ? 'text-[#F59E0B]' : 'text-white/50'}`}>
+                  <span className={`font-mono text-xs font-600 ${tx.type === 'in' ? 'text-[#22C55E]' : tx.type === 'pending' ? 'text-[#F59E0B]' : 'text-black/50'}`}>
                     {tx.amount}
                   </span>
                 </div>
@@ -261,30 +261,30 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link to="/deposit" className="glass rounded-2xl border border-white/8 p-5 hover:border-[#22C55E]/30 transition-all group">
+          <Link to="/deposit" className="glass rounded-2xl border border-black/8 p-5 hover:border-[#22C55E]/30 transition-all group">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-[#22C55E]/10 flex items-center justify-center">
                 <ArrowDownLeft size={18} className="text-[#22C55E]" />
               </div>
               <div>
-                <p className="text-sm font-display font-600 text-white">Make a deposit</p>
-                <p className="text-xs text-white/30">Bank · Card · Crypto</p>
+                <p className="text-sm font-display font-600 text-[#0A0B0D]">Make a deposit</p>
+                <p className="text-xs text-black/30">Bank, Card, Crypto</p>
               </div>
             </div>
-            <p className="text-xs text-white/30 leading-relaxed">Funds available instantly for trading once confirmed.</p>
+            <p className="text-xs text-black/30 leading-relaxed">Funds available instantly for trading once confirmed.</p>
           </Link>
 
-          <Link to="/withdraw" className="glass rounded-2xl border border-white/8 p-5 hover:border-[#2F6BFF]/30 transition-all group">
+          <Link to="/withdraw" className="glass rounded-2xl border border-black/8 p-5 hover:border-[#2F6BFF]/30 transition-all group">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-[#2F6BFF]/10 flex items-center justify-center">
                 <ArrowUpRight size={18} className="text-[#2F6BFF]" />
               </div>
               <div>
-                <p className="text-sm font-display font-600 text-white">Withdraw funds</p>
-                <p className="text-xs text-white/30">Bank · Card · 4h avg.</p>
+                <p className="text-sm font-display font-600 text-[#0A0B0D]">Withdraw funds</p>
+                <p className="text-xs text-black/30">Bank, Card, 4h avg.</p>
               </div>
             </div>
-            <p className="text-xs text-white/30 leading-relaxed">Live FX rates with full fee breakdown before you confirm.</p>
+            <p className="text-xs text-black/30 leading-relaxed">Live FX rates with full fee breakdown before you confirm.</p>
           </Link>
         </div>
       </div>
