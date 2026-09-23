@@ -1,0 +1,326 @@
+# IndySolutions — Multi-Asset Investment Platform
+### Complete Figma Design Brief (Web + Dashboard + Admin)
+
+> Paste this whole document into Figma AI / Figma Make, or hand it to a designer as the creative brief. Every section is written to be self-contained so pieces can be built independently and still feel like one system. This version specifies every page in the sitemap — nothing is left for the tool to improvise.
+
+---
+
+## 1. THE BIG IDEA
+
+IndySolutions is a premium investment platform where a single account gives users exposure to three very different asset classes in one clean interface:
+
+1. **NFTs** — curated/verified digital collectible investments
+2. **Stocks** — equities and ETFs, including thematic sets like SpaceX-adjacent / space-economy stocks
+3. **Other Investments** — a flexible third bucket (commodities, real estate tokens, private deals, whatever you add later)
+
+The Tesla screenshots you shared are **inspiration only** — big cinematic hero imagery, generous whitespace, confident minimal typography, subtle motion, product-configurator-style interactions. We are not copying Tesla's content or layout 1:1; we're borrowing the *feeling* (expensive, engineered, trustworthy) and building an original visual language on top of it.
+
+**Design principle that governs everything below:** no two sections — and, in this complete version, no two full pages — should share a layout pattern. Variety is a deliberate rule, not an accident — but every section still uses the same color tokens, type scale, spacing system, and corner-radius so it reads as one product, not several.
+
+---
+
+## 2. BRAND & VISUAL DIRECTION
+
+**Mood:** engineered, confident, quiet-luxury fintech. Think less "crypto degen neon," more "private bank meets SpaceX mission control."
+
+- **Color system** (define as Figma variables, not hard-coded hex):
+  - `bg/primary` — near-black (#0A0B0D) for hero/dark sections
+  - `bg/secondary` — off-white (#F7F7F5) for light sections (alternate dark/light rhythm down each page)
+  - `accent/primary` — one confident accent (electric blue #2F6BFF or ion green #4CFFB3 — pick one, use it sparingly for CTAs, live data, charts)
+  - `accent/gain` — green for positive balance/returns
+  - `accent/loss` — red/orange for negative movement
+  - `accent/warning` — amber, reserved for pending/attention-needed states (KYC pending, withdrawal delayed)
+  - `text/primary`, `text/muted`, `border/subtle` — standard neutral ramp
+- **Typography:** one geometric/grotesk sans for headings (e.g. a Söhne/General Sans/Inter Display-style face) at large confident sizes (64–96px hero), one highly-legible sans for body/data (Inter or IBM Plex Sans — data tables need a face that keeps numbers monospaced-friendly). Set a strict type scale (12/14/16/20/24/32/48/64/96) as Figma text styles — never freehand a font size.
+- **Imagery:** real, professional photography and 3D renders only — no stock-photo handshake clichés. For NFTs use actual high-res artwork mockups on device frames; for stocks/SpaceX use real market imagery (rocket launches, trading floors, satellite views) shot or licensed professionally; for "other investments" use clean editorial photography matching the asset (gold bars, real estate exteriors, etc). Treat every image with a subtle dark gradient overlay for text legibility, consistent across the site.
+- **Motion:** scroll-triggered fades/parallax on hero sections, number-counter animations on stat bands, smooth chart line-draw animations on the dashboard. Keep it restrained — motion should feel precise, not playful.
+- **Corner radius & elevation:** pick one radius scale (e.g. 4 / 8 / 16 / 24) and one shadow system, apply consistently across cards, buttons, modals.
+- **Icons, not emoji — anywhere, ever.** Use one consistent icon library end to end (Lucide, Phosphor, or Feather — pick one and never mix) as a Figma component set with a single stroke-width variable. Every status, section, nav item, empty state, and notification uses a real icon from that set, never an emoji character. This applies across the marketing site, dashboard, admin panel, and support widget.
+
+### Mobile responsiveness (non-negotiable, build for it from the first frame)
+
+Design every screen at three breakpoints as real Figma frames, not an afterthought: **Mobile (390px)**, **Tablet (768px)**, **Desktop (1440px)**. Rules that keep the "nothing repeats" principle intact on mobile too:
+- **Nav** collapses to a hamburger + logo + a single primary CTA icon; the language switcher moves into the menu.
+- **Stat bands** stack vertically, numbers stay large, dividers become horizontal instead of vertical.
+- **Split/asymmetric layouts and carousels** become full-width swipeable single cards with dot pagination.
+- **Vertical steppers** keep their numbered-rail feel but the rail collapses to sit above each step's content instead of beside it.
+- **Any holdings/data list** switches from table rows to stacked cards (thumbnail + name + value + status badge) under ~600px.
+- **Any multi-step wizard** (withdrawal, deposit, KYC) becomes a full-screen bottom sheet per step on mobile, with a persistent progress bar pinned to the top and a sticky primary button pinned to the bottom (thumb-reachable).
+- **Card scanner** fills the full viewport on mobile like a native camera app.
+- Touch targets minimum 44×44px everywhere; no hover-only interactions — every hover state needs a tap/press equivalent.
+
+---
+
+## 3. SITE MAP
+
+**Public / Marketing site**
+1. Home (§4)
+2. NFTs — browse/marketplace (§7)
+3. Stocks — browse/watchlist, incl. SpaceX/space-economy shelf (§7)
+4. Other Investments — browse (§7)
+5. How It Works (§11)
+6. Security & Trust (§11)
+7. Pricing / Fees (§11)
+8. About / Company (§11)
+9. Contact (§11)
+10. Login / Sign up (§5)
+
+**Authenticated app**
+11. Dashboard — portfolio overview (§6)
+12. Asset detail — NFT / Stock / Other, each its own template (§6)
+13. Deposit (§8)
+14. Withdraw — multi-step flow (§10)
+15. Transaction History (§9)
+16. Settings — profile, security, language, notifications, payout methods (§5)
+17. Support / live chat (§13)
+
+**System / utility (§14)**
+18. 404 — page not found
+19. Session expired
+20. Scheduled maintenance
+21. Generic error / "something went wrong"
+
+**Admin (§15 — separate, hidden surface)**
+22. Admin login
+23. Admin dashboard (KPIs)
+24. User list + user detail/edit
+25. Login history
+26. Support inbox
+27. KYC review queue
+28. Audit log
+
+---
+
+## 4. HOMEPAGE — SECTION-BY-SECTION (each visually distinct)
+
+Build these top to bottom. Alternate dark/light backgrounds as noted so the page has rhythm.
+
+1. **Hero — full-bleed cinematic** *(dark bg)*: full-viewport video/3D loop (slow rotating globe with data points, or a rocket ascending) with a short, confident headline ("One account. Three ways to grow.") and a single primary CTA. Minimal nav overlaid on top, transparent until scroll.
+
+2. **Live stat band — centered, data-forward** *(light bg)*: 3–4 big animated counters side by side (Total value secured, Assets under management, Countries served, Avg. withdrawal time). No imagery, pure typography + thin divider lines.
+
+3. **Three-pillar showcase — asymmetric split** *(dark bg)*: NFTs / Stocks / Other Investments shown as three unequal-width cards (not a boring equal 3-grid) — e.g. one large card + two stacked smaller cards, each with its own photography and an "Explore" link + icon.
+
+4. **Product configurator-style carousel** *(light bg)*: horizontal swipeable cards showcasing 4–5 flagship assets, each card expands on interaction — arrows on the sides, dot pagination underneath.
+
+5. **How it works — vertical stepper** *(dark bg)*: 4 steps (Sign up → Fund your account → Invest across NFTs/Stocks/Other → Withdraw in your currency) as a left-side numbered rail with a connecting line, content on the right, each step reveals on scroll. (This is the homepage teaser; the full How It Works page in §11 goes deeper.)
+
+6. **Security & trust band — icon + microcopy row** *(light bg)*: bank-grade encryption, KYC verified, licensed payment partners, insured custody — clean horizontal row of icon + one-line copy.
+
+7. **Live market ticker strip** *(dark, full-bleed thin band)*: a scrolling marquee-style ticker of live-looking prices for featured stocks/NFTs.
+
+8. **Testimonials — single large quote** *(light bg)*: one large rotating testimonial, big serif or italic display type, lots of whitespace.
+
+9. **Global reach — map visualization** *(dark bg)*: a stylized world map with glowing dots showing where users are investing from, paired with the "6 languages" message and a language switcher preview.
+
+10. **Final CTA — split screen** *(light bg)*: left half bold headline + CTA button, right half a tall dashboard screenshot/mockup, slightly overlapping the section above for depth.
+
+11. **Footer — dense but organized**: multi-column footer (Product / Company / Legal / Support / Language switcher / Social), dark background, small type, matches nav style.
+
+---
+
+## 5. LOGIN, ONBOARDING & PROFILE SETTINGS
+
+- **Sign up:** email/phone + password, or SSO (Google/Apple), then a short KYC step (name, DOB, country, ID upload) as a clean multi-step form with a progress bar — not a wall of fields at once.
+- **Login:** simple centered card on a dark, quietly animated background (slow particle/data-point drift, not the hero video); "Forgot password" and SSO options below the primary form. Include a rate-limit-aware error state (see §14).
+- **Profile settings page**, organized as tabs:
+  - **Profile** — upload/crop profile picture (circular crop tool), display name, bio/username, country
+  - **Security** — password change, 2FA toggle (authenticator app + SMS), active sessions/devices list with "log out" per device
+  - **Preferences** — language selector (§12), currency display preference, dark/light mode toggle, notification preferences (email/push/SMS toggles per event type)
+  - **Payment methods** — linked bank accounts and cards, add/remove, set default
+  - **Verification** — KYC status, re-upload documents if needed, with a clear visual for `pending` / `verified` / `rejected` (rejected shows a reason + re-submit CTA)
+  - **Danger zone** — deactivate/close account, download my data
+
+---
+
+## 6. DASHBOARD & PORTFOLIO
+
+- **Overview screen:** total balance in large type at top (with an eye icon to hide/show for privacy), a segmented control (All / NFTs / Stocks / Other), a performance chart (line chart, time-range toggle 1D/1W/1M/1Y/All), and a holdings list below as rows (thumbnail, name, current value, gain/loss badge). Quick-action row above the fold: Deposit / Withdraw / Support, as icon buttons.
+- **Asset detail pages** — deliberately different templates per asset type:
+  - **NFT detail:** large square artwork hero, rarity/traits panel, price history chart, "list for sale" / "hold" actions
+  - **Stock detail:** classic candlestick/line chart, key stats grid (P/E, market cap, day range), buy/sell panel docked to the right
+  - **Other investment detail:** editorial layout — big photo, written description block, a progress-bar-style "funding/maturity" indicator instead of a stock-style chart
+
+---
+
+## 7. BROWSE / MARKETPLACE PAGES (NFTs, Stocks, Other Investments)
+
+These are the three pages named in the sitemap but never designed before — each gets its **own** browsing pattern so they don't feel like the same template with different data.
+
+**7.1 — NFTs (grid/gallery pattern)**
+- Masonry-style image grid (cards vary in height based on artwork aspect ratio — visually the most "gallery" page on the site), filter rail on the left (collection, price range, trait filters) collapsing to a filter drawer on mobile.
+- Sort control top-right (Price, Recently listed, Trending).
+- Each card: artwork, name, collection tag, current price, small "verified" badge icon.
+- Clicking a card opens the NFT detail template from §6.
+
+**7.2 — Stocks (data-table + watchlist pattern)**
+- Deliberately the *opposite* of the NFT grid — a dense, scannable table/list (ticker, name, price, day change %, sparkline mini-chart), because this is how people actually compare stocks.
+- A "SpaceX & Space Economy" shelf pinned at the top as a distinct horizontal-scroll row of featured tickers, separate from the main table below it.
+- Search bar + sector filter chips above the table.
+- Tap a row → Stock detail template (§6).
+
+**7.3 — Other Investments (editorial card pattern)**
+- Neither a grid nor a table — a single-column feed of large editorial cards (photo + headline + short description + funding-progress bar + expected return range), since these assets need more context per item than an NFT or a stock ticker does.
+- Category filter chips at top (Real Estate, Commodities, Private Deals, etc.).
+- Tap a card → Other-investment detail template (§6).
+
+---
+
+## 8. DEPOSIT FLOW
+
+Simpler than withdrawal, but still its own multi-step flow — do not reuse the withdrawal screens with labels swapped.
+
+**Step 1 — Choose funding method:** bank transfer, card, or crypto (BTC/USDT) shown as three distinct option cards, not a dropdown.
+**Step 2 — Enter amount:** shows any deposit minimum, and a live preview of what it converts to in the user's account currency if different.
+**Step 3 — Confirm & instructions:** for bank transfer, show the IndySolutions receiving details and a reference code to include; for card, a standard card-entry form (not the scanner — that's withdrawal-specific); for crypto, a QR code + wallet address with a copy button and a network-selection warning (e.g. "Send only USDT on the TRC-20 network").
+**Step 4 — Pending/success state:** bank and crypto deposits show a "we'll notify you once received" pending state with an estimated timeframe; card deposits confirm instantly.
+
+---
+
+## 9. TRANSACTION HISTORY (full page, not just "a table")
+
+- Header row: total in / total out summary for the selected date range, plus a date-range picker and an export-to-CSV icon button.
+- Filter chips: All / Deposits / Withdrawals / Buys / Sells / Fees.
+- Table (desktop) / stacked cards (mobile): icon indicating transaction type, description, asset type, amount (colored green/red by direction), status chip (Completed/Pending/Failed), timestamp.
+- Row click opens a detail drawer (slide-in from the right on desktop, bottom sheet on mobile) with the full breakdown — for a withdrawal this includes the FX rate and fee that were locked in at the time, pulled straight from §10 Step 2's data.
+- Empty state (no transactions yet): friendly icon + "Make your first deposit" CTA, not a blank table.
+
+---
+
+## 10. WITHDRAWAL FLOW (build every step as its own screen)
+
+Multi-step wizard with a progress indicator at the top on every step.
+
+**Step 1 — Select source & amount:** user picks which balance to withdraw from (NFT proceeds / stock proceeds / other), enters an amount, sees available balance.
+
+**Step 2 — Live rate & breakdown:** itemized summary card —
+- Amount requested
+- Live FX rate ("1 USD = 0.92 EUR — refreshes every 30s")
+- Capital gains/tax withheld (labeled as an estimate, with a tooltip: "consult a tax advisor")
+- IndySolutions service fee (% and resulting amount)
+- **Net amount the user will receive**, bold, largest type on the card
+
+**Step 3 — Destination:** linked bank account (via IndySolutions as intermediary — short explainer: "IndySolutions securely routes your withdrawal to your bank") or linked debit card.
+
+**Step 4 — Card verification (demo scanner):** camera viewfinder frame with animated scan-line, fields populating with a checkmark as each locks in (masked card number, expiry, cardholder name), manual-entry fallback link. **Demo/mock interaction only** — prototype as a scripted animation, not a functioning scanner. Real card capture requires a PCI-compliant licensed processor (§16).
+
+**Step 5 — Currency conversion confirmation:** if payout currency differs from account currency, final confirmation card with locked-in rate, fee, exact amount landing, estimated arrival time.
+
+**Step 6 — Success screen:** checkmark animation, summary, estimated arrival window, "Track this withdrawal" link into Transaction History (§9).
+
+**Failure state (any step):** a dedicated error card — not a toast — explaining what failed (e.g. "This withdrawal couldn't be processed — your card issuer declined it") with a "Try a different method" and a "Contact support" button that opens the widget pre-filled with the withdrawal reference.
+
+---
+
+## 11. INFORMATIONAL / MARKETING PAGES
+
+Five pages named in the sitemap, each with a distinct structure so they don't all become "hero + three paragraphs":
+
+**11.1 — How It Works:** long-form scrollytelling page, expanding the homepage stepper into full detail — each of the 4 steps gets its own full-viewport section with a supporting screenshot/illustration, plus a closing FAQ accordion.
+
+**11.2 — Security & Trust:** structured like a trust report, not a landing page — a top summary band (encryption standard, licensed partner names, KYC/AML statement), then expandable detail sections (Custody, Data Protection, Regulatory Status, Insurance), each with an icon and a "Learn more" expand — dense, credible, low on decoration.
+
+**11.3 — Pricing / Fees:** a comparison-table layout — rows are fee types (deposit, withdrawal, FX conversion, inactivity if any), columns are asset type (NFT/Stocks/Other) — genuinely different from every other page since it's the one place a literal table-grid is the right answer. A small FX-fee calculator widget beneath it (enter an amount, see the fee live) reuses the Step 2 breakdown pattern from §10.
+
+**11.4 — About / Company:** editorial, human layout — mission statement in large display type, a simple timeline/milestones strip, team photos in a clean grid (real photography, not illustrated avatars), and a closing careers CTA.
+
+**11.5 — Contact:** contact form + live-chat entry point + support email/phone + business hours by region (ties into §12 timezones), plus a link into the Help Center from §13.
+
+---
+
+## 12. MULTI-LANGUAGE SUPPORT
+
+- Languages: **English (default) + 5 others** — recommended set: **Spanish, French, Portuguese, German, Arabic** (covers Europe, Latin America, and MENA well; swap Arabic for Mandarin or Hindi if your target market skews Asia).
+- UI: a globe/language icon in the nav opening a dropdown with each language's name in its own script plus a flag or country-code chip.
+- Build all text as auto-layout with "hug contents," not fixed-width boxes. For Arabic, design a full RTL-mirrored variant of every screen — a real layout variant, not just translated copy.
+- Numbers/currency localize too (decimal separators, currency symbol placement).
+
+---
+
+## 13. CUSTOMER CARE / SUPPORT (its own mini-system)
+
+- **Floating support entry point:** circular icon button (chat/headset icon) fixed bottom-right on every authenticated screen except the full-screen card-scanner step. On the marketing site it opens a lighter "talk to sales" version.
+- **Support widget — expanded state:** slide-up sheet (mobile) / docked panel (desktop) with three tabs: **Chat**, **My Tickets**, **Help Center**.
+  - **Chat:** conversation thread (user bubbles right-aligned in accent color, support left-aligned neutral), typing indicator, timestamps grouped by day, composer with attachments. Unread badge on the floating icon.
+  - **My Tickets:** list with status chips (Open / Waiting on you / Resolved).
+  - **Help Center:** searchable FAQ, accordion-style, organized by NFTs / Stocks / Other Investments / Withdrawals & Fees.
+- **Empty/first-open state:** 3–4 quick-reply chips ("Where's my withdrawal?", "How do fees work?", "Verify my identity", "Talk to a human").
+- **Escalation state:** "Connect me to a person" hands off to a human-support state with an estimated wait time shown.
+
+---
+
+## 14. ERROR, EMPTY, LOADING & UTILITY STATES
+
+Every screen designed above needs these three companion states — design them once as reusable patterns, then apply everywhere:
+
+- **Loading:** skeleton screens matching the real layout's shape (not a centered spinner) for the dashboard, browse pages, and transaction history; a spinner is acceptable only inside small components like a button mid-submit.
+- **Empty:** a centered icon + one-line message + a single clear CTA — used for "no holdings yet," "no transactions yet," "no support tickets," "no search results."
+- **Error (inline):** a small icon + message + retry button, used when part of a page fails to load (e.g. the live price feed) without breaking the rest of the page.
+
+**Dedicated full-page utility screens:**
+- **404:** off-brand-playful is fine here (this is the one place a little personality is welcome) — icon illustration, "Page not found," a button back to Dashboard/Home.
+- **Session expired:** centered card, "Your session has expired for your security," single "Log back in" button — appears mid-flow if a token expires (e.g. during withdrawal) without losing the user's place once they re-auth.
+- **Scheduled maintenance:** full-screen takeover with an estimated return time, shown at the infra level (not a page the user navigates to).
+- **Generic error / "something went wrong":** last-resort fallback for unhandled failures — icon, apologetic one-liner, "Reload" and "Contact support" buttons.
+
+---
+
+## 15. ADMIN PANEL (separate, hidden surface — see build rules below)
+
+The admin surface is reached only via the hidden footer-dot trigger (4 taps/clicks) routing to an obscure path, with its own login completely separate from user login (see the backend prompt for the auth logic). Visually: same design system, but a colder, denser, data-first layout — admin tools should look unmistakably like an internal console, not a customer-facing page, so there's never confusion about which surface someone is looking at.
+
+**15.1 — Admin login:** minimal centered form, username + password only (no SSO, no "remember me" beyond a short session).
+
+**15.2 — Admin dashboard:** KPI cards at top (total users, total AUM, pending KYC count, open support tickets, withdrawals pending review), then a recent-activity feed below.
+
+**15.3 — User list:** dense table (name, email, KYC status chip, balance, signup date), search bar, KYC-status filter, pagination. Row click → user detail.
+
+**15.4 — User detail/edit:** left column shows core editable fields (name, email, phone) in an inline-edit form with validation (blank fields, duplicate email); right column shows read-only portfolio balances by asset type with a clearly separate "Manual balance adjustment" action (requires a reason field before it submits — this writes to the audit log, it's never a quiet inline edit on a money field) and their login history (§15.5) inline below.
+
+**15.5 — Login history:** per-user, a full timestamped table of every login (not just latest) — device/user-agent column, exportable.
+
+**15.6 — Support inbox:** admin-side view of every thread across all users, filterable by status, same chat-thread UI pattern as the user-facing widget but in a dense two-pane layout (thread list left, active conversation right). Swipe-left-to-reveal-delete on mobile thread rows; standard delete icon + confirm modal on desktop.
+
+**15.7 — KYC review queue:** list of pending KYC submissions with document thumbnails, an approve/reject action pair, and a required reason field on reject (feeds the user-facing rejection state in §5).
+
+**15.8 — Audit log:** simple, dense, chronological table — admin, action, target user, what changed (before/after), timestamp. Filterable by admin and by date range.
+
+---
+
+## 16. NOTIFICATION & EMAIL TEMPLATES
+
+Design as a small template system, not one-offs — a consistent header/footer wrapper (logo, then unsubscribe/preferences link in the footer), with the following content variants:
+- Welcome / verify your email
+- KYC approved / KYC rejected (with reason)
+- Deposit received
+- Withdrawal requested → processing → completed (three states of the same template, status-driven)
+- Withdrawal failed (with a clear next-step CTA)
+- New support reply
+- Security alert — new device login
+- Password changed confirmation
+
+In-app equivalents (toast + notification-center list) should reuse the same iconography and status colors as the email templates so the two feel like one system.
+
+---
+
+## 17. TRUST, COMPLIANCE & FEE TRANSPARENCY
+
+A platform that moves user funds, converts currencies, and pays out to bank accounts/cards is a regulated financial activity in most countries — this affects design because trust signals and fee transparency need to be visible, not buried:
+
+- Show the fee and tax breakdown **before** the user confirms every withdrawal (never after) — already built into §10 Step 2.
+- The Security & Trust page (§11.2) is the persistent home for KYC/AML practices, which licensed payment partner actually moves the money, and how funds are custodied.
+- For the real build (beyond the Figma prototype): actual card capture, bank payouts, and FX conversion normally require a licensed payment processor or banking-as-a-service partner (e.g. Stripe, Wise, a regulated EMI) rather than a custom scanner — flag this to your dev team early, since it affects both compliance and which parts of this flow can be "real" vs. remain a polished demo at launch.
+
+---
+
+## 18. FIGMA FILE ORGANIZATION
+
+- **Pages:** `Design System` / `Marketing Site` / `Dashboard App` / `Deposit & Withdrawal Flows` / `Admin Panel` / `States & Utility Screens` / `Components` / `Archive`
+- **Design System page:** color variables, type styles, spacing tokens, icon set, button variants (primary/secondary/ghost × default/hover/disabled/loading), form field states, chart color tokens, status/badge colors — build this first, everything else consumes it.
+- **Components:** every reusable piece (nav bar, footer, stat counter, asset row, modal shell, toast/notification, language switcher, progress stepper, skeleton loader, empty-state block) built as a proper Figma component with variants — not copy-pasted frames.
+- Name frames by URL path (e.g. `/dashboard/withdraw/step-2`, `/admin/users/:id`) so handoff to developers is unambiguous.
+- Use auto-layout everywhere so the whole file resizes cleanly for the language/RTL variants in §12.
+
+---
+
+*Still not covered, on purpose — these are copy/content decisions, not layout ones, so they don't block starting the Figma build: exact fee percentages, exact legal disclaimer text, and final pick of which 3 languages beyond Spanish. Fill those in as you go; they don't change any screen's structure.*
