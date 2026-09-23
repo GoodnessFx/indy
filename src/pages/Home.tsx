@@ -122,16 +122,15 @@ export default function Home() {
       {/* 1. Hero, full-bleed cinematic */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop&auto=format)`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            transform: `translateY(${scrollY * 0.3}px)`,
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#F7F7F5]/70 via-white/40 to-white" />
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop&auto=format"
+            alt="Global markets at night"
+            className="w-full h-full object-cover"
+            style={{ transform: `translateY(${scrollY * 0.3}px)` }}
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0B0D]/80 via-[#0A0B0D]/45 to-[#0A0B0D]" />
 
         {/* Grid overlay */}
         <div className="absolute inset-0 opacity-10"
@@ -143,18 +142,18 @@ export default function Home() {
             <span className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase">Markets are open</span>
           </div>
 
-          <h1 className="font-display font-800 text-5xl md:text-7xl lg:text-8xl text-[#0A0B0D] leading-[0.95] tracking-tight mb-8">
-            One account.<br />
-            <span className="gradient-text">Three ways to grow.</span>
+          <h1 className="font-display font-800 text-5xl md:text-7xl lg:text-8xl text-white leading-[0.95] tracking-tight mb-8">
+            Your portfolio<br />
+            <span className="gradient-text">should not look like everyone else's.</span>
           </h1>
-          <p className="text-black/50 text-lg md:text-xl font-body max-w-xl mx-auto mb-12 leading-relaxed">
-            Invest in NFTs, stocks, and curated alternative assets from a single dashboard. Verified assets, real time pricing, withdrawals in your own currency.
+          <p className="text-white/60 text-lg md:text-xl font-body max-w-xl mx-auto mb-12 leading-relaxed">
+            NFTs, equities, vehicles, and curated private deals, verified, priced, and held in one account, with withdrawals in your own currency.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link to="/signup" className="btn-primary px-8 py-4 rounded-xl text-base flex items-center gap-2 w-full sm:w-auto justify-center">
               Open your account <ArrowRight size={18} />
             </Link>
-            <Link to="/how-it-works" className="btn-ghost px-8 py-4 rounded-xl text-base flex items-center gap-2 w-full sm:w-auto justify-center">
+            <Link to="/how-it-works" className="btn-ghost-dark-on-dark px-8 py-4 rounded-xl text-base flex items-center gap-2 w-full sm:w-auto justify-center">
               <Play size={16} /> See how it works
             </Link>
           </div>
@@ -179,35 +178,35 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. Three-pillar showcase */}
-      <section className="bg-[#F7F7F5] py-24 px-6">
+      {/* 3. Three-pillar showcase, dark image cards */}
+      <section className="bg-[#0A0B0D] py-24 px-6 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto">
           <div className="flex items-end justify-between mb-12 flex-col md:flex-row gap-4">
             <div>
               <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-3">Asset Classes</p>
-              <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] leading-tight">
+              <h2 className="font-display font-800 text-4xl lg:text-5xl text-white leading-tight">
                 Three markets.<br />One login.
               </h2>
             </div>
-            <p className="text-black/40 text-sm max-w-sm leading-relaxed">
+            <p className="text-white/40 text-sm max-w-sm leading-relaxed">
               Each asset class has its own browsing experience, tuned to how investors actually evaluate that type of asset.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Large NFT card */}
-            <div className="lg:col-span-3 relative rounded-2xl overflow-hidden group card-hover border border-black/8 bg-white" style={{ minHeight: '420px' }}>
+            <div className="lg:col-span-3 relative rounded-2xl overflow-hidden group card-hover border border-white/8 bg-[#111318]" style={{ minHeight: '420px' }}>
               <img
                 src="https://images.unsplash.com/photo-1634193295627-1cdddf751ebf?w=800&h=600&fit=crop&auto=format"
                 alt="NFT artwork"
-                className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
+                className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] via-white/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] via-[#0A0B0D]/40 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-8">
                 <span className="chip-accent text-xs px-3 py-1 rounded-full font-mono font-500 mb-3 inline-block">NFTs</span>
-                <h3 className="font-display font-700 text-2xl text-[#0A0B0D] mb-2">Curated Digital Collectibles</h3>
-                <p className="text-black/50 text-sm mb-5">Verified artwork, on-chain provenance, real investment value.</p>
-                <Link to="/nfts" className="flex items-center gap-2 text-[#2F6BFF] text-sm font-medium hover:gap-3 transition-all">
+                <h3 className="font-display font-700 text-2xl text-white mb-2">Curated Digital Collectibles</h3>
+                <p className="text-white/50 text-sm mb-5">Verified artwork, on-chain provenance, real investment value.</p>
+                <Link to="/nfts" className="flex items-center gap-2 text-[#7DA6FF] text-sm font-medium hover:gap-3 transition-all">
                   Explore NFTs <ArrowRight size={15} />
                 </Link>
               </div>
@@ -215,32 +214,32 @@ export default function Home() {
 
             {/* Two stacked smaller cards */}
             <div className="lg:col-span-2 flex flex-col gap-4">
-              <div className="relative rounded-2xl overflow-hidden group card-hover border border-black/8 bg-white flex-1" style={{ minHeight: '200px' }}>
+              <div className="relative rounded-2xl overflow-hidden group card-hover border border-white/8 bg-[#111318] flex-1" style={{ minHeight: '200px' }}>
                 <img
                   src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=300&fit=crop&auto=format"
                   alt="Stock market"
-                  className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700"
+                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="chip-gain text-xs px-3 py-1 rounded-full font-mono font-500 mb-2 inline-block">Stocks</span>
-                  <h3 className="font-display font-700 text-xl text-[#0A0B0D] mb-1">Equities & ETFs</h3>
+                  <h3 className="font-display font-700 text-xl text-white mb-1">Equities & ETFs</h3>
                   <Link to="/stocks" className="flex items-center gap-2 text-[#22C55E] text-sm font-medium hover:gap-3 transition-all">
                     Browse stocks <ArrowRight size={14} />
                   </Link>
                 </div>
               </div>
 
-              <div className="relative rounded-2xl overflow-hidden group card-hover border border-black/8 bg-white flex-1" style={{ minHeight: '200px' }}>
+              <div className="relative rounded-2xl overflow-hidden group card-hover border border-white/8 bg-[#111318] flex-1" style={{ minHeight: '200px' }}>
                 <img
                   src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=600&h=300&fit=crop&auto=format"
                   alt="Real estate investment"
-                  className="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-70 group-hover:scale-105 transition-all duration-700"
+                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="chip-warning text-xs px-3 py-1 rounded-full font-mono font-500 mb-2 inline-block">Investments</span>
-                  <h3 className="font-display font-700 text-xl text-[#0A0B0D] mb-1">Alternative Assets</h3>
+                  <h3 className="font-display font-700 text-xl text-white mb-1">Alternative Assets</h3>
                   <Link to="/investments" className="flex items-center gap-2 text-[#F59E0B] text-sm font-medium hover:gap-3 transition-all">
                     Explore deals <ArrowRight size={14} />
                   </Link>
@@ -252,37 +251,38 @@ export default function Home() {
       </section>
 
       {/* 4. Product configurator carousel */}
-      <section className="bg-[#F7F7F5] py-24 px-6">
+      {/* 4. Featured showcase, dark cinematic card */}
+      <section className="bg-[#0A0B0D] py-24 px-6 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto">
           <div className="text-center mb-16">
             <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-3">Featured Assets</p>
-            <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] leading-tight">
+            <h2 className="font-display font-800 text-4xl lg:text-5xl text-white leading-tight">
               Handpicked for this quarter
             </h2>
           </div>
 
           {/* Large card */}
-          <div className="relative bg-[#F7F7F5] rounded-3xl overflow-hidden mb-6" style={{ minHeight: '440px' }}>
+          <div className="relative bg-[#111318] rounded-3xl overflow-hidden mb-6" style={{ minHeight: '440px' }}>
             <img
               src={`https://images.unsplash.com/${featuredAssets[activeAsset].image}?w=1200&h=500&fit=crop&auto=format`}
               alt={featuredAssets[activeAsset].name}
-              className="absolute inset-0 w-full h-full object-cover opacity-40 transition-opacity duration-500"
+              className="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity duration-500"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#F7F7F5] via-white/70 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0A0B0D] via-[#0A0B0D]/70 to-transparent" />
             <div className="relative z-10 p-10 lg:p-14 max-w-lg">
               <span className="font-mono text-xs tracking-widest uppercase mb-4 inline-block px-3 py-1 rounded-full"
                 style={{ background: `${featuredAssets[activeAsset].color}20`, color: featuredAssets[activeAsset].color }}>
                 {featuredAssets[activeAsset].type}
               </span>
-              <h3 className="font-display font-800 text-3xl lg:text-4xl text-[#0A0B0D] mb-3">{featuredAssets[activeAsset].name}</h3>
-              <p className="text-black/50 text-sm leading-relaxed mb-6">{featuredAssets[activeAsset].desc}</p>
+              <h3 className="font-display font-800 text-3xl lg:text-4xl text-white mb-3">{featuredAssets[activeAsset].name}</h3>
+              <p className="text-white/50 text-sm leading-relaxed mb-6">{featuredAssets[activeAsset].desc}</p>
               <div className="flex items-end gap-6 mb-8">
                 <div>
-                  <p className="text-black/40 text-xs mb-1">Current price</p>
-                  <p className="font-mono font-600 text-2xl text-[#0A0B0D]">{featuredAssets[activeAsset].price}</p>
+                  <p className="text-white/40 text-xs mb-1">Current price</p>
+                  <p className="font-mono font-600 text-2xl text-white">{featuredAssets[activeAsset].price}</p>
                 </div>
                 <div>
-                  <p className="text-black/40 text-xs mb-1">Return</p>
+                  <p className="text-white/40 text-xs mb-1">Return</p>
                   <p className="font-mono font-600 text-2xl text-[#22C55E]">{featuredAssets[activeAsset].return}</p>
                 </div>
               </div>
@@ -304,9 +304,9 @@ export default function Home() {
                 style={{ width: '180px', height: '100px' }}
               >
                 <img src={`https://images.unsplash.com/${asset.image}?w=200&h=110&fit=crop&auto=format`} alt={asset.name} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5]/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D]/80 to-transparent" />
                 <div className="absolute bottom-2 left-2 right-2">
-                  <p className="text-[#0A0B0D] text-xs font-medium truncate">{asset.name}</p>
+                  <p className="text-white text-xs font-medium truncate">{asset.name}</p>
                 </div>
               </button>
             ))}
@@ -316,19 +316,19 @@ export default function Home() {
           <div className="flex items-center justify-center gap-2 mt-6">
             {featuredAssets.map((_, i) => (
               <button key={i} onClick={() => setActiveAsset(i)}
-                className={`rounded-full transition-all duration-300 ${i === activeAsset ? 'w-6 h-2 bg-[#2F6BFF]' : 'w-2 h-2 bg-[#F7F7F5]/20'}`} />
+                className={`rounded-full transition-all duration-300 ${i === activeAsset ? 'w-6 h-2 bg-[#2F6BFF]' : 'w-2 h-2 bg-white/20'}`} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* 5. How it works, vertical stepper */}
-      <section className="bg-[#F7F7F5] py-24 px-6">
+      {/* 5. How it works, vertical stepper, dark rail */}
+      <section className="bg-[#0A0B0D] py-24 px-6 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto">
           <div className="max-w-3xl mx-auto">
             <div className="text-center mb-16">
               <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-3">Process</p>
-              <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D]">
+              <h2 className="font-display font-800 text-4xl lg:text-5xl text-white">
                 From zero to invested<br />in four steps
               </h2>
             </div>
@@ -341,20 +341,20 @@ export default function Home() {
             ].map((step, i) => (
               <div key={i} className="flex gap-8 mb-12 last:mb-0 group">
                 <div className="flex flex-col items-center shrink-0">
-                  <div className="w-12 h-12 rounded-xl bg-[#2F6BFF]/10 border border-[#2F6BFF]/30 flex items-center justify-center font-mono font-600 text-[#2F6BFF] text-sm transition-all group-hover:bg-[#2F6BFF] group-hover:border-[#2F6BFF] group-hover:text-black">
+                  <div className="w-12 h-12 rounded-xl bg-[#2F6BFF]/10 border border-[#2F6BFF]/30 flex items-center justify-center font-mono font-600 text-[#7DA6FF] text-sm transition-all group-hover:bg-[#2F6BFF] group-hover:border-[#2F6BFF] group-hover:text-white">
                     {step.n}
                   </div>
                   {i < 3 && <div className="w-px flex-1 mt-3 stepper-line" style={{ minHeight: '40px' }} />}
                 </div>
                 <div className="pt-2.5 pb-10">
-                  <h3 className="font-display font-700 text-xl text-[#0A0B0D] mb-2">{step.title}</h3>
-                  <p className="text-black/40 text-sm leading-relaxed">{step.body}</p>
+                  <h3 className="font-display font-700 text-xl text-white mb-2">{step.title}</h3>
+                  <p className="text-white/40 text-sm leading-relaxed">{step.body}</p>
                 </div>
               </div>
             ))}
 
             <div className="text-center">
-              <Link to="/how-it-works" className="text-[#2F6BFF] text-sm hover:text-[#4F82FF] flex items-center gap-2 justify-center">
+              <Link to="/how-it-works" className="text-[#7DA6FF] text-sm hover:text-white flex items-center gap-2 justify-center">
                 Full walkthrough <ChevronRight size={15} />
               </Link>
             </div>
@@ -362,8 +362,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. Security band */}
-      <section className="bg-[#F7F7F5] py-16 px-6">
+      {/* 6. Security band, blue band */}
+      <section className="bg-gradient-to-r from-[#0D1430] via-[#122454] to-[#0D1430] py-16 px-6 border-y border-[#2F6BFF]/20">
         <div className="max-w-[1440px] mx-auto">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[
@@ -373,12 +373,12 @@ export default function Home() {
               { icon: Zap, title: 'Insured custody', body: 'Digital assets custodied with FDIC-equivalent insurance on qualifying accounts.' },
             ].map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex flex-col gap-4">
-                <div className="w-10 h-10 rounded-xl bg-[#F7F7F5]/5 flex items-center justify-center">
-                  <Icon size={18} className="text-[#0A0B0D]" />
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+                  <Icon size={18} className="text-[#7DA6FF]" />
                 </div>
                 <div>
-                  <p className="font-display font-600 text-sm text-[#0A0B0D] mb-1">{title}</p>
-                  <p className="text-xs text-[#0A0B0D]/50 leading-relaxed">{body}</p>
+                  <p className="font-display font-600 text-sm text-white mb-1">{title}</p>
+                  <p className="text-xs text-white/50 leading-relaxed">{body}</p>
                 </div>
               </div>
             ))}
@@ -389,8 +389,8 @@ export default function Home() {
       {/* 7. Live market ticker */}
       <TickerStrip />
 
-      {/* 8. Testimonials */}
-      <section className="bg-[#F7F7F5] py-28 px-6">
+      {/* 8. Testimonials, dark quote room */}
+      <section className="bg-[#0A0B0D] py-28 px-6 border-t border-white/5">
         <div className="max-w-3xl mx-auto text-center">
           <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-12">Investor Stories</p>
 
@@ -402,14 +402,14 @@ export default function Home() {
                   i === activeTestimonial ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
                 }`}
               >
-                <blockquote className="font-display font-400 italic text-2xl lg:text-3xl text-[#0A0B0D] leading-relaxed mb-10">
+                <blockquote className="font-display font-400 italic text-2xl lg:text-3xl text-white leading-relaxed mb-10">
                   "{t.quote}"
                 </blockquote>
                 <div className="flex items-center gap-4">
-                  <img src={`https://images.unsplash.com/${t.avatar}?w=48&h=48&fit=crop&crop=face&auto=format`} alt={t.name} className="w-12 h-12 rounded-full object-cover" />
+                  <img src={`https://images.unsplash.com/${t.avatar}?w=96&h=96&fit=crop&crop=face&auto=format`} alt={t.name} className="w-12 h-12 rounded-full object-cover ring-2 ring-[#2F6BFF]/40" />
                   <div className="text-left">
-                    <p className="font-display font-600 text-sm text-[#0A0B0D]">{t.name}</p>
-                    <p className="text-xs text-[#0A0B0D]/40">{t.role}</p>
+                    <p className="font-display font-600 text-sm text-white">{t.name}</p>
+                    <p className="text-xs text-white/40">{t.role}</p>
                   </div>
                 </div>
               </div>
@@ -419,34 +419,34 @@ export default function Home() {
           <div className="flex items-center justify-center gap-2 mt-8">
             {testimonials.map((_, i) => (
               <button key={i} onClick={() => setActiveTestimonial(i)}
-                className={`rounded-full transition-all ${i === activeTestimonial ? 'w-6 h-2 bg-[#2F6BFF]' : 'w-2 h-2 bg-[#F7F7F5]/20'}`} />
+                className={`rounded-full transition-all ${i === activeTestimonial ? 'w-6 h-2 bg-[#2F6BFF]' : 'w-2 h-2 bg-white/20'}`} />
             ))}
           </div>
 
           <div className="mt-12 flex items-center justify-center gap-8 flex-wrap">
             <div className="flex items-center gap-1.5">
               {[...Array(5)].map((_, i) => <Star key={i} size={14} className="fill-[#F59E0B] text-[#F59E0B]" />)}
-              <span className="text-sm text-[#0A0B0D]/60 ml-2">4.9/5, 2,400 reviews</span>
+              <span className="text-sm text-white/60 ml-2">4.9/5, 2,400 reviews</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 9. Global reach, map */}
-      <section className="bg-[#F7F7F5] py-24 px-6">
+      {/* 9. Global reach, map on dark */}
+      <section className="bg-[#0A0B0D] py-24 px-6 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
               <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-4">Global Reach</p>
-              <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] mb-6">
+              <h2 className="font-display font-800 text-4xl lg:text-5xl text-white mb-6">
                 68 countries.<br />6 languages.
               </h2>
-              <p className="text-black/40 text-sm leading-relaxed mb-8 max-w-sm">
+              <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-sm">
                 From Lagos to Singapore, Dubai to Sao Paulo, IndySolutions is built for a world that doesn't stop at borders.
               </p>
               <div className="grid grid-cols-3 gap-3">
-                {['ðŸ‡ºðŸ‡¸ English', 'ðŸ‡ªðŸ‡¸ EspaÃ±ol', 'ðŸ‡«ðŸ‡· FranÃ§ais', 'ðŸ‡§ðŸ‡· PortuguÃªs', 'ðŸ‡©ðŸ‡ª Deutsch', 'ðŸ‡¦ðŸ‡ª Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©'].map(lang => (
-                  <div key={lang} className="px-3 py-2.5 rounded-xl border border-black/8 text-xs text-black/50 text-center">
+                {['English', 'Espanol', 'Francais', 'Portugues', 'Deutsch', 'AR'].map(lang => (
+                  <div key={lang} className="px-3 py-2.5 rounded-xl border border-white/8 text-xs text-white/50 text-center">
                     {lang}
                   </div>
                 ))}
@@ -454,14 +454,14 @@ export default function Home() {
             </div>
 
             {/* Stylized map */}
-            <div className="relative h-64 lg:h-80 bg-[#F7F7F5] rounded-2xl border border-black/5 overflow-hidden">
+            <div className="relative h-64 lg:h-80 bg-[#0d1020] rounded-2xl border border-white/5 overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop&auto=format"
                 alt="World map"
-                className="absolute inset-0 w-full h-full object-cover opacity-20"
+                className="absolute inset-0 w-full h-full object-cover opacity-30"
               />
               <div className="absolute inset-0" style={{
-                background: 'radial-gradient(ellipse at 50% 50%, rgba(47,107,255,0.08) 0%, transparent 70%)',
+                background: 'radial-gradient(ellipse at 50% 50%, rgba(47,107,255,0.15) 0%, transparent 70%)',
               }} />
               {mapDots.map((dot, i) => (
                 <div key={i} className="absolute" style={{ top: dot.top, left: dot.left }}>
@@ -471,29 +471,29 @@ export default function Home() {
               ))}
               <div className="absolute bottom-4 right-4 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#2F6BFF] dot-pulse" />
-                <span className="font-mono text-[10px] text-black/40">Live investor activity</span>
+                <span className="font-mono text-[10px] text-white/40">Live investor activity</span>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 10. Final CTA, split screen */}
-      <section className="bg-[#F7F7F5] py-24 px-6">
+      {/* 10. Final CTA, split screen on deep blue */}
+      <section className="bg-gradient-to-br from-[#0A1030] via-[#16307A] to-[#0A0B0D] py-24 px-6 border-t border-white/5">
         <div className="max-w-[1440px] mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div>
-              <h2 className="font-display font-800 text-5xl lg:text-6xl text-[#0A0B0D] leading-tight mb-8">
+              <h2 className="font-display font-800 text-5xl lg:text-6xl text-white leading-tight mb-8">
                 Start investing<br />today.
               </h2>
-              <p className="text-[#0A0B0D]/50 text-base leading-relaxed mb-10 max-w-sm">
+              <p className="text-white/50 text-base leading-relaxed mb-10 max-w-sm">
                 Open your account in minutes. No minimum investment to get started. Full KYC verification keeps your portfolio safe.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/signup" className="btn-primary px-8 py-4 rounded-xl text-base inline-flex items-center gap-2 justify-center">
                   Create free account <ArrowRight size={18} />
                 </Link>
-                <Link to="/contact" className="btn-ghost-dark px-8 py-4 rounded-xl text-base inline-flex items-center gap-2 justify-center">
+                <Link to="/contact" className="btn-ghost-dark-on-dark px-8 py-4 rounded-xl text-base inline-flex items-center gap-2 justify-center">
                   Talk to sales
                 </Link>
               </div>
@@ -504,8 +504,8 @@ export default function Home() {
                   { icon: Clock, text: '4h avg. withdrawal' },
                 ].map(({ icon: Icon, text }) => (
                   <div key={text} className="flex items-center gap-2">
-                    <Icon size={14} className="text-[#2F6BFF]" />
-                    <span className="text-sm text-[#0A0B0D]/50">{text}</span>
+                    <Icon size={14} className="text-[#7DA6FF]" />
+                    <span className="text-sm text-white/50">{text}</span>
                   </div>
                 ))}
               </div>

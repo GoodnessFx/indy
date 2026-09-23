@@ -22,9 +22,12 @@ export const mockStocks = [
 
 export const spaceStocks = ['ASTS', 'RKLB', 'SPCE'];
 
-// Vehicle-backed investment offerings. Real Tesla lineup specs, pulled from Tesla's
-// public spec sheets. Prices move often, update before launch. Fractional exposure is
-// structured as vehicle-backed shares (see /vehicles page copy).
+// Vehicle-backed investment offerings. Real Tesla lineup specs and starting prices.
+// Photography is openly licensed Tesla photography from Wikimedia Commons, one
+// matching image per model. Prices move often, update before launch.
+
+const vehiclePhotoBase = 'https://upload.wikimedia.org/wikipedia/commons/thumb';
+
 export const mockVehicles = [
   {
     id: 'model-3',
@@ -35,56 +38,61 @@ export const mockVehicles = [
     zeroToSixty: 4.9,
     topSpeedMph: 125,
     seats: 5,
-    image: 'photo-1560958089-b8a1929cea89',
+    photo: `${vehiclePhotoBase}/a/ab/Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg/1920px-Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg`,
+    credit: 'Tesla Model 3, 2023. Wikimedia Commons',
     note: 'Highest resale velocity in the fleet. Best liquidity profile for short-hold allocations.',
   },
   {
     id: 'model-y',
     name: 'Model Y',
-    tagline: 'Best-selling SUV in the world, fleet workhorse',
+    tagline: 'Best-selling SUV in the world, the fleet workhorse',
     price: 41490,
     rangeMi: 330,
     zeroToSixty: 4.8,
     topSpeedMph: 135,
     seats: 7,
-    image: 'photo-1571068316344-75bc76f77890',
+    photo: `${vehiclePhotoBase}/5/5c/Tesla_Model_Y_1X7A6211.jpg/1920px-Tesla_Model_Y_1X7A6211.jpg`,
+    credit: 'Tesla Model Y. Wikimedia Commons',
     note: 'Fleet backbone. Strong rental demand keeps utilization above 80% across the pool.',
   },
   {
     id: 'model-s',
     name: 'Model S',
-    tagline: 'Long-range flagship for premium allocations',
+    tagline: 'Long range flagship for premium allocations',
     price: 87490,
     rangeMi: 410,
     zeroToSixty: 3.1,
     topSpeedMph: 149,
     seats: 5,
-    image: 'photo-1617788138017-80ad40651399',
+    photo: `${vehiclePhotoBase}/d/df/21_Tesla_Model_S_Plaid.jpg/1280px-21_Tesla_Model_S_Plaid.jpg`,
+    credit: 'Tesla Model S Plaid, 2021. Wikimedia Commons',
     note: 'Plaid trim vehicles hold collector interest. Slower turnover, higher per-unit margin.',
   },
   {
     id: 'model-x',
     name: 'Model X',
-    tagline: 'Full-size SUV with falcon-wing doors',
+    tagline: 'Full size SUV with falcon wing doors',
     price: 92490,
     rangeMi: 335,
     zeroToSixty: 3.8,
     topSpeedMph: 155,
     seats: 7,
-    image: 'photo-1553440569-bcc63803a83d',
+    photo: `${vehiclePhotoBase}/c/c6/Tesla_Model_X_100D_1X7A6736.jpg/1280px-Tesla_Model_X_100D_1X7A6736.jpg`,
+    credit: 'Tesla Model X 100D. Wikimedia Commons',
     note: 'Lowest fleet volume. Limited allocation windows, announced to holders by email first.',
   },
   {
     id: 'cybertruck',
     name: 'Cybertruck',
-    tagline: 'Stainless-steel utility with the strongest order backlog',
+    tagline: 'Stainless steel utility with the strongest order backlog',
     price: 82490,
     rangeMi: 340,
     zeroToSixty: 2.6,
     topSpeedMph: 130,
     seats: 5,
-    image: 'photo-1617704548623-340376564e68',
-    note: 'Waitlist-driven demand. Allocations typically sell out within hours of listing.',
+    photo: `${vehiclePhotoBase}/d/dc/2024_Tesla_Cybertruck_Foundation_Series_IMG_0642.jpg/1280px-2024_Tesla_Cybertruck_Foundation_Series_IMG_0642.jpg`,
+    credit: 'Tesla Cybertruck Foundation Series, 2024. Wikimedia Commons',
+    note: 'Waitlist driven demand. Allocations typically sell out within hours of listing.',
   },
 ];
 

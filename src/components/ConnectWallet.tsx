@@ -202,8 +202,8 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
             disabled={connecting !== null}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-black/5 text-left transition-colors disabled:opacity-50"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#F6851B]/12 flex items-center justify-center shrink-0">
-              <span className="font-display font-800 text-sm text-[#F6851B]">M</span>
+            <div className="w-9 h-9 rounded-xl bg-[#F6851B]/10 flex items-center justify-center shrink-0 overflow-hidden">
+              <img src="/metamask.svg" alt="MetaMask" className="w-6 h-6 object-contain" />
             </div>
             <div>
               <p className="text-sm font-medium text-[#0A0B0D]">MetaMask</p>
@@ -215,8 +215,8 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
             disabled={connecting !== null}
             className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-black/5 text-left transition-colors disabled:opacity-50"
           >
-            <div className="w-9 h-9 rounded-xl bg-[#AB9FF2]/20 flex items-center justify-center shrink-0">
-              <span className="font-display font-800 text-sm text-[#7C6FE8]">P</span>
+            <div className="w-9 h-9 rounded-xl bg-[#AB9FF2]/15 flex items-center justify-center shrink-0 overflow-hidden">
+              <img src="/phantom.png" alt="Phantom" className="w-6 h-6 object-contain" />
             </div>
             <div>
               <p className="text-sm font-medium text-[#0A0B0D]">Phantom</p>

@@ -20,8 +20,10 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const isLight = ['/how-it-works', '/security', '/pricing', '/about', '/contact'].includes(location.pathname);
-  const isDark = !isLight;
+  // Site base is white. Nav text stays dark on every surface so scrolling
+  // never hides it. Only the hero panels below render dark imagery.
+  const isLight = true;
+  const isDark = false;
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
