@@ -4,7 +4,8 @@ import { languages } from '../data/mock';
 import ScanCardModal from '../components/ScanCardModal';
 import { getPayoutMethods, removePayoutMethod, type PayoutMethod } from '../lib/payoutMethods';
 import { getReferralCode } from '../lib/watchlist';
-import { mockTransactions } from '../data/mock';
+import { myOrders } from '../lib/orders';
+import { useAuth } from '../lib/useAuth';
 
 type Tab = 'profile' | 'security' | 'preferences' | 'payments' | 'verification' | 'danger';
 
@@ -34,6 +35,11 @@ export default function Settings() {
   const [copied, setCopied] = useState(false);
   const [statementDone, setStatementDone] = useState(false);
   const referralCode = getReferralCode();
+  const { profile } = useAuth();
+  const fullName = (profile?.name || profile?.email || 'Account').trim();
+  const [firstName, ...rest] = fullName.split(' ');
+  const lastName = rest.join(' ') || profile?.family_name || '';
+  const profileInitial = fullName.charAt(0).toUpperCase();
 
   const copyReferral = async () => {
     const link = `https://indysolutions.com/signup?ref=${referralCode}`;
@@ -45,8 +51,8 @@ export default function Settings() {
   };
 
   const downloadStatement = () => {
-    const rows = mockTransactions.map(t =>
-      [t.date, t.id, t.description, t.asset, t.amount, t.fee, t.status].join(',')
+    const rows = myOrders().map(o =>
+      [o.createdAt, o.id, `${o.kind} investment: ${o.assetName}`, o.currency, o.amount, (o.amount * 0.01).toFixed(2), o.status].join(',')
     );
     const csv = [
       'Date,Reference,Description,Asset,Amount,Fee,Status',
@@ -107,7 +113,7 @@ export default function Settings() {
                 {/* Avatar */}
                 <div className="flex items-center gap-5 mb-8">
                   <div className="relative">
-                    <div className="w-20 h-20 rounded-2xl bg-[#2F6BFF]/20 flex items-center justify-center text-3xl font-medium text-[#2F6BFF]">M</div>
+                    <div className="w-20 h-20 rounded-2xl bg-[#2F6BFF]/20 flex items-center justify-center text-3xl font-medium text-[#2F6BFF]">{profileInitial}</div>
                     <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors">
                       <Upload size={12} className="text-[#0A0B0D]" />
                     </button>
@@ -120,10 +126,10 @@ export default function Settings() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   {[
-                    { label: 'First name', value: 'Marcus', type: 'text' },
-                    { label: 'Last name', value: 'Chen', type: 'text' },
-                    { label: 'Display name / username', value: 'marcuschen', type: 'text' },
-                    { label: 'Email address', value: 'marcus@example.com', type: 'email' },
+                    { label: 'First name', value: firstName || '', type: 'text' },
+                    { label: 'Last name', value: lastName, type: 'text' },
+                    { label: 'Display name / username', value: fullName.toLowerCase().replace(/[^a-z0-9]+/g, ''), type: 'text' },
+                    { label: 'Email address', value: profile?.email || '', type: 'email' },
                   ].map(field => (
                     <div key={field.label}>
                       <label className="block text-xs text-black/40 mb-2">{field.label}</label>

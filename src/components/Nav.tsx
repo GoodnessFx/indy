@@ -4,6 +4,10 @@ import { Globe, Bell, Menu, X, TrendingUp, ChevronDown, LogOut, Settings, Layout
 import { languages } from '../data/mock';
 import Logo from './Logo';
 import ConnectWallet from './ConnectWallet';
+import { useAuth } from '../lib/useAuth';
+import { myOrders } from '../lib/orders';
+import { getTriggers } from '../lib/watchlist';
+import { useOrdersSync } from '../lib/useOrdersSync';
 
 interface NavProps {
   isAuthenticated?: boolean;
@@ -16,7 +20,10 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [currentLang, setCurrentLang] = useState(languages[0]);
-  const [notifCount] = useState(3);
+  const { profile } = useAuth();
+  const accountName = profile?.name || profile?.email || 'Account';
+  const accountEmail = profile?.email || '';
+  const accountInitial = (profile?.name || profile?.email || 'A').trim().charAt(0).toUpperCase();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -57,21 +64,34 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
     ? isDark ? 'bg-[#F7F7F5]/95 backdrop-blur-xl border-b border-black/5' : 'bg-[#F7F7F5]/95 backdrop-blur-xl border-b border-black/5'
     : 'bg-transparent';
 
+  // Notifications are built from this account's own activity: pending
+  // investments and triggered price alerts. A new account sees nothing to read
+  // rather than seeded demo messages.
+  const [orders] = useOrdersSync(() => myOrders());
+  const [triggers] = useOrdersSync(() => getTriggers());
   const notifications = [
-    { id: 1, text: 'Withdrawal of $3,200 is processing', time: '2h ago', read: false },
-    { id: 2, text: 'NVDA up 2.63% today', time: '4h ago', read: false },
-    { id: 3, text: 'KYC verification approved', time: '1d ago', read: false },
-    { id: 4, text: 'New login from Chrome on macOS', time: '2d ago', read: true },
-  ];
+    ...orders.filter(o => o.status === 'pending').map(o => ({
+      id: o.id,
+      text: `${o.assetName} is awaiting payment`,
+      time: new Date(o.createdAt).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      read: false,
+    })),
+    ...triggers.map(t => ({
+      id: t.id,
+      text: t.message,
+      time: new Date(t.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      read: t.read,
+    })),
+  ].slice(0, 8);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12">
         <div className="flex items-center justify-between h-16 lg:h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <Logo size={44} />
-            <span className={`font-display font-800 text-xl tracking-tight ${textColor}`}>
+          {/* Logo and name: one line, never wraps into the status pill below */}
+          <Link to="/" className="flex items-center gap-2 min-w-0 shrink mr-2 group">
+            <Logo size={40} className="shrink-0" />
+            <span className={`min-w-0 truncate font-display font-800 leading-none whitespace-nowrap text-[15px] sm:text-lg lg:text-xl tracking-tight ${textColor}`}>
               Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span>
             </span>
           </Link>
@@ -135,7 +155,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                     className="relative w-9 h-9 flex items-center justify-center rounded-lg text-black/60 hover:text-black hover:bg-black/5 transition-colors"
                   >
                     <Bell size={17} />
-                    {notifCount > 0 && (
+                    {notifications.length > 0 && (
                       <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#2F6BFF] rounded-full" />
                     )}
                   </button>
@@ -143,8 +163,13 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                     <div className="absolute right-0 top-12 w-80 glass rounded-2xl border border-black/8 shadow-2xl overflow-hidden slide-in-right">
                       <div className="px-4 py-3 border-b border-black/8 flex items-center justify-between">
                         <span className="font-display font-600 text-sm text-[#0A0B0D]">Notifications</span>
-                        <button className="text-xs text-[#2F6BFF] hover:text-[#4F82FF]">Mark all read</button>
                       </div>
+                      {notifications.length === 0 && (
+                        <div className="px-4 py-8 text-center">
+                          <p className="text-xs text-black/40">You are all caught up.</p>
+                          <p className="text-[11px] text-black/25 mt-1">Activity on your account will show up here.</p>
+                        </div>
+                      )}
                       {notifications.map(n => (
                         <div key={n.id} className={`px-4 py-3 border-b border-black/5 flex gap-3 hover:bg-black/3 transition-colors ${!n.read ? 'bg-black/2' : ''}`}>
                           {!n.read && <div className="w-1.5 h-1.5 rounded-full bg-[#2F6BFF] mt-1.5 shrink-0" />}
@@ -156,7 +181,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                         </div>
                       ))}
                       <div className="p-3">
-                        <button className="w-full text-center text-xs text-[#2F6BFF] py-2 hover:bg-black/5 rounded-lg transition-colors">View all notifications</button>
+                        <Link to="/dashboard" className="block w-full text-center text-xs text-[#2F6BFF] py-2 hover:bg-black/5 rounded-lg transition-colors">View dashboard</Link>
                       </div>
                     </div>
                   )}
@@ -168,15 +193,15 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                     onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); setLangOpen(false); }}
                     className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl bg-black/5 hover:bg-black/10 transition-colors"
                   >
-                    <div className="w-7 h-7 rounded-lg bg-black/10 flex items-center justify-center text-xs font-medium text-black/60">M</div>
-                    <span className="text-sm font-medium text-black/80">Marcus</span>
+                    <div className="w-7 h-7 rounded-lg bg-[#2F6BFF]/15 flex items-center justify-center text-xs font-medium text-[#2F6BFF]">{accountInitial}</div>
+                    <span className="text-sm font-medium text-black/80 max-w-[110px] truncate">{accountName.split(' ')[0]}</span>
                     <ChevronDown size={12} className={`text-black/40 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                   </button>
                   {profileOpen && (
                     <div className="absolute right-0 top-12 w-52 glass rounded-xl border border-black/8 py-1 shadow-2xl">
                       <div className="px-4 py-3 border-b border-black/8">
-                        <p className="text-sm font-medium text-[#0A0B0D]">Marcus Chen</p>
-                        <p className="text-xs text-black/40">marcus@example.com</p>
+                        <p className="text-sm font-medium text-[#0A0B0D] truncate">{accountName}</p>
+                        <p className="text-xs text-black/40 truncate">{accountEmail}</p>
                       </div>
                       <Link to="/dashboard" className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-black/70 hover:text-black hover:bg-black/5 transition-colors">
                         <LayoutDashboard size={14} /> Dashboard

@@ -121,10 +121,6 @@ export default function Footer() {
             />
           </div>
         </div>
-
-        <p className="mt-6 text-[11px] text-black/15 leading-relaxed max-w-3xl">
-          Investment involves risk. The value of investments and the income from them can go down as well as up, and you may not get back the amount originally invested. Indy Digital Marketing Solutions is not a licensed financial advisor. Past performance is not indicative of future results. All trades are subject to our Terms of Service and applicable regulations.
-        </p>
       </div>
     </footer>
   );

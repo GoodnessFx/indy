@@ -152,7 +152,8 @@ export default function Home() {
         <div className="absolute inset-0 opacity-10"
           style={{ backgroundImage: 'linear-gradient(rgba(47,107,255,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(47,107,255,0.3) 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
 
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
+        {/* py keeps the status pill clear of the fixed nav on small screens */}
+        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto py-28 md:py-0">
           <div className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-[#2F6BFF]/30 bg-[#2F6BFF]/10">
             <span className="w-1.5 h-1.5 rounded-full bg-[#2F6BFF] dot-pulse" />
             <span className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase">Markets are open</span>

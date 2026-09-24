@@ -1,38 +1,47 @@
 ﻿import { useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, MessageSquare } from 'lucide-react';
 import AdminLayout from './AdminLayout';
+import { allTickets } from '../../lib/audit';
+import { useOrdersSync } from '../../lib/useOrdersSync';
 
-const threads = [
-  { id: 'TK-2841', user: 'Marcus Chen', subject: 'Withdrawal delay inquiry', status: 'Open', last: '2h ago', unread: true },
-  { id: 'TK-2840', user: 'Amara Osei', subject: 'KYC document re-submission', status: 'Waiting on you', last: '3h ago', unread: false },
-  { id: 'TK-2839', user: 'Lena Muller', subject: 'Unable to add bank account', status: 'Open', last: '5h ago', unread: true },
-  { id: 'TK-2838', user: 'Raj K.', subject: 'Account verification appeal', status: 'Open', last: '1d ago', unread: false },
-  { id: 'TK-2820', user: 'Sofia Andrade', subject: 'Deposit confirmation', status: 'Resolved', last: '3d ago', unread: false },
-];
-
-const messages: Record<string, { from: 'user' | 'support'; text: string; time: string }[]> = {
-  'TK-2841': [
-    { from: 'user', text: 'Hi, I initiated a withdrawal 3 days ago and it hasn\'t arrived yet. Can you check status?', time: '09:00' },
-    { from: 'support', text: 'Hi Marcus, thanks for reaching out. Let me pull up the details now.', time: '09:15' },
-    { from: 'user', text: 'The reference is WDRL-2024-4521. It was supposed to go to Barclays.', time: '09:16' },
-  ],
-};
+// The inbox shows only real tickets raised by signed-in clients. A fresh
+// install shows an empty inbox rather than sample conversations.
 
 export default function AdminSupport() {
-  const [selected, setSelected] = useState('TK-2841');
+  const [feed] = useOrdersSync(() => allTickets());
+  const [selected, setSelected] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [reply, setReply] = useState('');
-  const [localMessages, setLocalMessages] = useState(messages);
+  const [localMessages, setLocalMessages] = useState<Record<string, { from: 'user' | 'support'; text: string; time: string }[]>>({});
+
+  const threads = feed.map(t => ({
+    id: t.id,
+    user: t.account,
+    subject: t.subject,
+    status: t.status,
+    last: new Date(t.updatedAt).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+    openedAt: t.updatedAt,
+    unread: t.status === 'Open',
+  }));
 
   const filteredThreads = threads.filter(t => statusFilter === 'All' || t.status === statusFilter);
-  const currentThread = threads.find(t => t.id === selected);
-  const currentMessages = localMessages[selected] || [];
+  const currentThread = threads.find(t => t.id === selected) ?? filteredThreads[0] ?? threads[0];
+  const currentMessages: { from: 'user' | 'support'; text: string; time: string }[] = currentThread
+    ? [
+        {
+          from: 'user',
+          text: currentThread.subject,
+          time: new Date(currentThread.openedAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+        },
+        ...(currentThread ? localMessages[currentThread.id] || [] : []),
+      ]
+    : [];
 
   const sendReply = () => {
-    if (!reply.trim()) return;
+    if (!reply.trim() || !currentThread) return;
     setLocalMessages(p => ({
       ...p,
-      [selected]: [...(p[selected] || []), { from: 'support', text: reply, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }],
+      [currentThread.id]: [...(p[currentThread.id] || []), { from: 'support', text: reply, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }],
     }));
     setReply('');
   };
@@ -56,6 +65,15 @@ export default function AdminSupport() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
+            {threads.length === 0 && (
+              <div className="px-5 py-10 text-center">
+                <MessageSquare size={26} className="text-black/15 mx-auto mb-3" />
+                <p className="text-xs text-black/40 mb-1">No client tickets yet</p>
+                <p className="text-[11px] text-black/25 leading-relaxed">
+                  Tickets raised by signed-in clients land here in real time.
+                </p>
+              </div>
+            )}
             {filteredThreads.map(t => (
               <button key={t.id} onClick={() => setSelected(t.id)}
                 className={`w-full text-left px-4 py-3.5 border-b border-black/3 hover:bg-black/2 transition-colors ${selected === t.id ? 'bg-black/3' : ''}`}>

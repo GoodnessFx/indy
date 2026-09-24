@@ -1,8 +1,11 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Download, Calendar, ArrowDownLeft, ArrowUpRight, BarChart2, DollarSign, X, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Package } from 'lucide-react';
-import { mockTransactions } from '../data/mock';
+import { myOrders } from '../lib/orders';
+import { useOrdersSync } from '../lib/useOrdersSync';
 
+// Every client starts with an empty history. Rows are built only from that
+// client's own submitted investments, so nothing demo or shared appears here.
 const filters = ['All', 'Deposits', 'Withdrawals', 'Buys', 'Sells', 'Fees'];
 
 function txIcon(type: string) {
@@ -34,9 +37,24 @@ function statusChip(status: string) {
 export default function TransactionHistory() {
   const [filter, setFilter] = useState('All');
   const [dateRange, setDateRange] = useState('This month');
-  const [selectedTx, setSelectedTx] = useState<typeof mockTransactions[0] | null>(null);
+  const [orders] = useOrdersSync(() => myOrders());
 
-  const filtered = mockTransactions.filter(tx => {
+  const transactions = orders.map(o => ({
+    id: o.id,
+    type: 'buy',
+    description: `${o.kind} investment, ${o.assetName}`,
+    asset: o.currency,
+    amount: o.amount,
+    direction: 'out',
+    status: o.status === 'active' ? 'completed' : 'pending',
+    date: o.paidAt || o.createdAt,
+    fee: Math.round(o.amount * 0.01 * 100) / 100,
+    rate: null as string | null,
+  }));
+
+  const [selectedTx, setSelectedTx] = useState<typeof transactions[0] | null>(null);
+
+  const filtered = transactions.filter(tx => {
     if (filter === 'All') return true;
     if (filter === 'Deposits') return tx.type === 'deposit';
     if (filter === 'Withdrawals') return tx.type === 'withdrawal';
@@ -46,8 +64,8 @@ export default function TransactionHistory() {
     return true;
   });
 
-  const totalIn = mockTransactions.filter(t => t.direction === 'in').reduce((s, t) => s + t.amount, 0);
-  const totalOut = mockTransactions.filter(t => t.direction === 'out').reduce((s, t) => s + t.amount, 0);
+  const totalIn = transactions.filter(t => t.direction === 'in').reduce((s, t) => s + t.amount, 0);
+  const totalOut = transactions.filter(t => t.direction === 'out').reduce((s, t) => s + t.amount, 0);
 
   const formatDate = (iso: string) => {
     const d = new Date(iso);

@@ -86,3 +86,40 @@ export function recordScan(scan: {
 export function scanFeed(): ScanEvent[] {
   return read<ScanEvent>(SCAN_KEY);
 }
+
+export interface Ticket {
+  id: string;
+  subject: string;
+  status: "Open" | "Waiting on you" | "Resolved";
+  updatedAt: string;
+}
+
+const TICKET_KEY = "indy_admin_ticket_feed";
+
+function ticketAccount(): string {
+  const profile = getStoredGoogleUser();
+  return profile?.email ?? profile?.sub ?? "guest";
+}
+
+/** Tickets are strictly per account. A new account always starts empty. */
+export function myTickets(): Ticket[] {
+  return read<Ticket>(`${TICKET_KEY}_${ticketAccount()}`);
+}
+
+export function createTicket(subject: string): Ticket {
+  const ticket: Ticket = {
+    id: `TK-${Math.floor(1000 + Math.random() * 8999)}`,
+    subject,
+    status: "Open",
+    updatedAt: new Date().toISOString(),
+  };
+  push(`${TICKET_KEY}_${ticketAccount()}`, ticket, 50);
+  push(TICKET_KEY, { ...ticket, account: ticketAccount() }, 100);
+  window.dispatchEvent(new Event("indy-tickets"));
+  return ticket;
+}
+
+/** Admin view across every account. */
+export function allTickets(): (Ticket & { account: string })[] {
+  return read<Ticket & { account: string }>(TICKET_KEY);
+}

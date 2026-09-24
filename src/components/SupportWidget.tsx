@@ -1,7 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
+import { createTicket, myTickets } from '../lib/audit';
+import { useOrdersSync } from '../lib/useOrdersSync';
 
 type Tab = 'chat' | 'tickets' | 'help';
 
@@ -34,11 +36,7 @@ export default function SupportWidget() {
     'Talk to an agent',
   ]);
 
-  const tickets = [
-    { id: 'TK-2841', subject: 'Withdrawal delay inquiry', status: 'Open', updated: '2h ago' },
-    { id: 'TK-2809', subject: 'KYC document re-submission', status: 'Waiting on you', updated: '3d ago' },
-    { id: 'TK-2750', subject: 'Deposit confirmation', status: 'Resolved', updated: '1w ago' },
-  ];
+  const [tickets] = useOrdersSync(() => myTickets());
 
   const helpTopics = [
     {
@@ -127,9 +125,6 @@ export default function SupportWidget() {
         aria-label="Open support"
       >
         {open || showingGate ? <X size={20} /> : <MessageCircle size={20} />}
-        {!open && !showingGate && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#EF4444] rounded-full flex items-center justify-center text-[10px] font-bold text-[#0A0B0D]">3</span>
-        )}
       </button>
 
       {/* Sign-in gate, shown before the chat opens (also a mobile sheet) */}
@@ -252,15 +247,26 @@ export default function SupportWidget() {
             </div>
           )}
 
-          {/* Tickets tab */}
+          {/* Tickets tab, strictly this account's own tickets */}
           {tab === 'tickets' && (
             <div className="flex-1 overflow-y-auto" style={{ maxHeight: '340px' }}>
+              {tickets.length === 0 && (
+                <div className="px-5 py-10 text-center">
+                  <Clock size={26} className="text-black/15 mx-auto mb-3" />
+                  <p className="text-sm text-black/50 mb-1">No requests yet</p>
+                  <p className="text-xs text-black/30 leading-relaxed mb-4">
+                    Support tickets you open will appear here with their status.
+                  </p>
+                </div>
+              )}
               {tickets.map(ticket => (
                 <div key={ticket.id} className="px-4 py-3 border-b border-black/5 hover:bg-black/3 transition-colors cursor-pointer">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-black/80 truncate">{ticket.subject}</p>
-                      <p className="text-xs text-black/30 mt-0.5">{ticket.id}, Updated {ticket.updated}</p>
+                      <p className="text-xs text-black/30 mt-0.5">
+                        {ticket.id}, Updated {new Date(ticket.updatedAt).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
                     <div className="flex items-center gap-1.5">
                       {ticketStatusIcon(ticket.status)}
@@ -270,8 +276,14 @@ export default function SupportWidget() {
                 </div>
               ))}
               <div className="p-4">
-                <button className="w-full text-center text-xs text-black/30 py-2 bg-black/3 rounded-xl hover:bg-black/5 transition-colors">
-                  + New support request
+                <button
+                  onClick={() => {
+                    const lastUser = [...messages].reverse().find(m => m.from === 'user');
+                    createTicket(lastUser?.text.slice(0, 60) || 'Support request');
+                  }}
+                  className="w-full flex items-center justify-center gap-1.5 text-xs text-black/40 py-2 bg-black/3 rounded-xl hover:bg-black/5 transition-colors"
+                >
+                  <Plus size={12} /> New support request
                 </button>
               </div>
             </div>
