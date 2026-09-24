@@ -57,12 +57,12 @@ const pick = <T,>(arr: T[], n: number) => arr[Math.floor(seed(n) * arr.length) %
 // --- NFTs: twelve collections, eighteen pieces each, plus the seed pieces ---
 
 const artImages = [
-  'asset-1634193295', 'asset-1618005182',
-  'asset-1558618666', 'asset-1549317661',
-  'asset-1500462918', 'asset-1535016120',
-  'asset-1531746020', 'asset-1463453091',
-  'asset-1487412720', 'asset-1531123897',
-  'asset-1518770660', 'asset-1472099645',
+  'art-orchid', 'art-morph',
+  'art-solar', 'art-mono',
+  'art-forest', 'art-cosmos',
+  'art-cosmos', 'art-mono',
+  'avatar-3', 'avatar-1',
+  'feat-stock', 'avatar-2',
 ];
 
 const collections = [
@@ -296,10 +296,10 @@ export const spaceEconomyIds = ['RKLB', 'ASTS', 'SPCE', 'LUNR', 'RDW', 'PL', 'IR
 // --- Alternative investments: 100+ across seven categories ---
 
 const altImages = [
-  'asset-1486325212', 'asset-1610375461',
-  'asset-1559757148', 'asset-1512453979',
-  'asset-1532996122', 'asset-1454165804',
-  'asset-1563013544', 'asset-1526304640',
+  'alt-estate', 'alt-commodity',
+  'alt-deals', 'alt-infra',
+  'alt-credit', 'alt-venture',
+  'feat-stock', 'feat-estate',
 ];
 
 const cities = ['Lisbon', 'Austin', 'Rotterdam', 'Nairobi', 'Osaka', 'Toronto', 'Valencia', 'Busan', 'Medellin', 'Helsinki', 'Perth', 'Doha', 'Porto', 'Accra', 'Tallinn', 'Bogota', 'Lyon', 'Sharjah'];

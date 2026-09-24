@@ -1,8 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <rect x="4" y="4" width="56" height="56" rx="12" fill="#0B0B14"/>
-  <g fill="none" stroke-width="5" stroke-linecap="round">
-    <path d="M14 46 Q22 26 30 46" stroke="#FF2E97"/>
-    <path d="M22 52 Q26 20 42 52" stroke="#FFC107"/>
-    <path d="M34 50 Q46 26 52 44" stroke="#00C853"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <rect width="200" height="200" rx="44" fill="#0B0B14"/>
+  <path d="M28 142c8-44 30-80 52-80 14 0 18 12 22 30 3-20 8-34 20-34 22 0 44 36 52 80" fill="none" stroke="#FF5CAA" stroke-width="13" stroke-linecap="round"/>
+  <path d="M62 148c6-52 24-96 44-96 12 0 15 14 18 34" fill="none" stroke="#FFC757" stroke-width="11" stroke-linecap="round"/>
+  <path d="M100 148c8-40 26-66 46-66 10 0 13 10 15 24" fill="none" stroke="#4CD964" stroke-width="11" stroke-linecap="round"/>
+  <path d="M132 148c6-26 18-42 30-42" fill="none" stroke="#5AC8FA" stroke-width="11" stroke-linecap="round"/>
 </svg>

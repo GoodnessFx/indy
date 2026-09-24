@@ -1,6 +1,7 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, TrendingUp, TrendingDown, Info } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Info, Star } from 'lucide-react';
+import { isWatched, toggleWatch } from '../lib/watchlist';
 import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar } from 'recharts';
 import { allStocks } from '../data/catalog';
 
@@ -20,6 +21,11 @@ export default function StockDetail() {
   const [qty, setQty] = useState('5');
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [timeRange, setTimeRange] = useState('6M');
+  const [watching, setWatching] = useState(false);
+
+  useEffect(() => {
+    setWatching(isWatched(stock.id));
+  }, [stock.id]);
 
   const total = (parseFloat(qty) || 0) * stock.price;
 
@@ -169,6 +175,27 @@ export default function StockDetail() {
               <div className="mt-4 text-xs text-black/20 text-center">
                 Market order, Available balance: $15,165.40
               </div>
+              <button
+                onClick={() => {
+                  const next = toggleWatch({
+                    id: stock.id,
+                    kind: 'stock',
+                    name: `${stock.id}, ${stock.name}`,
+                    target: Number(stock.price.toFixed(2)),
+                    currency: 'USD',
+                  });
+                  setWatching(next.some(w => w.id === stock.id));
+                }}
+                aria-pressed={watching}
+                className={`mt-3 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm transition-colors ${
+                  watching
+                    ? 'bg-[#F59E0B]/15 text-[#F59E0B] border border-[#F59E0B]/30'
+                    : 'btn-ghost'
+                }`}
+              >
+                <Star size={15} fill={watching ? 'currentColor' : 'none'} />
+                {watching ? 'Watching' : 'Watch this stock'}
+              </button>
             </div>
           </div>
         </div>

@@ -1,11 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <defs>
-    <linearGradient id="cb" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0052FF"/>
-      <stop offset="1" stop-color="#0060FF"/>
-    </linearGradient>
-  </defs>
-  <rect x="4" y="4" width="56" height="56" rx="12" fill="#fff"/>
-  <rect x="12" y="12" width="40" height="40" rx="20" fill="url(#cb)"/>
-  <text x="32" y="40" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700" fill="#fff" text-anchor="middle">C</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <circle cx="512" cy="512" r="512" fill="#0052FF"/>
+  <path fill="#fff" d="M686.9 341.6c-32.9-32.9-77.6-51.6-123.2-51.6h-103.5c-15.3 0-27.7 12.4-27.7 27.7v368.7c0 15.3 12.4 27.7 27.7 27.7h103.5c45.6 0 90.3-18.7 123.2-51.6 32.9-32.9 51-76.6 51-122.4s-18.1-89.5-51-122.5l-6.9-6.9 6.9-6.9c32.9-32.9 32.9-29.3 0-62.2zm-48.7 242.1c-19.9 19.9-47.2 31.4-74.5 31.4h-46.8V409.9h46.8c27.3 0 54.6 11.5 74.5 31.4 19.9 19.9 31.1 46 31.1 73.1s-11.2 49.4-31.1 69.3z"/>
 </svg>

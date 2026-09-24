@@ -2,10 +2,10 @@
 import { ArrowRight } from 'lucide-react';
 
 const team = [
-  { name: 'Elena Vasquez', role: 'CEO & Co-founder', img: 'asset-1531746020', bio: 'Former Goldman Sachs VP. Built 3 fintech startups, 2 acquired.' },
-  { name: 'James Osei', role: 'CTO & Co-founder', img: 'asset-1472099645', bio: 'Ex-Stripe engineering lead. 12 years in payment infrastructure.' },
-  { name: 'Priya Sharma', role: 'Chief Compliance Officer', img: 'asset-1487412720', bio: 'Former FCA regulator. Specialist in cross-border financial regulation.' },
-  { name: 'Luca Ferrari', role: 'Head of Design', img: 'asset-1463453091', bio: 'Previously Figma and Monzo. Built interfaces for 50M+ users.' },
+  { name: 'Elena Vasquez', role: 'CEO & Co-founder', img: 'art-cosmos', bio: 'Former Goldman Sachs VP. Built 3 fintech startups, 2 acquired.' },
+  { name: 'James Osei', role: 'CTO & Co-founder', img: 'avatar-2', bio: 'Ex-Stripe engineering lead. 12 years in payment infrastructure.' },
+  { name: 'Priya Sharma', role: 'Chief Compliance Officer', img: 'avatar-3', bio: 'Former FCA regulator. Specialist in cross-border financial regulation.' },
+  { name: 'Luca Ferrari', role: 'Head of Design', img: 'art-mono', bio: 'Previously Figma and Monzo. Built interfaces for 50M+ users.' },
 ];
 
 const milestones = [

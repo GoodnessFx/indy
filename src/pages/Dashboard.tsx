@@ -1,11 +1,11 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw, PieChart, BellRing } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { portfolioChartData, mockNFTs, mockStocks, mockInvestments } from '../data/mock';
-import FxCalculator from '../components/FxCalculator';
 import AssetImage from '../components/AssetImage';
 import CurrencyCalculator from '../components/CurrencyCalculator';
+import WatchlistPanel from '../components/WatchlistPanel';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -18,8 +18,8 @@ export default function Dashboard() {
   const [loading] = useState(false);
 
   const holdings = [
-    { id: 'nft-1', type: 'NFT', name: 'Quantum Orchid #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'asset-1634193295', status: 'active' },
-    { id: 'nft-2', type: 'NFT', name: 'Void Walker #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'asset-1618005182', status: 'active' },
+    { id: 'nft-1', type: 'NFT', name: 'Quantum Orchid #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'art-orchid', status: 'active' },
+    { id: 'nft-2', type: 'NFT', name: 'Void Walker #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'art-morph', status: 'active' },
     { id: 'NVDA', type: 'Stock', name: 'NVDA, NVIDIA Corp.', value: 4376, cost: 3160, gain: 1216, gainPct: 38.5, image: null, status: 'active' },
     { id: 'ASTS', type: 'Stock', name: 'ASTS, AST SpaceMobile', value: 2109, cost: 1750, gain: 359, gainPct: 20.5, image: null, status: 'active' },
     { id: 'inv-1', type: 'Other', name: 'Manhattan Luxury Tower', value: 5200, cost: 5000, gain: 200, gainPct: 4.0, image: null, status: 'active' },
@@ -74,25 +74,30 @@ export default function Dashboard() {
 
           {/* Quick actions */}
           <div className="flex items-center gap-3">
-            {[
-              { label: 'Deposit', icon: ArrowDownLeft, to: '/deposit', color: 'text-[#22C55E]', bg: 'bg-[#22C55E]/10 hover:bg-[#22C55E]/20' },
-              { label: 'Withdraw', icon: ArrowUpRight, to: '/withdraw', color: 'text-[#2F6BFF]', bg: 'bg-[#2F6BFF]/10 hover:bg-[#2F6BFF]/20' },
-              { label: 'Support', icon: MessageCircle, to: '#support', color: 'text-black/60', bg: 'bg-black/5 hover:bg-black/10' },
-            ].map(({ label, icon: Icon, to, color, bg }) => (
-              <Link
-                key={label}
-                to={to}
-                className={`flex flex-col items-center gap-1.5 w-20 py-3 rounded-xl ${bg} transition-colors`}
-              >
-                <Icon size={18} className={color} />
-                <span className="text-xs text-black/50">{label}</span>
-              </Link>
-            ))}
+            <Link
+              to="/deposit"
+              className="flex flex-col items-center gap-1.5 w-20 py-3 rounded-xl bg-[#22C55E]/10 hover:bg-[#22C55E]/20 transition-colors"
+            >
+              <ArrowDownLeft size={18} className="text-[#22C55E]" />
+              <span className="text-xs text-black/50">Deposit</span>
+            </Link>
+            <Link
+              to="/withdraw"
+              className="flex flex-col items-center gap-1.5 w-20 py-3 rounded-xl bg-[#2F6BFF]/10 hover:bg-[#2F6BFF]/20 transition-colors"
+            >
+              <ArrowUpRight size={18} className="text-[#2F6BFF]" />
+              <span className="text-xs text-black/50">Withdraw</span>
+            </Link>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("indy-open-support"))}
+              className="flex flex-col items-center gap-1.5 w-20 py-3 rounded-xl bg-black/5 hover:bg-black/10 transition-colors"
+            >
+              <MessageCircle size={18} className="text-black/60" />
+              <span className="text-xs text-black/50">Support</span>
+            </button>
           </div>
         </div>
-
-        {/* Live FX calculator */}
-        <div className="mb-8"><FxCalculator /></div>
 
         {/* Performance chart */}
         <div className="glass rounded-2xl border border-black/8 p-6 mb-8">
@@ -293,6 +298,58 @@ export default function Dashboard() {
         {/* Currency and crypto calculator widget, same shared live rate feed */}
         <div className="mt-6">
           <CurrencyCalculator compact />
+        </div>
+
+        {/* Portfolio intelligence: diversification plus watchlist and alerts */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <PieChart size={16} className="text-[#2F6BFF]" />
+            <h2 className="font-display font-600 text-lg text-[#0A0B0D]">Portfolio intelligence</h2>
+          </div>
+          <div className="glass rounded-2xl border border-black/8 p-5 mb-4">
+            <p className="text-xs text-black/40 font-mono mb-4">DIVERSIFICATION</p>
+            <div className="flex h-3 rounded-full overflow-hidden mb-4">
+              {[
+                { key: 'NFTs', value: holdings.filter(h => h.type === 'NFT').reduce((s, h) => s + h.value, 0), color: '#8B5CF6' },
+                { key: 'Stocks', value: holdings.filter(h => h.type === 'Stock').reduce((s, h) => s + h.value, 0), color: '#22C55E' },
+                { key: 'Other', value: holdings.filter(h => h.type === 'Other').reduce((s, h) => s + h.value, 0), color: '#F59E0B' },
+              ].map(seg => (
+                <div
+                  key={seg.key}
+                  className="h-full"
+                  style={{ width: `${totalBalance ? (seg.value / totalBalance) * 100 : 0}%`, background: seg.color }}
+                  title={`${seg.key}: $${seg.value.toLocaleString()}`}
+                />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { key: 'NFTs', value: holdings.filter(h => h.type === 'NFT').reduce((s, h) => s + h.value, 0), color: '#8B5CF6' },
+                { key: 'Stocks', value: holdings.filter(h => h.type === 'Stock').reduce((s, h) => s + h.value, 0), color: '#22C55E' },
+                { key: 'Other', value: holdings.filter(h => h.type === 'Other').reduce((s, h) => s + h.value, 0), color: '#F59E0B' },
+              ].map(seg => (
+                <div key={seg.key} className="flex items-center justify-between rounded-xl bg-black/3 px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: seg.color }} />
+                    <span className="text-xs text-black/50">{seg.key}</span>
+                  </div>
+                  <span className="font-mono text-xs font-600 text-[#0A0B0D]">
+                    {totalBalance ? ((seg.value / totalBalance) * 100).toFixed(1) : '0.0'}%
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[11px] text-black/30 mt-4 leading-relaxed">
+              {holdings.filter(h => h.type === 'Other').reduce((s, h) => s + h.value, 0) / totalBalance < 0.3
+                ? 'Alternative holdings sit under a third of this portfolio. Adding to the real estate or commodity sleeve would balance equity swings.'
+                : 'Alternative holdings carry real weight here, which cushions equity swings but locks more capital into longer timelines.'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 mb-4">
+            <BellRing size={16} className="text-[#F59E0B]" />
+            <h2 className="font-display font-600 text-lg text-[#0A0B0D]">Watchlist and price alerts</h2>
+          </div>
+          <WatchlistPanel />
         </div>
       </div>
     </div>

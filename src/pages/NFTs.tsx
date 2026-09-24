@@ -150,7 +150,7 @@ export default function NFTs() {
                         label={nft.name}
                         className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#ffffff] to-transparent opacity-60" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
                       {nft.verified && (
                         <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-[#2F6BFF]/20 border border-[#2F6BFF]/30 rounded-full px-2.5 py-1">
                           <BadgeCheck size={11} className="text-[#2F6BFF]" />

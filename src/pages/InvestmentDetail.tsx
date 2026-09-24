@@ -1,5 +1,6 @@
 ﻿import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Clock, Shield, BadgeCheck } from 'lucide-react';
+import WatchButton from '../components/WatchButton';
 import { allInvestments } from '../data/catalog';
 import AssetImage from '../components/AssetImage';
 
@@ -108,6 +109,14 @@ export default function InvestmentDetail() {
               <Link to="/signup" className="w-full block text-center btn-primary py-4 rounded-xl text-sm font-display font-600">
                 Invest now
               </Link>
+              <WatchButton
+                id={inv.id}
+                kind="investment"
+                name={inv.name}
+                target={inv.target}
+                currency="USD"
+                className="w-full mt-3"
+              />
 
               <p className="text-[10px] text-black/20 text-center mt-3 leading-relaxed">
                 Returns are projections. Investments may lose value. Consult a financial advisor before investing.

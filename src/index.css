@@ -110,28 +110,28 @@ body {
 /* Glassmorphism */
 .glass {
   background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(0,0,0,0.06);
 }
 .glass-light {
   background: rgba(247, 247, 245, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(0,0,0,0.06);
 }
 
-/* Card hover glow */
+/* Card hover depth */
 .card-hover {
   transition: all 0.25s ease;
 }
 .card-hover:hover {
   border-color: rgba(47,107,255,0.3);
-  box-shadow: 0 0 30px rgba(47,107,255,0.15);
+  box-shadow: 0 16px 36px rgba(10,11,13,0.08);
   transform: translateY(-2px);
 }
 
-/* Blue glow button */
+/* Primary action button */
 .btn-primary {
   background: #2F6BFF;
   color: #fff;
@@ -142,7 +142,7 @@ body {
 }
 .btn-primary:hover {
   background: #4F82FF;
-  box-shadow: 0 0 24px rgba(47,107,255,0.5);
+  box-shadow: 0 10px 24px rgba(47,107,255,0.18);
   transform: translateY(-1px);
 }
 .btn-primary:active {
@@ -293,3 +293,8 @@ body {
    wash, so underlying photos keep their blacks/contrast and city lights read). */
 .photo-tint-bottom { background: linear-gradient(to top, rgba(10,11,13,0.78) 0%, rgba(10,11,13,0.14) 45%, rgba(10,11,13,0) 72%); }
 .photo-tint-side { background: linear-gradient(to right, rgba(10,11,13,0.05) 0%, rgba(10,11,13,0.42) 60%); }
+.photo-tint-hero { background: linear-gradient(to bottom, rgba(10,11,13,0.74) 0%, rgba(10,11,13,0.18) 40%, rgba(10,11,13,0.82) 100%); }
+
+/* Legacy aliases kept so image-backed sections cannot silently drift back. */
+.asset-tint-bottom,
+.asset-tint-botto { background: linear-gradient(to top, rgba(10,11,13,0.78) 0%, rgba(10,11,13,0.14) 45%, rgba(10,11,13,0) 72%); }

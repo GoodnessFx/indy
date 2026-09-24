@@ -1,5 +1,6 @@
 ﻿import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, Share2, Heart, TrendingUp } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Share2, TrendingUp } from 'lucide-react';
+import WatchButton from '../components/WatchButton';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { allNFTs } from '../data/catalog';
 import AssetImage from '../components/AssetImage';
@@ -28,9 +29,14 @@ export default function NFTDetail() {
               <AssetImage seed={nft.image} label={nft.name} verified={nft.verified} className="absolute inset-0 w-full h-full" />
             </div>
             <div className="flex items-center gap-3 mt-4">
-              <button className="flex-1 flex items-center justify-center gap-2 btn-ghost py-3 rounded-xl text-sm">
-                <Heart size={15} /> Save
-              </button>
+              <WatchButton
+                id={nft.id}
+                kind="nft"
+                name={nft.name}
+                target={nft.usd}
+                currency="USD"
+                className="flex-1"
+              />
               <button className="flex-1 flex items-center justify-center gap-2 btn-ghost py-3 rounded-xl text-sm">
                 <Share2 size={15} /> Share
               </button>

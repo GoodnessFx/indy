@@ -1,12 +1,12 @@
 // Mock data for IndySolutions platform
 
 export const mockNFTs = [
-  { id: 'nft-1', name: 'Quantum Orchid #042', collection: 'Digital Bloom', price: 4.2, currency: 'ETH', usd: 14700, change: 12.4, image: 'asset-1634193295', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Deep Space' }, { trait: 'Style', value: 'Chromatic' }, { trait: 'Edition', value: '1 of 10' }] },
-  { id: 'nft-2', name: 'Void Walker #009', collection: 'Neon Genesis', price: 1.8, currency: 'ETH', usd: 6300, change: -3.2, image: 'asset-1618005182', verified: true, rarity: 'Rare', traits: [{ trait: 'Background', value: 'Void' }, { trait: 'Style', value: 'Monochrome' }, { trait: 'Edition', value: '1 of 50' }] },
-  { id: 'nft-3', name: 'Solaris Prime', collection: 'CryptoArt', price: 9.5, currency: 'ETH', usd: 33250, change: 28.1, image: 'asset-1558618666', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Solar Flare' }, { trait: 'Style', value: 'Vivid' }, { trait: 'Edition', value: '1 of 3' }] },
-  { id: 'nft-4', name: 'Meridian #117', collection: 'Abstract Futures', price: 0.45, currency: 'ETH', usd: 1575, change: 5.6, image: 'asset-1549317661', verified: false, rarity: 'Common', traits: [{ trait: 'Background', value: 'Geometric' }, { trait: 'Edition', value: '1 of 200' }] },
-  { id: 'nft-5', name: 'Electric Forest', collection: 'NatureCode', price: 2.1, currency: 'ETH', usd: 7350, change: -1.8, image: 'asset-1500462918', verified: true, rarity: 'Uncommon', traits: [{ trait: 'Background', value: 'Forest' }, { trait: 'Style', value: 'Neon' }] },
-  { id: 'nft-6', name: 'Titan Construct #88', collection: 'MechVerse', price: 6.7, currency: 'ETH', usd: 23450, change: 18.3, image: 'asset-1535016120', verified: true, rarity: 'Epic', traits: [{ trait: 'Weapon', value: 'Plasma Blade' }, { trait: 'Armor', value: 'Obsidian' }] },
+  { id: 'nft-1', name: 'Quantum Orchid #042', collection: 'Digital Bloom', price: 4.2, currency: 'ETH', usd: 14700, change: 12.4, image: 'art-orchid', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Deep Space' }, { trait: 'Style', value: 'Chromatic' }, { trait: 'Edition', value: '1 of 10' }] },
+  { id: 'nft-2', name: 'Void Walker #009', collection: 'Neon Genesis', price: 1.8, currency: 'ETH', usd: 6300, change: -3.2, image: 'art-morph', verified: true, rarity: 'Rare', traits: [{ trait: 'Background', value: 'Void' }, { trait: 'Style', value: 'Monochrome' }, { trait: 'Edition', value: '1 of 50' }] },
+  { id: 'nft-3', name: 'Solaris Prime', collection: 'CryptoArt', price: 9.5, currency: 'ETH', usd: 33250, change: 28.1, image: 'art-solar', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Solar Flare' }, { trait: 'Style', value: 'Vivid' }, { trait: 'Edition', value: '1 of 3' }] },
+  { id: 'nft-4', name: 'Meridian #117', collection: 'Abstract Futures', price: 0.45, currency: 'ETH', usd: 1575, change: 5.6, image: 'art-mono', verified: false, rarity: 'Common', traits: [{ trait: 'Background', value: 'Geometric' }, { trait: 'Edition', value: '1 of 200' }] },
+  { id: 'nft-5', name: 'Electric Forest', collection: 'NatureCode', price: 2.1, currency: 'ETH', usd: 7350, change: -1.8, image: 'art-forest', verified: true, rarity: 'Uncommon', traits: [{ trait: 'Background', value: 'Forest' }, { trait: 'Style', value: 'Neon' }] },
+  { id: 'nft-6', name: 'Titan Construct #88', collection: 'MechVerse', price: 6.7, currency: 'ETH', usd: 23450, change: 18.3, image: 'art-cosmos', verified: true, rarity: 'Epic', traits: [{ trait: 'Weapon', value: 'Plasma Blade' }, { trait: 'Armor', value: 'Obsidian' }] },
 ];
 
 export const mockStocks = [
@@ -24,9 +24,12 @@ export const spaceStocks = ['ASTS', 'RKLB', 'SPCE'];
 
 // Vehicle-backed investment offerings. Real Tesla lineup specs and starting prices.
 // Photography is openly licensed Tesla photography from Wikimedia Commons, one
-// matching image per model. Prices move often, update before launch.
+// matching photo per model. Prices move often, update before launch.
 
-const vehiclePhotoBase = 'https://upload.wikimedia.org/wikipedia/commons/thumb';
+import { VEHICLE_PHOTOS } from '../lib/images';
+
+const PHOTO = (id: keyof typeof VEHICLE_PHOTOS) => VEHICLE_PHOTOS[id].src;
+const CREDIT = (id: keyof typeof VEHICLE_PHOTOS) => VEHICLE_PHOTOS[id].credit;
 
 export const mockVehicles = [
   {
@@ -38,8 +41,8 @@ export const mockVehicles = [
     zeroToSixty: 4.9,
     topSpeedMph: 125,
     seats: 5,
-    photo: `${vehiclePhotoBase}/a/ab/Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg/1920px-Tesla_Model_3_%282023%29_Autofr%C3%BChling_Ulm_IMG_9282.jpg`,
-    credit: 'Tesla Model 3, 2023. Wikimedia Commons',
+    photo: PHOTO('model-3'),
+    credit: CREDIT('model-3'),
     note: 'Highest resale velocity in the fleet. Best liquidity profile for short-hold allocations.',
   },
   {
@@ -51,8 +54,8 @@ export const mockVehicles = [
     zeroToSixty: 4.8,
     topSpeedMph: 135,
     seats: 7,
-    photo: `${vehiclePhotoBase}/5/5c/Tesla_Model_Y_1X7A6211.jpg/1920px-Tesla_Model_Y_1X7A6211.jpg`,
-    credit: 'Tesla Model Y. Wikimedia Commons',
+    photo: PHOTO('model-y'),
+    credit: CREDIT('model-y'),
     note: 'Fleet backbone. Strong rental demand keeps utilization above 80% across the pool.',
   },
   {
@@ -64,8 +67,8 @@ export const mockVehicles = [
     zeroToSixty: 3.1,
     topSpeedMph: 149,
     seats: 5,
-    photo: `${vehiclePhotoBase}/d/df/21_Tesla_Model_S_Plaid.jpg/1280px-21_Tesla_Model_S_Plaid.jpg`,
-    credit: 'Tesla Model S Plaid, 2021. Wikimedia Commons',
+    photo: PHOTO('model-s'),
+    credit: CREDIT('model-s'),
     note: 'Plaid trim vehicles hold collector interest. Slower turnover, higher per-unit margin.',
   },
   {
@@ -77,8 +80,8 @@ export const mockVehicles = [
     zeroToSixty: 3.8,
     topSpeedMph: 155,
     seats: 7,
-    photo: `${vehiclePhotoBase}/c/c6/Tesla_Model_X_100D_1X7A6736.jpg/1280px-Tesla_Model_X_100D_1X7A6736.jpg`,
-    credit: 'Tesla Model X 100D. Wikimedia Commons',
+    photo: PHOTO('model-x'),
+    credit: CREDIT('model-x'),
     note: 'Lowest fleet volume. Limited allocation windows, announced to holders by email first.',
   },
   {
@@ -90,18 +93,18 @@ export const mockVehicles = [
     zeroToSixty: 2.6,
     topSpeedMph: 130,
     seats: 5,
-    photo: `${vehiclePhotoBase}/0/0c/Tesla_Cybertruck_outside.jpg/1280px-Tesla_Cybertruck_outside.jpg`,
-    credit: 'Tesla Cybertruck, 2023. Wikimedia Commons',
+    photo: PHOTO('cybertruck'),
+    credit: CREDIT('cybertruck'),
     note: 'Waitlist driven demand. Allocations typically sell out within hours of listing.',
   },
 ];
 
 export const mockInvestments = [
-  { id: 'inv-1', name: 'Manhattan Luxury Tower Fund', category: 'Real Estate', description: 'Fractional ownership in a 42-floor luxury residential tower in Midtown Manhattan. Q4 completion expected with 8.2% projected annual yield.', image: 'asset-1486325212', progress: 72, target: 25000000, raised: 18000000, returnMin: 7.8, returnMax: 9.2, timeline: '24 months', verified: true },
-  { id: 'inv-2', name: 'Gold Reserve Allocation Series IV', category: 'Commodities', description: 'Allocated physical gold stored in Swiss vaults with allocated storage certificates. LBMA-certified bars, fully insured, quarterly audit reports.', image: 'asset-1610375461', progress: 94, target: 5000000, raised: 4700000, returnMin: 4.5, returnMax: 6.1, timeline: '12 months', verified: true },
-  { id: 'inv-3', name: 'Series B: MedTech AI Platform', category: 'Private Deals', description: 'Pre-IPO equity stake in a medical diagnostics AI company with 3 FDA clearances, 180 hospital partnerships, and projected 2026 IPO.', image: 'asset-1559757148', progress: 38, target: 8000000, raised: 3040000, returnMin: 15.0, returnMax: 35.0, timeline: '18-36 months', verified: true },
-  { id: 'inv-4', name: 'Dubai Marina Commercial REIT', category: 'Real Estate', description: 'UAE-based real estate investment trust covering Grade-A commercial units in Dubai Marina, regulated by DFSA.', image: 'asset-1512453979', progress: 55, target: 12000000, raised: 6600000, returnMin: 9.0, returnMax: 11.5, timeline: '36 months', verified: true },
-  { id: 'inv-5', name: 'Lithium Supply Chain Fund', category: 'Commodities', description: 'Diversified exposure to lithium mining operations in Chile and Australia through a regulated commodity fund. Critical EV supply chain asset.', image: 'asset-1532996122', progress: 61, target: 3500000, raised: 2135000, returnMin: 11.0, returnMax: 18.0, timeline: '24 months', verified: false },
+  { id: 'inv-1', name: 'Manhattan Luxury Tower Fund', category: 'Real Estate', description: 'Fractional ownership in a 42-floor luxury residential tower in Midtown Manhattan. Q4 completion expected with 8.2% projected annual yield.', image: 'alt-estate', progress: 72, target: 25000000, raised: 18000000, returnMin: 7.8, returnMax: 9.2, timeline: '24 months', verified: true },
+  { id: 'inv-2', name: 'Gold Reserve Allocation Series IV', category: 'Commodities', description: 'Allocated physical gold stored in Swiss vaults with allocated storage certificates. LBMA-certified bars, fully insured, quarterly audit reports.', image: 'alt-commodity', progress: 94, target: 5000000, raised: 4700000, returnMin: 4.5, returnMax: 6.1, timeline: '12 months', verified: true },
+  { id: 'inv-3', name: 'Series B: MedTech AI Platform', category: 'Private Deals', description: 'Pre-IPO equity stake in a medical diagnostics AI company with 3 FDA clearances, 180 hospital partnerships, and projected 2026 IPO.', image: 'alt-deals', progress: 38, target: 8000000, raised: 3040000, returnMin: 15.0, returnMax: 35.0, timeline: '18-36 months', verified: true },
+  { id: 'inv-4', name: 'Dubai Marina Commercial REIT', category: 'Real Estate', description: 'UAE-based real estate investment trust covering Grade-A commercial units in Dubai Marina, regulated by DFSA.', image: 'alt-infra', progress: 55, target: 12000000, raised: 6600000, returnMin: 9.0, returnMax: 11.5, timeline: '36 months', verified: true },
+  { id: 'inv-5', name: 'Lithium Supply Chain Fund', category: 'Commodities', description: 'Diversified exposure to lithium mining operations in Chile and Australia through a regulated commodity fund. Critical EV supply chain asset.', image: 'alt-credit', progress: 61, target: 3500000, raised: 2135000, returnMin: 11.0, returnMax: 18.0, timeline: '24 months', verified: false },
 ];
 
 export const mockTransactions = [
@@ -136,13 +139,17 @@ export const tickerItems = [
   { symbol: 'SPCE', price: '3.42', change: '-5.00%', positive: false },
 ];
 
+// Languages, stored as plain Unicode literals (this file is UTF-8, and
+// index.html declares <meta charset="UTF-8">). Rendered with a Globe icon,
+// never flag emoji, and the Arabic name is written directly in Arabic script.
+// If a build step ever escapes these again, that step is the bug, not this list.
 export const languages = [
-  { code: 'en', name: 'English', script: 'English', flag: 'EN' },
-  { code: 'es', name: 'Espa\u00f1ol', script: 'Espa\u00f1ol', flag: 'ES' },
-  { code: 'fr', name: 'Fran\u00e7ais', script: 'Fran\u00e7ais', flag: 'FR' },
-  { code: 'pt', name: 'Portugu\u00eas', script: 'Portugu\u00eas', flag: 'PT' },
-  { code: 'de', name: 'Deutsch', script: 'Deutsch', flag: 'DE' },
-  { code: 'ar', name: 'Arabic', script: '\u0627\u0644\u0639\u0631\u0628\u064a\u0629', flag: 'AR' },
+  { code: 'en', name: 'English', script: 'English' },
+  { code: 'es', name: 'Español', script: 'Español' },
+  { code: 'fr', name: 'Français', script: 'Français' },
+  { code: 'pt', name: 'Português', script: 'Português' },
+  { code: 'de', name: 'Deutsch', script: 'Deutsch' },
+  { code: 'ar', name: 'Arabic', script: 'العربية' },
 ];
 
 export const kycStatuses = {

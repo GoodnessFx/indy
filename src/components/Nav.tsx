@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Globe, Bell, Menu, X, TrendingUp, ChevronDown, LogOut, Settings, LayoutDashboard, User } from 'lucide-react';
+import { Globe, Bell, Menu, X, TrendingUp, ChevronDown, LogOut, Settings, LayoutDashboard, Check } from 'lucide-react';
 import { languages } from '../data/mock';
 import Logo from './Logo';
 import ConnectWallet from './ConnectWallet';
@@ -70,7 +70,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2.5 group">
-            <Logo size={36} className="transition-all group-hover:shadow-[0_0_20px_rgba(47,107,255,0.6)]" />
+            <Logo size={36} />
             <span className={`font-display font-700 text-lg tracking-tight ${textColor}`}>
               Indy<span className="text-[#2F6BFF]">Solutions</span>
             </span>
@@ -117,8 +117,9 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                         currentLang.code === lang.code ? 'text-[#2F6BFF]' : 'text-black/80'
                       }`}
                     >
-                      <Globe size={13} className="text-black/30" />
-                      <span>{lang.script}</span>
+                      <Globe size={13} className="text-black/30 shrink-0" />
+                      <span className="truncate">{lang.script}</span>
+                      {currentLang.code === lang.code && <Check size={13} className="text-[#2F6BFF] ml-auto shrink-0" />}
                     </button>
                   ))}
                 </div>

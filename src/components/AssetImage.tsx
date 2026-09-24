@@ -1,15 +1,17 @@
+import { useState } from "react";
+import { fallbackIndex, resolvePhoto } from "../lib/images";
+
 import { Image, BadgeCheck } from "lucide-react";
 
-// Deterministic, safe placeholder used in place of any unvetted AI-generated
-// artwork. Renders a clean branded gradient tile with an icon and a clearly
-// labelled "Coming soon" note, never an AI image that has not been reviewed.
+// Every image surface on the site renders through this component (or the
+// photo-tint utilities for raw <img> tags like the hero). The photo itself
+// always comes from the verified registry in lib/images, so a broken remote
+// URL can never silently turn a section blank again: anything without a
+// verified photo renders this deterministic branded placeholder tile, clearly
+// labelled, never an unreviewed generated file.
 //
-// Swap in real, licensed asset photography before launch. This exists so a
-// generated image can never ship unintentionally, which is what happened on
-// the homepage NFT preview.
-//
-// The tile is deterministic from `seed`, so the same asset always gets the
-// same palette on every render and every reload.
+// Tint rule: dark gradient tints only. White or light washes crush photo
+// contrast and are not allowed here.
 
 interface AssetImageProps {
   /** Stable id used to derive a consistent palette. Use the asset id. */
@@ -35,14 +37,6 @@ const PALETTES: [from: string, to: string, accent: string][] = [
   ["#B45309", "#1A1207", "#F5B95B"],
 ];
 
-function hash(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) & 0x7fffffff;
-  }
-  return Math.abs(h);
-}
-
 export default function AssetImage({
   seed,
   label = "Image coming soon",
@@ -51,20 +45,40 @@ export default function AssetImage({
   showLabel = true,
   dark = false,
 }: AssetImageProps) {
-  const [from, to] = PALETTES[hash(seed) % PALETTES.length];
+  const [failed, setFailed] = useState(false);
+  const [from, to] = PALETTES[fallbackIndex(seed, PALETTES.length)];
+  const src = resolvePhoto(seed);
+
+  if (src && !failed) {
+    return (
+      <div className={`${className} relative overflow-hidden`} role="img" aria-label={label}>
+        <img
+          src={src}
+          alt={label}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+        {verified && (
+          <span className="absolute top-2 right-2 flex items-center gap-1 rounded-full bg-black/45 px-2 py-0.5 backdrop-blur-sm">
+            <BadgeCheck size={9} className="text-white/95" />
+            <span className="text-[9px] font-medium text-white/95">Verified</span>
+          </span>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
-      className={`${className} flex items-center justify-center overflow-hidden`}
+      className={`${className} relative flex items-center justify-center overflow-hidden`}
       style={{
         background: `linear-gradient(135deg, ${from} 0%, #0A0B0D 55%, ${to} 100%)`,
       }}
       role="img"
       aria-label={label}
     >
-      <div
-        className="pointer-events-none"
-        style={{ background: "radial-gradient(circle at 30% 28%, rgba(255,255,255,0.18) 0%, transparent 58%)" }}
-      />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(circle at 30% 28%, rgba(255,255,255,0.18) 0%, transparent 58%)" }} />
       <div className="relative flex flex-col items-center justify-center gap-2">
         <Image size={22} strokeWidth={1.5} className="text-white/95" />
         {showLabel && (

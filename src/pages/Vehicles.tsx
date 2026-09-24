@@ -123,7 +123,7 @@ export default function Vehicles() {
           </div>
 
           {/* Current model context */}
-          <div className="mt-12 rounded-2xl border border-[#2F6BFF]/25 bg-gradient-to-r from-[#2F6BFF]/15 to-transparent px-6 lg:px-8 py-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+          <div className="mt-12 rounded-2xl border border-[#2F6BFF]/25 bg-[#2F6BFF]/8 px-6 lg:px-8 py-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
             <div className="shrink-0">
               <p className="text-xs text-white/30 mb-1">Allocation note, {active.name}</p>
               <p className="text-sm text-white/70 max-w-xl">{active.note}</p>

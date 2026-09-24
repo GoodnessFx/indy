@@ -1,8 +1,10 @@
 ﻿import { useState } from 'react';
-import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff, Globe, QrCode, ScanLine } from 'lucide-react';
+import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff, Globe, QrCode, ScanLine, FileDown, Gift, Copy } from 'lucide-react';
 import { languages } from '../data/mock';
 import ScanCardModal from '../components/ScanCardModal';
 import { getPayoutMethods, removePayoutMethod, type PayoutMethod } from '../lib/payoutMethods';
+import { getReferralCode } from '../lib/watchlist';
+import { mockTransactions } from '../data/mock';
 
 type Tab = 'profile' | 'security' | 'preferences' | 'payments' | 'verification' | 'danger';
 
@@ -29,6 +31,41 @@ export default function Settings() {
   const [savedProfile, setSavedProfile] = useState(false);
   const [methods, setMethods] = useState<PayoutMethod[]>(() => getPayoutMethods());
   const [scanOpen, setScanOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [statementDone, setStatementDone] = useState(false);
+  const referralCode = getReferralCode();
+
+  const copyReferral = async () => {
+    const link = `https://indysolutions.com/signup?ref=${referralCode}`;
+    try {
+      await navigator.clipboard?.writeText(link);
+    } catch { /* clipboard unavailable, the code is still visible */ }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  const downloadStatement = () => {
+    const rows = mockTransactions.map(t =>
+      [t.date, t.id, t.description, t.asset, t.amount, t.fee, t.status].join(',')
+    );
+    const csv = [
+      'Date,Reference,Description,Asset,Amount,Fee,Status',
+      ...rows,
+      '',
+      `Referral code,${referralCode}`,
+    ].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'indysolutions-statement.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatementDone(true);
+    setTimeout(() => setStatementDone(false), 2500);
+  };
 
   const saveProfile = () => { setSavedProfile(true); setTimeout(() => setSavedProfile(false), 2000); };
 
@@ -297,6 +334,45 @@ export default function Settings() {
                 <p className="text-xs text-black/30 mt-3 leading-relaxed">
                   Cards added here are available to select when you withdraw, so you do not need to rescan each time.
                 </p>
+
+                {/* Statements and referrals live next to money movement */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
+                  <div className="rounded-2xl border border-black/8 bg-black/3 p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileDown size={15} className="text-[#2F6BFF]" />
+                      <h3 className="font-display font-600 text-sm text-[#0A0B0D]">Account statement</h3>
+                    </div>
+                    <p className="text-xs text-black/40 leading-relaxed mb-4">
+                      Download a dated record of every transaction, fee, and holding for your own files.
+                    </p>
+                    <button
+                      onClick={downloadStatement}
+                      className="px-5 py-2.5 rounded-xl bg-[#2F6BFF] text-sm text-white hover:bg-[#4F82FF] transition-colors"
+                    >
+                      {statementDone ? 'Downloaded' : 'Download statement'}
+                    </button>
+                  </div>
+                  <div className="rounded-2xl border border-black/8 bg-black/3 p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Gift size={15} className="text-[#F59E0B]" />
+                      <h3 className="font-display font-600 text-sm text-[#0A0B0D]">Refer a friend</h3>
+                    </div>
+                    <p className="text-xs text-black/40 leading-relaxed mb-4">
+                      Share your link. You both receive a fee discount once their first deposit clears.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="flex-1 font-mono text-xs bg-white border border-black/10 rounded-xl px-3 py-2.5 text-[#0A0B0D] truncate">
+                        {referralCode}
+                      </span>
+                      <button
+                        onClick={copyReferral}
+                        className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-black/15 text-xs text-black/60 hover:border-black/30 transition-colors"
+                      >
+                        <Copy size={13} /> {copied ? 'Copied' : 'Copy'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 
