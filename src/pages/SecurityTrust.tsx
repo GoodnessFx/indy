@@ -24,7 +24,7 @@ const sections = [
     icon: FileText,
     title: 'Regulatory Status',
     summary: 'FCA registered, DFSA regulated, SEC-registered investment adviser',
-    content: 'IndySolutions Ltd is registered with the UK Financial Conduct Authority (FCA). Our MENA operations are regulated by the Dubai Financial Services Authority (DFSA). US investment advisory services are registered with the SEC. Licensing details are available on each regulatory body\'s public register.',
+    content: 'Indy Digital Marketing Solutions Ltd is registered with the UK Financial Conduct Authority (FCA). Our MENA operations are regulated by the Dubai Financial Services Authority (DFSA). US investment advisory services are registered with the SEC. Licensing details are available on each regulatory body\'s public register.',
   },
 ];
 

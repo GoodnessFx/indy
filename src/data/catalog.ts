@@ -57,12 +57,12 @@ const pick = <T,>(arr: T[], n: number) => arr[Math.floor(seed(n) * arr.length) %
 // --- NFTs: twelve collections, eighteen pieces each, plus the seed pieces ---
 
 const artImages = [
-  'art-orchid', 'art-morph',
+  'art-tide', 'art-ember',
+  'art-iris', 'art-halo',
+  'art-dune', 'art-reef',
+  'art-orchid', 'art-cosmos',
   'art-solar', 'art-mono',
-  'art-forest', 'art-cosmos',
-  'art-cosmos', 'art-mono',
-  'avatar-3', 'avatar-1',
-  'feat-stock', 'avatar-2',
+  'art-forest', 'art-morph',
 ];
 
 const collections = [

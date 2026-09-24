@@ -1,10 +1,9 @@
 // One registry for every photo on the site.
 //
 // Every ID here was checked with an HTTP HEAD request and returned 200,
-// so a photo entry here means a photo that actually renders. Images marked
-// with an empty string are awaiting a verified replacement and fall back to
-// the branded placeholder tile, which is always better than a broken <img>
-// or an unreviewed generated file.
+// so a photo entry here means a photo that actually renders. Anything without
+// a verified photo renders the branded placeholder tile, which is always
+// better than a broken <img> or an unreviewed generated file.
 //
 // Do not paste remote image URLs anywhere else in the app. Add a new entry
 // here, verify it, and use its key.
@@ -13,8 +12,11 @@ const U = (id: string, w = 1600) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
 
 export const PHOTOS = {
-  // Hero: city skyline at night, dark sky so white headline text stays legible.
+  // Hero slideshow: cinematic city and market scenes, dark enough that white
+  // headline text stays legible. The homepage cycles through these.
   hero: U("photo-1477959858617-67f85cf4f1df", 1920),
+  'hero-2': U("photo-1519501025264-65ba15a82390", 1920),
+  'hero-3': U("photo-1486406146926-c627a92ad1ab", 1920),
   // Global reach map band: night earth from orbit.
   'global-map': U("photo-1451187580-47652a4f4078", 1200),
   // Three pillar cards.
@@ -27,13 +29,19 @@ export const PHOTOS = {
   'feat-estate': U("photo-1486406146926-c627a92ad1ab", 1200),
   'feat-space': U("photo-1446776811953-b23d57bd21aa", 1200),
   'feat-commodity': U("photo-1610375461246-83df859d849d", 1200),
-  // NFT artwork surfaces.
-  'art-orchid': U("photo-1618005182384-a83a8bd57fbe"),
-  'art-cosmos': U("photo-1462331940025-496dfbfc7564"),
-  'art-solar': U("photo-1614850715649-1d0106293bd1"),
+  // NFT artwork surfaces, real gallery style art, each used exactly once.
+  'art-orchid': U("photo-1541961017774-22349e4a1262"),
+  'art-cosmos': U("photo-1547891654-e66ed7ebb968"),
+  'art-solar': U("photo-1579783902614-a3fb3927b6a5"),
   'art-mono': U("photo-1550684848-fac1c5b4e853"),
   'art-forest': U("photo-1518531933037-91b2f5f229cc"),
   'art-morph': U("photo-1614850523459-c2f4c699c52e"),
+  'art-tide': U("photo-1536924940846-227afb31e2a5"),
+  'art-ember': U("photo-1561214115-f2f134cc4912"),
+  'art-iris': U("photo-1557672172-298e090bd0f1"),
+  'art-halo': U("photo-1541701494587-cb58502866ab"),
+  'art-dune': U("photo-1518709268805-4e9042af9f23"),
+  'art-reef': U("photo-1549490349-8643362247b5"),
   // Alternative investment photography.
   'alt-estate': U("photo-1486406146926-c627a92ad1ab"),
   'alt-commodity': U("photo-1610375461246-83df859d849d"),
@@ -41,6 +49,12 @@ export const PHOTOS = {
   'alt-infra': U("photo-1480714378408-67cf0d13bc1b"),
   'alt-credit': U("photo-1554224155-6726b3ff858f"),
   'alt-venture': U("photo-1559136555-9303baea8ebd"),
+  // How It Works step imagery, matched to what each step actually does.
+  'how-account': U("photo-1605792657660-596af9009e82"),
+  'how-verify': U("photo-1450101499163-c8848c66ca85"),
+  'how-fund': U("photo-1556742049-0cfed4f6a45d"),
+  'how-invest': U("photo-1611974789855-9c2a0a7236a3"),
+  'how-withdraw': U("photo-1526304640581-d334cdbbf45e"),
   // Testimonial avatars.
   'avatar-1': U("photo-1494790108377-be9c29b29330", 400),
   'avatar-2': U("photo-1507003211169-0a1dd7228f2d", 400),
@@ -111,6 +125,8 @@ export function resolvePhoto(seed: string): string {
     ? (seed as PhotoKey)
     : undefined;
   if (key) return PHOTOS[key];
+  // Bare photo ids (for example a How It Works step id) resolve directly.
+  if (/^photo-[a-z0-9-]+$/i.test(seed)) return U(seed);
   const legacy = LEGACY[seed];
   if (legacy === "") return "";
   if (legacy) return PHOTOS[legacy];

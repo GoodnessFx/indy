@@ -1,12 +1,12 @@
 // Mock data for IndySolutions platform
 
 export const mockNFTs = [
-  { id: 'nft-1', name: 'Quantum Orchid #042', collection: 'Digital Bloom', price: 4.2, currency: 'ETH', usd: 14700, change: 12.4, image: 'art-orchid', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Deep Space' }, { trait: 'Style', value: 'Chromatic' }, { trait: 'Edition', value: '1 of 10' }] },
-  { id: 'nft-2', name: 'Void Walker #009', collection: 'Neon Genesis', price: 1.8, currency: 'ETH', usd: 6300, change: -3.2, image: 'art-morph', verified: true, rarity: 'Rare', traits: [{ trait: 'Background', value: 'Void' }, { trait: 'Style', value: 'Monochrome' }, { trait: 'Edition', value: '1 of 50' }] },
-  { id: 'nft-3', name: 'Solaris Prime', collection: 'CryptoArt', price: 9.5, currency: 'ETH', usd: 33250, change: 28.1, image: 'art-solar', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Solar Flare' }, { trait: 'Style', value: 'Vivid' }, { trait: 'Edition', value: '1 of 3' }] },
-  { id: 'nft-4', name: 'Meridian #117', collection: 'Abstract Futures', price: 0.45, currency: 'ETH', usd: 1575, change: 5.6, image: 'art-mono', verified: false, rarity: 'Common', traits: [{ trait: 'Background', value: 'Geometric' }, { trait: 'Edition', value: '1 of 200' }] },
-  { id: 'nft-5', name: 'Electric Forest', collection: 'NatureCode', price: 2.1, currency: 'ETH', usd: 7350, change: -1.8, image: 'art-forest', verified: true, rarity: 'Uncommon', traits: [{ trait: 'Background', value: 'Forest' }, { trait: 'Style', value: 'Neon' }] },
-  { id: 'nft-6', name: 'Titan Construct #88', collection: 'MechVerse', price: 6.7, currency: 'ETH', usd: 23450, change: 18.3, image: 'art-cosmos', verified: true, rarity: 'Epic', traits: [{ trait: 'Weapon', value: 'Plasma Blade' }, { trait: 'Armor', value: 'Obsidian' }] },
+  { id: 'nft-1', name: 'Chromatic Tide #042', collection: 'Digital Bloom', price: 4.2, currency: 'ETH', usd: 14700, change: 12.4, image: 'art-tide', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Deep Space' }, { trait: 'Style', value: 'Chromatic' }, { trait: 'Edition', value: '1 of 10' }] },
+  { id: 'nft-2', name: 'Ember Passage #009', collection: 'Neon Genesis', price: 1.8, currency: 'ETH', usd: 6300, change: -3.2, image: 'art-ember', verified: true, rarity: 'Rare', traits: [{ trait: 'Background', value: 'Ember' }, { trait: 'Style', value: 'Textured' }, { trait: 'Edition', value: '1 of 50' }] },
+  { id: 'nft-3', name: 'Gilded Iris', collection: 'CryptoArt', price: 9.5, currency: 'ETH', usd: 33250, change: 28.1, image: 'art-iris', verified: true, rarity: 'Legendary', traits: [{ trait: 'Background', value: 'Gold Leaf' }, { trait: 'Style', value: 'Vivid' }, { trait: 'Edition', value: '1 of 3' }] },
+  { id: 'nft-4', name: 'Halogen Meridian #117', collection: 'Abstract Futures', price: 0.45, currency: 'ETH', usd: 1575, change: 5.6, image: 'art-halo', verified: false, rarity: 'Common', traits: [{ trait: 'Background', value: 'Geometric' }, { trait: 'Edition', value: '1 of 200' }] },
+  { id: 'nft-5', name: 'Neon Dunes', collection: 'NatureCode', price: 2.1, currency: 'ETH', usd: 7350, change: -1.8, image: 'art-dune', verified: true, rarity: 'Uncommon', traits: [{ trait: 'Background', value: 'Desert' }, { trait: 'Style', value: 'Neon' }] },
+  { id: 'nft-6', name: 'Coral Reef Construct #88', collection: 'MechVerse', price: 6.7, currency: 'ETH', usd: 23450, change: 18.3, image: 'art-reef', verified: true, rarity: 'Epic', traits: [{ trait: 'Palette', value: 'Coral' }, { trait: 'Finish', value: 'Textured' }] },
 ];
 
 export const mockStocks = [

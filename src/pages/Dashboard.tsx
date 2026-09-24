@@ -1,11 +1,13 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw, PieChart, BellRing } from 'lucide-react';
+import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw, PieChart, BellRing, Receipt } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { portfolioChartData, mockNFTs, mockStocks, mockInvestments } from '../data/mock';
 import AssetImage from '../components/AssetImage';
 import CurrencyCalculator from '../components/CurrencyCalculator';
 import WatchlistPanel from '../components/WatchlistPanel';
+import { myOrders, type InvestmentOrder } from '../lib/orders';
+import { useOrdersSync } from '../lib/useOrdersSync';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -16,14 +18,28 @@ export default function Dashboard() {
   const [segment, setSegment] = useState<'All' | 'NFTs' | 'Stocks' | 'Other'>('All');
   const [timeRange, setTimeRange] = useState('1M');
   const [loading] = useState(false);
+  const [orders] = useOrdersSync<InvestmentOrder[]>(() => myOrders());
+
+  const orderHoldings = orders.map(o => ({
+    id: o.id,
+    type: o.kind === 'nft' ? 'NFT' : o.kind === 'stock' ? 'Stock' : 'Other',
+    name: o.assetName,
+    value: o.amount,
+    cost: o.amount,
+    gain: 0,
+    gainPct: 0,
+    image: null as string | null,
+    status: o.status,
+  }));
 
   const holdings = [
-    { id: 'nft-1', type: 'NFT', name: 'Quantum Orchid #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'art-orchid', status: 'active' },
-    { id: 'nft-2', type: 'NFT', name: 'Void Walker #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'art-morph', status: 'active' },
+    { id: 'nft-1', type: 'NFT', name: 'Chromatic Tide #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'art-tide', status: 'active' },
+    { id: 'nft-2', type: 'NFT', name: 'Ember Passage #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'art-ember', status: 'active' },
     { id: 'NVDA', type: 'Stock', name: 'NVDA, NVIDIA Corp.', value: 4376, cost: 3160, gain: 1216, gainPct: 38.5, image: null, status: 'active' },
     { id: 'ASTS', type: 'Stock', name: 'ASTS, AST SpaceMobile', value: 2109, cost: 1750, gain: 359, gainPct: 20.5, image: null, status: 'active' },
     { id: 'inv-1', type: 'Other', name: 'Manhattan Luxury Tower', value: 5200, cost: 5000, gain: 200, gainPct: 4.0, image: null, status: 'active' },
     { id: 'inv-2', type: 'Other', name: 'Gold Reserve Series IV', value: 2100, cost: 2000, gain: 100, gainPct: 5.0, image: null, status: 'active' },
+    ...orderHoldings,
   ];
 
   const filtered = segment === 'All' ? holdings : holdings.filter(h => {
@@ -196,7 +212,12 @@ export default function Dashboard() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-[#0A0B0D] truncate group-hover:text-[#2F6BFF] transition-colors">{holding.name}</p>
-                      <p className="text-xs text-black/30 mt-0.5">{holding.type}</p>
+                      <p className="text-xs text-black/30 mt-0.5 flex items-center gap-1.5">
+                        {holding.type}
+                        {holding.status === 'pending' && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] font-medium">Pending payment</span>
+                        )}
+                      </p>
                     </div>
                   </div>
 

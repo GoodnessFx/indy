@@ -5,7 +5,7 @@ import AssetImage from '../components/AssetImage';
 
 const steps = [
   {
-    n: '01', title: 'Create your account', image: 'photo-1614854262318-831574f15f1f',
+    n: '01', title: 'Create your account', image: 'how-account',
     body: 'Sign up with your email or Google/Apple SSO. Your account exists in under two minutes, and you can browse the whole platform before you verify anything.',
     long: [
       'When you sign up we create a user record with your name, email, and country, then email you a verification link. Until you click it, the account stays inactive.',
@@ -16,7 +16,7 @@ const steps = [
     details: ['Email or SSO in under two minutes', 'No minimum investment required', 'Available in 6 languages', 'Full login history you can review'],
   },
   {
-    n: '02', title: 'Complete identity verification', image: 'photo-1454165804606-c3d57bc86b40',
+    n: '02', title: 'Complete identity verification', image: 'how-verify',
     body: 'Upload a government issued ID and we check it against sanction and watchlist databases. Regulation requires this, and it usually clears the same day.',
     long: [
       'Verification satisfies anti money laundering law in every country we operate in. It also protects you, because funds can only be withdrawn to an account in your own name.',
@@ -27,7 +27,7 @@ const steps = [
     details: ['Passport, driver license, or national ID', 'Automated document and liveness check', 'Usually reviewed within 24 hours', 'Rejection reasons shown, with re upload'],
   },
   {
-    n: '03', title: 'Fund your account', image: 'photo-1563013544-824ae1b704d3',
+    n: '03', title: 'Fund your account', image: 'how-fund',
     body: 'Deposit by bank transfer, card, or crypto. Card deposits credit instantly, bank transfers and crypto credit as soon as they confirm.',
     long: [
       'Bank transfers are settled by a licensed payment partner, not by us directly. We show you their receiving details and a reference code. Always include that code, it is how your deposit is matched to your account. Without it the transfer goes to manual review and can take days to trace.',
@@ -38,7 +38,7 @@ const steps = [
     details: ['Bank transfer, card, or crypto', 'Card deposits credit instantly', 'Processor vaults card numbers, never us', 'Every deposit receipted in transaction history'],
   },
   {
-    n: '04', title: 'Invest across three asset classes', image: 'photo-1611974789855-9c2a0a7236a3',
+    n: '04', title: 'Invest across three asset classes', image: 'how-invest',
     body: 'Browse verified NFTs, live equity markets, and curated alternative deals from one portfolio view. Buy, hold, and track everything in a single ledger.',
     long: [
       'Stock prices come from a market data provider and refresh on a short cache, usually every fifteen to thirty seconds. The page shows the time the price was captured, so you can tell a live quote from a cached one.',
@@ -49,7 +49,7 @@ const steps = [
     details: ['Prices stamped with capture time', 'Verification badge on every checked NFT', 'Deal pages state structure and timeline', 'Executed price recorded on every trade'],
   },
   {
-    n: '05', title: 'Withdraw to your own currency', image: 'photo-1526304640581-d334cdbbf45e',
+    n: '05', title: 'Withdraw to your own currency', image: 'how-withdraw',
     body: 'See the fee, the tax withholding estimate, and the locked exchange rate before you confirm. Nothing is deducted silently.',
     long: [
       'The breakdown appears before you confirm, never after. You see the amount requested, the exchange rate with the time it was locked, the estimated tax withholding labeled as an estimate, the service fee, and the exact net amount landing in your account.',
@@ -84,7 +84,7 @@ const faqs = [
   { q: 'Is IndySolutions regulated?', a: 'IndySolutions operates under applicable financial regulations in each jurisdiction it serves. Payment processing is handled by licensed, PCI-DSS compliant partners. Full regulatory detail lives on our Security and Trust page.' },
   { q: 'What are the minimum investments?', a: 'There is no minimum for stock trading. NFT purchases are at market price. Alternative investment minimums vary by deal, and most start at $1,000.' },
   { q: 'How are my assets held?', a: 'Stocks are held in your name through our regulated custody partner. NFTs sit in a custodial wallet on your behalf. Alternative investments are held according to the terms of each deal structure, which are published on the deal page.' },
-  { q: 'Can I use IndySolutions from any country?', a: 'IndySolutions is live in 68 countries. Some features are limited by local rules, and when that applies to your country you see it clearly at signup rather than discovering it at withdrawal.' },
+  { q: 'Can I use Indy Digital Marketing Solutions from any country?', a: 'Indy Digital Marketing Solutions is live in 68 countries. Some features are limited by local rules, and when that applies to your country you see it clearly at signup rather than discovering it at withdrawal.' },
   { q: 'How is the exchange rate decided?', a: 'We take the mid market rate from institutional feeds and add a small disclosed spread. The exact rate and the time it was locked appear on your confirmation screen and are stored on the withdrawal record.' },
   { q: 'Can I cancel a withdrawal?', a: 'Yes, while it is still pending. Once it moves to processing the payout has been handed to the partner network and can no longer be pulled back, which is exactly why the status is visible at every step.' },
   { q: 'Are there inactivity fees?', a: 'No. Holding a position costs nothing. You pay when you transact, convert currency, or withdraw, and never simply for having an account.' },
@@ -145,9 +145,10 @@ export default function HowItWorks() {
                 <AssetImage
                   seed={step.image}
                   label={step.title}
+                  showLabel={false}
                   className="absolute inset-0 w-full h-full"
                 />
-                <div className={`absolute inset-0 ${i % 2 === 0 ? 'bg-gradient-to-br from-transparent to-white/20' : 'bg-gradient-to-br from-transparent to-[#2F6BFF]/20'}`} />
+                <div className="absolute inset-0 photo-tint-bottom" />
               </div>
             </div>
           </div>

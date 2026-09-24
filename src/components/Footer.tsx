@@ -26,7 +26,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-2.5 mb-5 group w-fit">
               <Logo size={36} />
               <span className="font-display font-700 text-lg text-[#0A0B0D]">
-                Indy<span className="text-[#2F6BFF]">Solutions</span>
+                Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span>
               </span>
             </Link>
             <p className="text-sm text-black/40 leading-relaxed max-w-xs mb-6">
@@ -104,7 +104,7 @@ export default function Footer() {
         {/* Bottom bar */}
         <div className="mt-16 pt-8 border-t border-black/5 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col md:flex-row items-center gap-4">
-            <p className="text-xs text-black/25">Â© 2026 IndySolutions Ltd. All rights reserved.</p>
+            <p className="text-xs text-black/25">© 2026 Indy Digital Marketing Solutions Ltd. All rights reserved.</p>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
               <span className="text-xs text-black/25">All systems operational</span>
@@ -123,7 +123,7 @@ export default function Footer() {
         </div>
 
         <p className="mt-6 text-[11px] text-black/15 leading-relaxed max-w-3xl">
-          Investment involves risk. The value of investments and the income from them can go down as well as up, and you may not get back the amount originally invested. IndySolutions is not a licensed financial advisor. Past performance is not indicative of future results. All trades are subject to our Terms of Service and applicable regulations.
+          Investment involves risk. The value of investments and the income from them can go down as well as up, and you may not get back the amount originally invested. Indy Digital Marketing Solutions is not a licensed financial advisor. Past performance is not indicative of future results. All trades are subject to our Terms of Service and applicable regulations.
         </p>
       </div>
     </footer>

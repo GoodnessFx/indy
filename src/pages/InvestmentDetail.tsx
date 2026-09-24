@@ -1,6 +1,14 @@
 ﻿import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
 import { ArrowLeft, TrendingUp, Clock, Shield, BadgeCheck } from 'lucide-react';
 import WatchButton from '../components/WatchButton';
+import {
+  InvestAwaitingPayment,
+  InvestShell,
+  InvestSignInGate,
+  useInvestFlow,
+} from '../components/InvestModal';
+import { useAuth } from '../lib/useAuth';
 import { allInvestments } from '../data/catalog';
 import AssetImage from '../components/AssetImage';
 
@@ -9,6 +17,9 @@ export default function InvestmentDetail() {
   const inv = allInvestments.find(i => i.id === id) || allInvestments[0];
   const raised = inv.raised >= 1000000 ? `$${(inv.raised / 1000000).toFixed(1)}M` : `$${(inv.raised / 1000).toFixed(0)}K`;
   const target = inv.target >= 1000000 ? `$${(inv.target / 1000000).toFixed(1)}M` : `$${(inv.target / 1000).toFixed(0)}K`;
+  const [investOpen, setInvestOpen] = useState(false);
+  const { signedIn, profile } = useAuth();
+  const invest = useInvestFlow({ assetId: inv.id, assetName: inv.name, kind: 'investment', price: 5000 });
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] pt-20">
@@ -106,9 +117,40 @@ export default function InvestmentDetail() {
                 </div>
               </div>
 
-              <Link to="/signup" className="w-full block text-center btn-primary py-4 rounded-xl text-sm font-display font-600">
+              <button onClick={() => setInvestOpen(true)} className="w-full block text-center btn-primary py-4 rounded-xl text-sm font-display font-600">
                 Invest now
-              </Link>
+              </button>
+
+              {investOpen && (
+                <InvestShell
+                  title={inv.name}
+                  subtitle={signedIn && profile ? `Signed in as ${profile.email}` : 'Sign-in required'}
+                  onClose={() => setInvestOpen(false)}
+                >
+                  {!signedIn ? (
+                    <InvestSignInGate />
+                  ) : invest.phase === 'form' ? (
+                    <>
+                      <label className="block text-xs text-black/40 mb-2">Investment amount (USD)</label>
+                      <input
+                        type="number"
+                        min="1000"
+                        value={invest.amount}
+                        onChange={e => invest.setAmount(e.target.value)}
+                        className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm font-mono text-[#0A0B0D] outline-none focus:border-[#F59E0B] mb-4"
+                      />
+                      <p className="text-[10px] text-black/25 mb-3">Minimum: $1,000</p>
+                      <button onClick={invest.submit} disabled={invest.amt < 1000} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
+                        Submit investment
+                      </button>
+                    </>
+                  ) : invest.phase === 'submitted' ? (
+                    <InvestAwaitingPayment onPay={invest.pay} onLater={() => setInvestOpen(false)} />
+                  ) : (
+                    <p className="text-sm text-[#22C55E] text-center py-4">Holding active. See it in your dashboard.</p>
+                  )}
+                </InvestShell>
+              )}
               <WatchButton
                 id={inv.id}
                 kind="investment"

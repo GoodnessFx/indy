@@ -1,6 +1,7 @@
 ﻿import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, BadgeCheck, Share2, TrendingUp } from 'lucide-react';
 import WatchButton from '../components/WatchButton';
+import NftInvestPanel from '../components/NftInvestPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { allNFTs } from '../data/catalog';
 import AssetImage from '../components/AssetImage';
@@ -70,7 +71,9 @@ export default function NFTDetail() {
                 <span className="font-mono text-sm">{nft.change >= 0 ? '+' : ''}{nft.change}% past 30 days</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Link to="/signup" className="btn-primary py-3.5 rounded-xl text-sm text-center">Buy now</Link>
+                <NftInvestPanel
+                  target={{ assetId: nft.id, assetName: nft.name, kind: 'nft', price: nft.usd, currency: 'USD' }}
+                />
                 <button className="btn-ghost py-3.5 rounded-xl text-sm">Make offer</button>
               </div>
             </div>

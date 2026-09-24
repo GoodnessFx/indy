@@ -136,7 +136,7 @@ export default function Deposit() {
                 <div className="space-y-3">
                   {[
                     { label: 'Bank name', value: 'Barclays Business Banking' },
-                    { label: 'Account name', value: 'IndySolutions Ltd' },
+                    { label: 'Account name', value: 'Indy Digital Marketing Solutions Ltd' },
                     { label: 'Sort code', value: '20-00-00' },
                     { label: 'Account number', value: '83621047' },
                     { label: 'SWIFT / BIC', value: 'BARCGB22' },

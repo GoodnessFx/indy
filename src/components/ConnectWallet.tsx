@@ -164,7 +164,7 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
   );
 // Sign-in gate shown to signed-out users instead of the wallet list.
   const signInPrompt = (
-    <div className={`${variant === "nav" ? "w-80 p-3" : "p-3"}`}>
+    <div className={`${variant === "nav" ? "w-80 max-w-[calc(100vw-2rem)] p-3" : "p-3"} overflow-hidden`}>
       <div className="flex items-center justify-between px-2 py-1">
         <span className="text-xs font-medium text-black/50">Connect a wallet</span>
       </div>
@@ -172,11 +172,11 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
         <div className="w-11 h-11 rounded-xl bg-[#2F6BFF]/12 flex items-center justify-center mx-auto mb-3">
           <Wallet size={20} className="text-[#2F6BFF]" />
         </div>
-        <p className="text-sm font-semibold text-[#0A0B0D] mb-1">Sign in to connect a wallet</p>
-        <p className="text-xs text-black/40 leading-relaxed mb-4 text-center">
-          You need an IndySolutions account before linking a wallet.
+        <p className="text-sm font-semibold text-[#0A0B0D] mb-1 break-words">Sign in to connect a wallet</p>
+        <p className="text-xs text-black/40 leading-relaxed mb-4 text-center break-words">
+          You need an Indy Digital Marketing Solutions account before linking a wallet.
         </p>
-        <Link to="/login" className="btn-primary w-full py-3 rounded-xl text-sm">Sign in</Link>
+        <Link to="/login" className="btn-primary w-full py-3 rounded-xl text-sm block text-center break-words">Sign in</Link>
       </div>
     </div>
   );

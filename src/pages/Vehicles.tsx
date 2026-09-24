@@ -2,12 +2,22 @@
 import { Link } from 'react-router-dom';
 import { BatteryCharging, Gauge, Zap, Users, ArrowRight, ShieldCheck, TrendingUp, Layers } from 'lucide-react';
 import { mockVehicles } from '../data/mock';
+import {
+  InvestAwaitingPayment,
+  InvestShell,
+  InvestSignInGate,
+  useInvestFlow,
+} from '../components/InvestModal';
+import { useAuth } from '../lib/useAuth';
 
 // Configurator-style page: deliberate contrast with the NFT grid, stock table,
 // and editorial feed. One model at a time, cinematic full-bleed hero, spec strip.
 export default function Vehicles() {
   const [activeId, setActiveId] = useState(mockVehicles[0].id);
   const active = mockVehicles.find(v => v.id === activeId) ?? mockVehicles[0];
+  const [investOpen, setInvestOpen] = useState(false);
+  const { signedIn, profile } = useAuth();
+  const invest = useInvestFlow({ assetId: active.id, assetName: `Tesla ${active.name} fleet share`, kind: 'vehicle', price: active.price });
 
   const specs = [
     { icon: BatteryCharging, label: 'Range (EPA est.)', value: `${active.rangeMi} mi` },
@@ -75,9 +85,39 @@ export default function Vehicles() {
               From <span className="text-white font-600 text-base">${active.price.toLocaleString()}</span>
             </p>
             <div className="h-6 w-px bg-white/20" />
-            <Link to="/signup" className="btn-primary px-6 py-3 rounded-xl text-sm flex items-center gap-2">
+            <button onClick={() => setInvestOpen(true)} className="btn-primary px-6 py-3 rounded-xl text-sm flex items-center gap-2">
               Reserve allocation <ArrowRight size={15} />
-            </Link>
+            </button>
+
+            {investOpen && (
+              <InvestShell
+                title={`Tesla ${active.name} fleet share`}
+                subtitle={signedIn && profile ? `Signed in as ${profile.email}` : 'Sign-in required'}
+                onClose={() => setInvestOpen(false)}
+              >
+                {!signedIn ? (
+                  <InvestSignInGate />
+                ) : invest.phase === 'form' ? (
+                  <>
+                    <label className="block text-xs text-black/40 mb-2">Allocation (USD)</label>
+                    <input
+                      type="number"
+                      min="1000"
+                      value={invest.amount}
+                      onChange={e => invest.setAmount(e.target.value)}
+                      className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm font-mono text-[#0A0B0D] outline-none focus:border-[#2F6BFF] mb-4"
+                    />
+                    <button onClick={invest.submit} disabled={invest.amt < 1000} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
+                      Submit allocation
+                    </button>
+                  </>
+                ) : invest.phase === 'submitted' ? (
+                  <InvestAwaitingPayment onPay={invest.pay} onLater={() => setInvestOpen(false)} />
+                ) : (
+                  <p className="text-sm text-[#22C55E] text-center py-4">Allocation active. See it in your dashboard.</p>
+                )}
+              </InvestShell>
+            )}
             <Link to="/contact" className="btn-ghost-dark-on-dark px-6 py-3 rounded-xl text-sm">
               Talk to sales
             </Link>

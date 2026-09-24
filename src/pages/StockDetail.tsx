@@ -2,6 +2,13 @@
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown, Info, Star } from 'lucide-react';
 import { isWatched, toggleWatch } from '../lib/watchlist';
+import {
+  InvestAwaitingPayment,
+  InvestShell,
+  InvestSignInGate,
+  useInvestFlow,
+} from '../components/InvestModal';
+import { useAuth } from '../lib/useAuth';
 import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar } from 'recharts';
 import { allStocks } from '../data/catalog';
 
@@ -22,6 +29,11 @@ export default function StockDetail() {
   const [side, setSide] = useState<'buy' | 'sell'>('buy');
   const [timeRange, setTimeRange] = useState('6M');
   const [watching, setWatching] = useState(false);
+  const [investOpen, setInvestOpen] = useState(false);
+  const { signedIn, profile } = useAuth();
+  const invest = useInvestFlow(
+    { assetId: stock.id, assetName: `${stock.id}, ${stock.name}`, kind: 'stock', price: stock.price },
+  );
 
   useEffect(() => {
     setWatching(isWatched(stock.id));
@@ -165,12 +177,43 @@ export default function StockDetail() {
                 </div>
               </div>
 
-              <Link to="/signup"
-                className={`w-full block text-center py-4 rounded-xl font-display font-600 text-sm transition-all ${
-                  side === 'buy' ? 'bg-[#22C55E] text-[#0A0B0D] hover:bg-[#16A34A]' : 'bg-[#EF4444] text-white hover:bg-[#DC2626]'
-                }`}>
+            <div>
+              <button onClick={() => setInvestOpen(true)} className={`w-full block text-center py-4 rounded-xl font-display font-600 text-sm transition-all ${
+                side === 'buy' ? 'bg-[#22C55E] text-[#0A0B0D] hover:bg-[#16A34A]' : 'bg-[#EF4444] text-white hover:bg-[#DC2626]'
+              }`}>
                 {side === 'buy' ? 'Buy' : 'Sell'} {qty || 0} shares
-              </Link>
+              </button>
+
+              {investOpen && (
+                <InvestShell
+                  title={`${stock.id}, ${stock.name}`}
+                  subtitle={signedIn && profile ? `Signed in as ${profile.email}` : 'Sign-in required'}
+                  onClose={() => setInvestOpen(false)}
+                >
+                  {!signedIn ? (
+                    <InvestSignInGate />
+                  ) : invest.phase === 'form' ? (
+                    <>
+                      <label className="block text-xs text-black/40 mb-2">Amount (USD)</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={invest.amount}
+                        onChange={e => invest.setAmount(e.target.value)}
+                        className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm font-mono text-[#0A0B0D] outline-none focus:border-[#22C55E] mb-4"
+                      />
+                      <button onClick={invest.submit} disabled={invest.amt <= 0} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
+                        Submit investment
+                      </button>
+                    </>
+                  ) : invest.phase === 'submitted' ? (
+                    <InvestAwaitingPayment onPay={invest.pay} onLater={() => setInvestOpen(false)} />
+                  ) : (
+                    <p className="text-sm text-[#22C55E] text-center py-4">Holding active. See it in your dashboard.</p>
+                  )}
+                </InvestShell>
+              )}
+            </div>
 
               <div className="mt-4 text-xs text-black/20 text-center">
                 Market order, Available balance: $15,165.40

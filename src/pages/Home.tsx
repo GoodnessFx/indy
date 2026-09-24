@@ -50,7 +50,7 @@ function StatCounter({ value, label, prefix = '', suffix = '' }: { value: number
 
 const featuredAssets = [
   {
-    id: 1, type: 'NFT', name: 'Quantum Orchid #042', return: '+214%', price: '$14,700',
+    id: 1, type: 'NFT', name: 'Chromatic Tide #042', return: '+214%', price: '$14,700',
     image: 'feat-nft',
     desc: 'Rare 1-of-10 generative artwork. Verified on-chain provenance.',
     color: '#8B5CF6',
@@ -109,6 +109,7 @@ const mapDots = [
 export default function Home() {
   const [activeAsset, setActiveAsset] = useState(0);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [heroSlide, setHeroSlide] = useState(0);
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -122,19 +123,28 @@ export default function Home() {
     return () => clearInterval(t);
   }, []);
 
+  useEffect(() => {
+    const t = setInterval(() => setHeroSlide(p => (p + 1) % 3), 7000);
+    return () => clearInterval(t);
+  }, []);
+
   return (
     <div className="bg-[#F7F7F5]">
 
-      {/* 1. Hero, full-bleed cinematic */}
+      {/* 1. Hero, full-bleed cinematic slideshow */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <img
-            src={PHOTOS.hero}
-            alt="Global markets at night"
-            className="w-full h-full object-cover"
-            style={{ transform: `translateY(${scrollY * 0.3}px)` }}
-          />
+        {/* Background slideshow: three cinematic scenes crossfade every 7s */}
+        <div className="absolute inset-0 bg-[#0A0B0D]">
+          {[PHOTOS.hero, PHOTOS['hero-2'], PHOTOS['hero-3']].map((src, i) => (
+            <img
+              key={src}
+              src={src}
+              alt=""
+              aria-hidden="true"
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[2000ms] ${i === heroSlide ? 'opacity-100' : 'opacity-0'}`}
+              style={{ transform: `translateY(${scrollY * 0.3}px)` }}
+            />
+          ))}
         </div>
         <div className="absolute inset-0 photo-tint-hero" />
 
@@ -162,6 +172,17 @@ export default function Home() {
             <Link to="/how-it-works" className="btn-ghost-dark-on-dark px-8 py-4 rounded-xl text-base flex items-center gap-2 w-full sm:w-auto justify-center">
               <Play size={16} /> See how it works
             </Link>
+          </div>
+          {/* Slideshow dots */}
+          <div className="flex items-center justify-center gap-2 mt-10">
+            {[0, 1, 2].map(i => (
+              <button
+                key={i}
+                onClick={() => setHeroSlide(i)}
+                aria-label={`Show background ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all ${i === heroSlide ? 'w-8 bg-white' : 'w-1.5 bg-white/30 hover:bg-white/60'}`}
+              />
+            ))}
           </div>
         </div>
 
@@ -256,6 +277,24 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Live calculator, right after the three pillar showcase */}
+      <section className="bg-[#F7F7F5] py-24 px-6 border-b border-black/5">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="max-w-2xl mb-12 mx-auto text-center">
+            <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-3">Live rates</p>
+            <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] leading-tight mb-4">
+              Currency and crypto in one box
+            </h2>
+            <p className="text-black/45 leading-relaxed">
+              Convert between EUR, USD, GBP, and BTC using the same live rates that price your withdrawals. Shown as an estimate because the exact rate locks in when you confirm.
+            </p>
+          </div>
+          <div className="max-w-xl mx-auto">
+            <CurrencyCalculator />
+          </div>
+        </div>
+      </section>
+
       {/* Market briefing: short reads tied to the assets on the platform */}
       <section className="bg-[#F7F7F5] py-24 px-6 border-b border-black/5">
         <div className="max-w-[1440px] mx-auto">
@@ -274,23 +313,6 @@ export default function Home() {
             </p>
           </div>
           <NewsFeed />
-        </div>
-      </section>
-
-      <section className="bg-[#F7F7F5] py-24 px-6 border-y border-black/5">
-        <div className="max-w-[1440px] mx-auto">
-          <div className="max-w-2xl mb-12 mx-auto text-center">
-            <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-3">Convert</p>
-            <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] leading-tight mb-4">
-              Currency and crypto in one box
-            </h2>
-            <p className="text-black/45 leading-relaxed">
-              Convert between EUR, USD, GBP, and BTC using the same live rates that price your withdrawals. Shown as an estimate because the exact rate locks in when you confirm.
-            </p>
-          </div>
-          <div className="max-w-xl mx-auto">
-            <CurrencyCalculator />
-          </div>
         </div>
       </section>
 
@@ -486,7 +508,7 @@ export default function Home() {
                 68 countries.<br />6 languages.
               </h2>
               <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-sm">
-                From Lagos to Singapore, Dubai to Sao Paulo, IndySolutions is built for a world that doesn't stop at borders.
+                From Lagos to Singapore, Dubai to Sao Paulo, Indy Digital Marketing Solutions is built for a world that doesn't stop at borders.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {languages.map(lang => (

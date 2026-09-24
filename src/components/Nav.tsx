@@ -72,7 +72,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
           <Link to="/" className="flex items-center gap-2.5 group">
             <Logo size={36} />
             <span className={`font-display font-700 text-lg tracking-tight ${textColor}`}>
-              Indy<span className="text-[#2F6BFF]">Solutions</span>
+              Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span>
             </span>
           </Link>
 

@@ -1,6 +1,8 @@
 ﻿import AdminLayout from './AdminLayout';
-import { Users, DollarSign, ShieldAlert, MessageSquare, Clock, TrendingUp } from 'lucide-react';
+import { Users, DollarSign, ShieldAlert, MessageSquare, Clock, TrendingUp, BellRing } from 'lucide-react';
 import { adminUsers } from '../../data/mock';
+import { adminOrderFeed } from '../../lib/orders';
+import { useOrdersSync } from '../../lib/useOrdersSync';
 
 const kpis = [
   { label: 'Total Users', value: '147,243', change: '+284 this week', icon: Users, color: 'text-[#2F6BFF]', bg: 'bg-[#2F6BFF]/10' },
@@ -20,6 +22,9 @@ const activity = [
 ];
 
 export default function AdminDashboard() {
+  const [feed] = useOrdersSync(() => adminOrderFeed());
+  const pending = feed.filter(o => o.status === 'pending');
+  const recent = feed.slice(0, 5);
   return (
     <AdminLayout>
       <div className="max-w-6xl">
@@ -49,6 +54,37 @@ export default function AdminDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Investment orders, clients land here the second they submit */}
+          <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+              <h2 className="font-mono text-sm text-black/70 flex items-center gap-2">
+                <BellRing size={14} className="text-[#F59E0B]" /> Investment orders
+              </h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] font-mono">
+                {pending.length} pending
+              </span>
+            </div>
+            <div className="divide-y divide-black/5">
+              {recent.length === 0 && (
+                <p className="px-5 py-6 text-xs text-black/30 font-mono">
+                  No client orders yet. New investments appear here instantly.
+                </p>
+              )}
+              {recent.map(o => (
+                <div key={o.id} className="flex items-center gap-3 px-5 py-3">
+                  <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${o.status === 'active' ? 'bg-[#22C55E]' : 'bg-[#F59E0B]'}`} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-black/70 truncate">{o.assetName}, <span className="text-black/40">{o.account}</span></p>
+                    <p className="text-[10px] text-black/25 font-mono">{o.currency} {o.amount.toLocaleString()} · {o.status}</p>
+                  </div>
+                  <span className="text-[10px] text-black/25 font-mono shrink-0">
+                    {new Date(o.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Recent activity */}
           <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-black/5">
