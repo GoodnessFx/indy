@@ -22,3 +22,9 @@ logs/
 # beside it.
 /.plugins/
 /.opencode-skills/
+; stray downloads
+*.crdownload
+
+*.mkv
+logo.jpg
+logo.webp

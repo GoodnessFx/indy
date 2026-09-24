@@ -54,7 +54,13 @@ function decodeCredential(credential: string): GoogleProfile {
 }
 
 export function getGoogleClientId(): string {
-  return import.meta.env.VITE_GOOGLE_CLIENT_ID as string ?? "";
+  // The Google OAuth client id for this project. It is a public value by design
+  // (safe in the bundle), so a hardcoded default is used as a fallback. That
+  // means Google Sign-In works on Render and any preview host even when the
+  // VITE_GOOGLE_CLIENT_ID env var was not injected at build time.
+  const DEFAULT_GOOGLE_CLIENT_ID =
+    "24300395823-u2fjcqaqai5j2dphrhdo0cbjjdisd4vn.apps.googleusercontent.com";
+  return (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined) ?? DEFAULT_GOOGLE_CLIENT_ID;
 }
 
 export async function signInWithGooglePopup(): Promise<GoogleProfile> {
