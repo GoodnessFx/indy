@@ -2,7 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, ArrowRight, ArrowLeft, Check, Upload, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
-import { signInWithGooglePopup } from '../lib/googleAuth';
+import { startGoogleSignIn } from '../lib/googleAuth';
 
 type Step = 1 | 2 | 3;
 
@@ -21,12 +21,12 @@ export default function Signup() {
     setGoogleError('');
     setGoogleLoading(true);
     try {
-      const profile = await signInWithGooglePopup();
+      const profile = await startGoogleSignIn('/dashboard');
+      // null means the browser is being redirected to Google (Supabase flow).
+      if (!profile) return;
       if (profile.email) update('email', profile.email);
       if (profile.given_name) update('firstName', profile.given_name);
       if (profile.family_name) update('lastName', profile.family_name);
-      localStorage.setItem('indy_user_email', profile.email);
-      localStorage.setItem('indy_user_name', profile.name);
       setStep(2);
     } catch (e) {
       setGoogleError(e instanceof Error ? e.message : 'Google sign-in failed. Try again.');

@@ -1,8 +1,8 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
-import { signInWithGooglePopup } from '../lib/googleAuth';
+import { getActiveProfile, onAuthChange, startGoogleSignIn } from '../lib/googleAuth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -13,17 +13,31 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Coming back from Google (Supabase OAuth) lands here with a session already
+  // present, so send the user straight to the dashboard.
+  useEffect(() => {
+    let active = true;
+    getActiveProfile().then(profile => {
+      if (active && profile) navigate('/dashboard', { replace: true });
+    });
+    const unsubscribe = onAuthChange(profile => {
+      if (active && profile) navigate('/dashboard', { replace: true });
+    });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, [navigate]);
+
   const handleGoogle = async () => {
     setError('');
     setGoogleLoading(true);
     try {
-      const profile = await signInWithGooglePopup();
-      localStorage.setItem('indy_user_email', profile.email);
-      localStorage.setItem('indy_user_name', profile.name);
-      navigate('/dashboard');
+      const profile = await startGoogleSignIn('/dashboard');
+      // null means the browser is being redirected to Google (Supabase flow).
+      if (profile) navigate('/dashboard');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Google sign-in failed. Try again.');
-    } finally {
       setGoogleLoading(false);
     }
   };

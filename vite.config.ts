@@ -34,6 +34,10 @@ react(),
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
+      // Dev/preview servers are reached through proxied hostnames (Figma Make
+      // preview, Render, ngrok, ...) which Vite's host check would otherwise
+      // reject with 403 "Blocked request. This host ... is not allowed."
+      allowedHosts: true,
       watch: {
         ignored: [
           '**/.figma/**',
@@ -43,6 +47,10 @@ react(),
     preview: {
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
+      // Required in production: a request to https://<service>.onrender.com
+      // arrives with that hostname in the Host header, and Vite 8 returns 403
+      // for any host not listed here.
+      allowedHosts: true,
     },
   }
 })

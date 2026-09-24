@@ -1,7 +1,22 @@
-// Google Identity Services (GIS) helper — frontend only.
+// Google Sign-In helper.
+//
+// Two modes, picked automatically:
+//  1. Supabase Google OAuth — used when VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY
+//     are set. Supabase holds the client secret server-side; the browser never
+//     sees it.
+//  2. Google Identity Services (GIS) popup — fallback while no Supabase project
+//     is configured yet. Uses the public client ID only, no secret.
+//
 // Uses VITE_GOOGLE_CLIENT_ID (public). The Client Secret must NEVER go in
-// frontend code or git — it lives server-side only (e.g. Supabase Auth >
+// frontend code or git — it lives server-side only (Supabase Auth >
 // Providers > Google, or your backend env).
+
+import {
+  isSupabaseConfigured,
+  signInWithGoogleOAuth,
+  getSupabaseProfile,
+  onSupabaseAuthChange,
+} from "./supabase";
 
 export interface GoogleProfile {
   sub: string;
@@ -80,9 +95,8 @@ export async function signInWithGooglePopup(): Promise<GoogleProfile> {
   if (!r.ok) throw new Error("Could not fetch Google profile.");
   const info = (await r.json()) as GoogleProfile;
 
-  // Persist a minimal session for this front-end-only app (demo auth store).
-  localStorage.setItem("indy_google_user", JSON.stringify(info));
-  localStorage.setItem("indy_auth_provider", "google");
+  // Persist the session so the UI can greet the user.
+  rememberProfile(info);
   return info;
 }
 
@@ -108,8 +122,7 @@ export async function signInWithGoogleCredential(): Promise<GoogleProfile> {
           try {
             if (!resp?.credential) throw new Error("Google sign-in was cancelled.");
             const profile = decodeCredential(resp.credential);
-            localStorage.setItem("indy_google_user", JSON.stringify(profile));
-            localStorage.setItem("indy_auth_provider", "google");
+            rememberProfile(profile);
             resolve(profile);
           } catch (e) {
             reject(e);
@@ -120,6 +133,52 @@ export async function signInWithGoogleCredential(): Promise<GoogleProfile> {
     } catch (e) {
       reject(e);
     }
+  });
+}
+
+/** Saves the signed-in profile locally so the UI can greet the user. */
+export function rememberProfile(profile: GoogleProfile): void {
+  localStorage.setItem("indy_google_user", JSON.stringify(profile));
+  localStorage.setItem("indy_auth_provider", isSupabaseConfigured ? "supabase-google" : "google");
+  localStorage.setItem("indy_user_email", profile.email);
+  localStorage.setItem("indy_user_name", profile.name);
+}
+
+/**
+ * Starts Google sign-in against whichever backend is configured.
+ *
+ * Returns the profile for the GIS popup flow, or `null` when the browser is
+ * being redirected to Google (Supabase OAuth) — in that case the page is about
+ * to navigate away and the caller should not do anything else.
+ */
+export async function startGoogleSignIn(redirectPath = "/dashboard"): Promise<GoogleProfile | null> {
+  if (isSupabaseConfigured) {
+    await signInWithGoogleOAuth(redirectPath);
+    return null;
+  }
+  const profile = await signInWithGooglePopup();
+  rememberProfile(profile);
+  return profile;
+}
+
+/**
+ * Profile of an already signed-in user. With Supabase this also completes the
+ * OAuth hand-off when the browser comes back from Google with a `?code=`.
+ */
+export async function getActiveProfile(): Promise<GoogleProfile | null> {
+  if (isSupabaseConfigured) {
+    const profile = await getSupabaseProfile();
+    if (profile) rememberProfile(profile);
+    return profile;
+  }
+  return getStoredGoogleUser();
+}
+
+/** Fires when a Supabase session appears or disappears. No-op without Supabase. */
+export function onAuthChange(cb: (profile: GoogleProfile | null) => void): () => void {
+  return onSupabaseAuthChange(profile => {
+    if (profile) rememberProfile(profile);
+    cb(profile);
   });
 }
 

@@ -82,7 +82,15 @@ Supabase Dashboard → **Authentication → Providers → Google** → enable, t
 | Client Secret | your `GOCSPX-...` secret (server-side value, never in this repo) |
 | Skip nonce checks | off (default) |
 
-Copy the **Callback URL (for OAuth)** Supabase shows on that screen — it looks like:
+Meantime: **Authentication → URL Configuration**:
+
+| Field | Value |
+| --- | --- |
+| Site URL | `https://indy-cmmi.onrender.com` |
+| Redirect URLs | add `https://indy-cmmi.onrender.com/**` and `http://localhost:8443/**` |
+
+Then copy the **Callback URL (for OAuth)** Supabase shows on the Google provider
+screen — it looks like:
 
 ```
 https://<your-project-ref>.supabase.co/auth/v1/callback
@@ -91,7 +99,8 @@ https://<your-project-ref>.supabase.co/auth/v1/callback
 That exact URL must be added to Google Cloud Console (step 4).
 
 Supabase API values for the `VITE_SUPABASE_*` vars above:
-Dashboard → **Settings → API** → *Project URL* and *anon public* key.
+Dashboard → **Settings → API** → *Project URL* and the **anon public** key
+(not the `service_role` key, not a `postgres:...` connection string).
 
 ---
 
@@ -114,6 +123,11 @@ https://<your-project-ref>.supabase.co/auth/v1/callback
 
 Missing origins produce `Error 400: origin_mismatch` / "Access blocked" when the
 user clicks *Continue with Google*.
+
+> **Crucial:** if your deployed site shows `403 Blocked request. This host
+> ("...") is not allowed.`, that is Vite 8's host check in `vite preview`.
+> Fixed in `vite.config.ts` with `preview.allowedHosts: true` (and
+> `server.allowedHosts: true` for dev). Redeploy after pulling that change.
 
 ---
 
