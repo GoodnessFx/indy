@@ -52,7 +52,7 @@ export default function Login() {
       navigate('/dashboard');
     } else {
       setLoading(false);
-      setError('Invalid credentials. Try demo@indysolutions.com / demo');
+      setError('Invalid email or password.');
     }
   };
 
@@ -166,10 +166,6 @@ export default function Login() {
               )}
             </button>
           </form>
-
-          <p className="text-center text-xs text-black/30 mt-6">
-            Demo credentials: <span className="text-black/50 font-mono">demo@indysolutions.com / demo</span>
-          </p>
         </div>
 
         <p className="text-center text-sm text-black/40 mt-8">
