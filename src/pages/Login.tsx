@@ -2,7 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
-import { getActiveProfile, onAuthChange, startGoogleSignIn } from '../lib/googleAuth';
+import { getActiveProfile, onAuthChange, rememberProfile, startGoogleSignIn } from '../lib/googleAuth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -47,13 +47,14 @@ export default function Login() {
     if (!email || !password) { setError('Please fill in all fields.'); return; }
     setLoading(true);
     setError('');
-    await new Promise(r => setTimeout(r, 1200));
-    if (email === 'demo@indysolutions.com' && password === 'demo') {
-      navigate('/dashboard');
-    } else {
-      setLoading(false);
-      setError('Invalid email or password.');
-    }
+    await new Promise(r => setTimeout(r, 800));
+    // Prototype email sign in. There is no password backend yet, so a valid
+    // email and password open a local session. Replace with a real auth call
+    // (for example Supabase signInWithPassword) once the backend is wired.
+    const derived = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
+    rememberProfile({ sub: `local-${Date.now()}`, email, name: derived || 'Investor' });
+    window.dispatchEvent(new Event('indy-auth'));
+    navigate('/dashboard');
   };
 
   return (
