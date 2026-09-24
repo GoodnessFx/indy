@@ -4,6 +4,7 @@ import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, Mes
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { portfolioChartData, mockNFTs, mockStocks, mockInvestments } from '../data/mock';
 import FxCalculator from '../components/FxCalculator';
+import AssetImage from '../components/AssetImage';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -180,9 +181,9 @@ export default function Dashboard() {
                 >
                   {/* Asset info */}
                   <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 ${!holding.image ? 'bg-[#2F6BFF]/10 flex items-center justify-center' : ''}`}>
+                    <div className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 relative ${!holding.image ? 'bg-[#2F6BFF]/10 flex items-center justify-center' : ''}`}>
                       {holding.image ? (
-                        <img src={`https://images.unsplash.com/${holding.image}?w=40&h=40&fit=crop&auto=format`} alt={holding.name} className="w-full h-full object-cover" />
+                        <AssetImage seed={holding.image} label={holding.name} showLabel={false} className="w-full h-full" />
                       ) : (
                         <BarChart2 size={16} className="text-[#2F6BFF]" />
                       )}

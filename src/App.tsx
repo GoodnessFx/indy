@@ -50,7 +50,7 @@ function AppShell() {
   const showNav = !isAdmin && !NO_NAV_ROUTES.some(r => pathname === r);
   const isAuthenticated = AUTH_ROUTES.some(r => pathname.startsWith(r));
   const showFooter = !isAdmin && !NO_FOOTER_ROUTES.some(r => pathname.startsWith(r));
-  const showSupport = !NO_SUPPORT_ROUTES.some(r => pathname.startsWith(r)) && isAuthenticated;
+  const showSupport = !NO_SUPPORT_ROUTES.some(r => pathname.startsWith(r));
 
   return (
     <>

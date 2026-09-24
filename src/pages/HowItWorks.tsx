@@ -1,6 +1,7 @@
 ﻿import { Link } from 'react-router-dom';
 import { ArrowRight, ChevronDown, Check } from 'lucide-react';
 import { useState } from 'react';
+import AssetImage from '../components/AssetImage';
 
 const steps = [
   {
@@ -141,10 +142,10 @@ export default function HowItWorks() {
                 </ul>
               </div>
               <div className={`relative rounded-3xl overflow-hidden ${i % 2 === 1 ? 'lg:col-start-1' : ''}`} style={{ minHeight: '360px' }}>
-                <img
-                  src={`https://images.unsplash.com/${step.image}?w=700&h=500&fit=crop&auto=format`}
-                  alt={step.title}
-                  className="w-full h-full object-cover absolute inset-0"
+                <AssetImage
+                  seed={step.image}
+                  label={step.title}
+                  className="absolute inset-0 w-full h-full"
                 />
                 <div className={`absolute inset-0 ${i % 2 === 0 ? 'bg-gradient-to-br from-transparent to-white/20' : 'bg-gradient-to-br from-transparent to-[#2F6BFF]/20'}`} />
               </div>

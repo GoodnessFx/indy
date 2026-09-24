@@ -2,6 +2,7 @@
 import { ArrowLeft, BadgeCheck, Share2, Heart, TrendingUp } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { allNFTs } from '../data/catalog';
+import AssetImage from '../components/AssetImage';
 
 const priceHistory = [
   { date: 'Mar', price: 1.2 }, { date: 'Apr', price: 1.8 }, { date: 'May', price: 1.4 },
@@ -23,12 +24,8 @@ export default function NFTDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           {/* Artwork */}
           <div>
-            <div className="rounded-3xl overflow-hidden border border-black/8 aspect-square bg-white">
-              <img
-                src={`https://images.unsplash.com/${nft.image}?w=800&h=800&fit=crop&auto=format`}
-                alt={nft.name}
-                className="w-full h-full object-cover"
-              />
+            <div className="rounded-3xl overflow-hidden border border-black/8 aspect-square bg-white relative">
+              <AssetImage seed={nft.image} label={nft.name} verified={nft.verified} className="absolute inset-0 w-full h-full" />
             </div>
             <div className="flex items-center gap-3 mt-4">
               <button className="flex-1 flex items-center justify-center gap-2 btn-ghost py-3 rounded-xl text-sm">

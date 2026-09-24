@@ -95,8 +95,13 @@ export default function Contact() {
                   </div>
                 </div>
               </div>
-              <p className="text-sm text-black/40 mb-4">Start a live chat for immediate assistance. Available during business hours.</p>
-              <button className="btn-primary px-5 py-3 rounded-xl text-sm w-full">Open live chat</button>
+              <p className="text-sm text-black/40 mb-4">Sign in and talk to an agent for immediate assistance. Your account context is carried automatically.</p>
+              <button
+                onClick={() => window.dispatchEvent(new CustomEvent('indy-open-support'))}
+                className="btn-primary px-5 py-3 rounded-xl text-sm w-full"
+              >
+                Talk to an agent
+              </button>
             </div>
 
             {/* Regional offices */}

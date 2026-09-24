@@ -2,6 +2,8 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Zap, Globe, Users, Clock, Star, ChevronRight, Play, Lock, BadgeCheck } from 'lucide-react';
 import TickerStrip from '../components/TickerStrip';
+import AssetImage from '../components/AssetImage';
+import CurrencyCalculator from '../components/CurrencyCalculator';
 
 function useCountUp(target: number, duration = 2000, prefix = '', suffix = '') {
   const [value, setValue] = useState(0);
@@ -130,7 +132,7 @@ export default function Home() {
             style={{ transform: `translateY(${scrollY * 0.3}px)` }}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0B0D]/80 via-[#0A0B0D]/45 to-[#0A0B0D]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0A0B0D]/70 via-[#0A0B0D]/15 to-[#0A0B0D]/80" />
 
         {/* Grid overlay */}
         <div className="absolute inset-0 opacity-10"
@@ -144,7 +146,7 @@ export default function Home() {
 
           <h1 className="font-display font-800 text-5xl md:text-7xl lg:text-8xl text-white leading-[0.95] tracking-tight mb-8">
             Your portfolio<br />
-            <span className="gradient-text">should not look like everyone else's.</span>
+            <span className="text-white">should not look like everyone else's.</span>
           </h1>
           <p className="text-white/60 text-lg md:text-xl font-body max-w-xl mx-auto mb-12 leading-relaxed">
             NFTs, equities, vehicles, and curated private deals, verified, priced, and held in one account, with withdrawals in your own currency.
@@ -196,10 +198,10 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
             {/* Large NFT card */}
             <div className="lg:col-span-3 relative rounded-2xl overflow-hidden group card-hover border border-white/8 bg-[#111318]" style={{ minHeight: '420px' }}>
-              <img
-                src="https://images.unsplash.com/photo-1634193295627-1cdddf751ebf?w=800&h=600&fit=crop&auto=format"
-                alt="NFT artwork"
-                className="absolute inset-0 w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
+              <AssetImage
+                seed="curated-digital-collectibles"
+                label="Curated digital collectibles"
+                className="absolute inset-0 w-full h-full opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] via-[#0A0B0D]/40 to-transparent" />
               <div className="absolute bottom-0 left-0 right-0 p-8">
@@ -215,10 +217,10 @@ export default function Home() {
             {/* Two stacked smaller cards */}
             <div className="lg:col-span-2 flex flex-col gap-4">
               <div className="relative rounded-2xl overflow-hidden group card-hover border border-white/8 bg-[#111318] flex-1" style={{ minHeight: '200px' }}>
-                <img
-                  src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?w=600&h=300&fit=crop&auto=format"
-                  alt="Stock market"
-                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
+                <AssetImage
+                  seed="pillar-stocks"
+                  label="Equities and ETFs"
+                  className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -231,10 +233,10 @@ export default function Home() {
               </div>
 
               <div className="relative rounded-2xl overflow-hidden group card-hover border border-white/8 bg-[#111318] flex-1" style={{ minHeight: '200px' }}>
-                <img
-                  src="https://images.unsplash.com/photo-1486325212027-8081e485255e?w=600&h=300&fit=crop&auto=format"
-                  alt="Real estate investment"
-                  className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
+                <AssetImage
+                  seed="pillar-alternative"
+                  label="Alternative assets"
+                  className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -246,6 +248,24 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Calculator, currency and crypto estimate */}
+      <section className="bg-[#F7F7F5] py-24 px-6">
+        <div className="max-w-[1440px] mx-auto">
+          <div className="max-w-2xl mb-12 mx-auto text-center">
+            <p className="font-mono text-xs text-[#2F6BFF] tracking-widest uppercase mb-3">Convert</p>
+            <h2 className="font-display font-800 text-4xl lg:text-5xl text-[#0A0B0D] leading-tight mb-4">
+              Currency and crypto in one box
+            </h2>
+            <p className="text-black/45 leading-relaxed">
+              Convert between EUR, USD, GBP, and BTC using the same live rates that price your withdrawals. Shown as an estimate because the exact rate locks in when you confirm.
+            </p>
+          </div>
+          <div className="max-w-xl mx-auto">
+            <CurrencyCalculator />
           </div>
         </div>
       </section>
@@ -263,10 +283,10 @@ export default function Home() {
 
           {/* Large card */}
           <div className="relative bg-[#111318] rounded-3xl overflow-hidden mb-6" style={{ minHeight: '440px' }}>
-            <img
-              src={`https://images.unsplash.com/${featuredAssets[activeAsset].image}?w=1200&h=500&fit=crop&auto=format`}
-              alt={featuredAssets[activeAsset].name}
-              className="absolute inset-0 w-full h-full object-cover opacity-70 transition-opacity duration-500"
+            <AssetImage
+              seed={featuredAssets[activeAsset].image}
+              label={featuredAssets[activeAsset].name}
+              className="absolute inset-0 w-full h-full opacity-70 transition-opacity duration-500"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0A0B0D] via-[#0A0B0D]/70 to-transparent" />
             <div className="relative z-10 p-10 lg:p-14 max-w-lg">
@@ -303,7 +323,7 @@ export default function Home() {
                 }`}
                 style={{ width: '180px', height: '100px' }}
               >
-                <img src={`https://images.unsplash.com/${asset.image}?w=200&h=110&fit=crop&auto=format`} alt={asset.name} className="w-full h-full object-cover" />
+                <AssetImage seed={asset.image} label={asset.name} showLabel={false} className="absolute inset-0 w-full h-full" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D]/80 to-transparent" />
                 <div className="absolute bottom-2 left-2 right-2">
                   <p className="text-white text-xs font-medium truncate">{asset.name}</p>

@@ -137,12 +137,12 @@ export const tickerItems = [
 ];
 
 export const languages = [
-  { code: 'en', name: 'English', script: 'English', flag: 'ðŸ‡ºðŸ‡¸' },
-  { code: 'es', name: 'EspaÃ±ol', script: 'EspaÃ±ol', flag: 'ðŸ‡ªðŸ‡¸' },
-  { code: 'fr', name: 'FranÃ§ais', script: 'FranÃ§ais', flag: 'ðŸ‡«ðŸ‡·' },
-  { code: 'pt', name: 'PortuguÃªs', script: 'PortuguÃªs', flag: 'ðŸ‡§ðŸ‡·' },
-  { code: 'de', name: 'Deutsch', script: 'Deutsch', flag: 'ðŸ‡©ðŸ‡ª' },
-  { code: 'ar', name: 'Arabic', script: 'Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©', flag: 'ðŸ‡¦ðŸ‡ª' },
+  { code: 'en', name: 'English', script: 'English', flag: 'EN' },
+  { code: 'es', name: 'Español', script: 'Español', flag: 'ES' },
+  { code: 'fr', name: 'Français', script: 'Français', flag: 'FR' },
+  { code: 'pt', name: 'Português', script: 'Português', flag: 'PT' },
+  { code: 'de', name: 'Deutsch', script: 'Deutsch', flag: 'DE' },
+  { code: 'ar', name: 'Arabic', script: 'العربية', flag: 'AR' },
 ];
 
 export const kycStatuses = {

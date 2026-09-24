@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { BadgeCheck, TrendingUp, Clock } from 'lucide-react';
 import { allInvestments, investmentCategories } from '../data/catalog';
+import AssetImage from '../components/AssetImage';
 
 const categories = investmentCategories;
 
@@ -51,10 +52,10 @@ export default function OtherInvestments() {
               <div className="grid grid-cols-1 md:grid-cols-[360px_1fr] lg:grid-cols-[420px_1fr]">
                 {/* Photo */}
                 <div className="relative overflow-hidden h-52 md:h-auto" style={{ minHeight: '220px' }}>
-                  <img
-                    src={`https://images.unsplash.com/${inv.image}?w=500&h=300&fit=crop&auto=format`}
-                    alt={inv.name}
-                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  <AssetImage
+                    seed={inv.image}
+                    label={inv.name}
+                    className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/60 md:to-white/90" />
                   <div className="absolute top-4 left-4 flex items-center gap-2">

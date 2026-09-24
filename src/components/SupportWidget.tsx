@@ -1,5 +1,7 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAuth } from '../lib/useAuth';
 
 type Tab = 'chat' | 'tickets' | 'help';
 
@@ -10,6 +12,16 @@ export default function SupportWidget() {
   const [helpSearch, setHelpSearch] = useState('');
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [humanRequested, setHumanRequested] = useState(false);
+  const [showingGate, setShowingGate] = useState(false);
+  const { signedIn } = useAuth();
+
+  // Let the Contact page ("Talk to an agent") and any other surface open this
+  // widget without reaching into its internals. The widget applies the gating.
+  useEffect(() => {
+    const openMe = () => setOpen(true);
+    window.addEventListener('indy-open-support', openMe);
+    return () => window.removeEventListener('indy-open-support', openMe);
+  }, []);
 
   const [messages, setMessages] = useState([
     { id: 1, from: 'support', text: 'Hi Marcus! How can we help you today?', time: '09:00' },
@@ -18,7 +30,7 @@ export default function SupportWidget() {
     "Where's my withdrawal?",
     'How do fees work?',
     'Verify my identity',
-    'Talk to a human',
+    'Talk to an agent',
   ]);
 
   const tickets = [
@@ -68,7 +80,7 @@ export default function SupportWidget() {
     setMessages(prev => [...prev, { id: Date.now(), from: 'user', text, time }]);
     setInput('');
 
-    if (text === 'Talk to a human') {
+    if (text === 'Talk to an agent') {
       setHumanRequested(true);
       setTimeout(() => {
         setMessages(prev => [...prev, {
@@ -106,15 +118,43 @@ export default function SupportWidget() {
     <>
       {/* Floating button */}
       <button
-        onClick={() => setOpen(!open)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl btn-primary flex items-center justify-center shadow-2xl glow-pulse"
+        onClick={() => {
+          if (!signedIn) { setShowingGate(!showingGate); setOpen(false); }
+          else { setOpen(!open); setShowingGate(false); }
+        }}
+        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl btn-primary flex items-center justify-center shadow-2xl"
         aria-label="Open support"
       >
-        {open ? <X size={20} /> : <MessageCircle size={20} />}
-        {!open && (
+        {open || showingGate ? <X size={20} /> : <MessageCircle size={20} />}
+        {!open && !showingGate && (
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#EF4444] rounded-full flex items-center justify-center text-[10px] font-bold text-[#0A0B0D]">3</span>
         )}
       </button>
+
+      {/* Sign-in gate, shown before the chat opens (also a mobile sheet) */}
+      {showingGate && !signedIn && (
+        <>
+          <div className="fixed inset-x-0 sm:right-6 bottom-6 z-[60]">
+            <div className="fixed inset-0 bg-black/40 z-[59] sm:hidden" onClick={() => setShowingGate(false)} aria-hidden="true" />
+            <div className="w-[340px] max-w-[calc(100vw-2rem)] mx-auto sm:mx-0 glass rounded-2xl sm:rounded-r-2xl rounded-b-2xl sm:rounded-l-2xl border border-black/8 shadow-2xl slide-up transition-all sm:bottom-6">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-black/8">
+                <span className="text-sm font-semibold text-[#0A0B0D]">Chat with support</span>
+                <button onClick={() => setShowingGate(false)} className="text-black/40 hover:text-black/70"><X size={15} /></button>
+              </div>
+              <div className="px-5 py-7 text-center">
+                <div className="w-12 h-12 rounded-xl bg-[#2F6BFF]/12 flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle size={22} className="text-[#2F6BFF]" />
+                </div>
+                <p className="text-base font-semibold text-[#0A0B0D] mb-1">Sign in to chat with support</p>
+                <p className="text-sm text-black/45 leading-relaxed mb-5">
+                  Your name and account context are carried automatically once you sign in.
+                </p>
+                <Link to="/login" className="btn-primary w-full py-3 rounded-xl text-sm">Sign in</Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Widget panel */}
       {open && (

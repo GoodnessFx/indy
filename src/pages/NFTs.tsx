@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, BadgeCheck, TrendingUp, TrendingDown, X } from 'lucide-react';
 import { allNFTs, nftCollections } from '../data/catalog';
+import AssetImage from '../components/AssetImage';
 
 const sortOptions = ['Trending', 'Price: High', 'Price: Low', 'Recently listed'];
 const collections = nftCollections;
@@ -144,10 +145,10 @@ export default function NFTs() {
                     style={{ marginBottom: '1rem' }}
                   >
                     <div className="relative overflow-hidden" style={{ height: cardHeights[i % cardHeights.length] }}>
-                      <img
-                        src={`https://images.unsplash.com/${nft.image}?w=500&h=${cardHeights[i % cardHeights.length]}&fit=crop&auto=format`}
-                        alt={nft.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      <AssetImage
+                        seed={nft.image}
+                        label={nft.name}
+                        className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#ffffff] to-transparent opacity-60" />
                       {nft.verified && (

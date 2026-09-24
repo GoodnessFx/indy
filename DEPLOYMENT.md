@@ -70,9 +70,40 @@ Notes:
 - Vite inlines env vars **at build time**. After adding/editing them you must
   redeploy (Manual Deploy → *Clear build cache & deploy*).
 
----
+## 2b. Database (`DATABASE_URL`) — backend only
 
-## 3. Supabase (Google provider)
+This repo is currently a **frontend-only SPA** (React + Vite). There is **no application
+backend** in this codebase that reads `process.env.DATABASE_URL`, so there is nowhere
+today that a database connection string is consumed at runtime.
+
+If / when a backend service is added (API, cron, or a DB job runner), wire it like this:
+
+| Key | Value | Required |
+| --- | --- | --- |
+| `DATABASE_URL` | your `postgresql://...` Supabase connection string (pooler) | only for a backend |
+
+Rules:
+- Set it as an environment variable on the **backend** service only. Never put it in a
+  `VITE_*` variable — Vite inlines `VITE_*` into the public browser bundle at build time.
+- Read it from `process.env.DATABASE_URL` in code. Never hardcode it in a file, never
+  commit it. It is a server-side secret.
+- It is already gitignored via `.env` and should never appear in `.env.example`.
+
+### Run the schema migration
+`supabase/schema.sql` creates the `users`, `portfolios`, and `transactions` tables (plus
+others). Run it against your database with the included idempotent runner (reads
+`DATABASE_URL`, safe to re-run):
+
+```bash
+npm i --no-save pg                     # install the Postgres client ad hoc
+DATABASE_URL="postgresql://..." node supabase/migrate.mjs --check   # confirm connectivity
+DATABASE_URL="postgresql://..." node supabase/migrate.mjs           # apply schema.sql
+```
+
+Or paste `supabase/schema.sql` into **Supabase Dashboard → SQL Editor** and run it there
+(the runner is only needed for a non-interactive / CI / backend context).
+
+---
 
 Supabase Dashboard → **Authentication → Providers → Google** → enable, then:
 

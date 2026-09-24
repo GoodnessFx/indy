@@ -1,6 +1,7 @@
 ﻿import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, Clock, Shield, BadgeCheck } from 'lucide-react';
 import { allInvestments } from '../data/catalog';
+import AssetImage from '../components/AssetImage';
 
 export default function InvestmentDetail() {
   const { id } = useParams();
@@ -12,10 +13,10 @@ export default function InvestmentDetail() {
     <div className="min-h-screen bg-[#F7F7F5] pt-20">
       {/* Hero */}
       <div className="relative h-72 lg:h-96 overflow-hidden">
-        <img
-          src={`https://images.unsplash.com/${inv.image}?w=1440&h=500&fit=crop&auto=format`}
-          alt={inv.name}
-          className="w-full h-full object-cover"
+        <AssetImage
+          seed={inv.image}
+          label={inv.name}
+          className="absolute inset-0 w-full h-full"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] via-white/30 to-transparent" />
       </div>
