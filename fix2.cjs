@@ -1,4 +1,41 @@
-import { useState, useEffect } from 'react';
+const fs = require('fs');
+
+// 1. SupportWidget.tsx
+let widget = fs.readFileSync('src/components/SupportWidget.tsx', 'utf8');
+widget = widget.replace(/useEffect\(\(\) => \{\n    const openMe = \(\) => setOpen\(true\);\n    window\.addEventListener\('indy-open-support', openMe\);\n    return \(\) => window\.removeEventListener\('indy-open-support', openMe\);\n  \}, \[\]\);/, `useEffect(() => {
+    const openMe = () => {
+      if (!signedIn) {
+        setShowingGate(true);
+        setOpen(false);
+      } else {
+        setOpen(true);
+        setShowingGate(false);
+      }
+    };
+    window.addEventListener('indy-open-support', openMe);
+    return () => window.removeEventListener('indy-open-support', openMe);
+  }, [signedIn]);`);
+fs.writeFileSync('src/components/SupportWidget.tsx', widget);
+
+// 2. Create fx feed
+fs.writeFileSync('src/lib/fxRates.ts', `export function getFXRate(to: string): number {
+  if (to === 'GBP') return 0.79;
+  if (to === 'EUR') return 0.92;
+  if (to === 'BTC') return 0.000015;
+  if (to === 'USD') return 1;
+  return 1;
+}
+
+export function getFXSymbol(to: string): string {
+  if (to === 'GBP') return '£';
+  if (to === 'EUR') return '€';
+  if (to === 'BTC') return '₿';
+  return '$';
+}
+`);
+
+// 3. Create CurrencyCalculator
+fs.writeFileSync('src/components/CurrencyCalculator.tsx', `import { useState, useEffect } from 'react';
 import { RefreshCw, ArrowRightLeft } from 'lucide-react';
 import { getFXRate } from '../lib/fxRates';
 
@@ -25,7 +62,7 @@ export default function CurrencyCalculator({ compact = false }: { compact?: bool
   const formattedResult = to === 'BTC' ? result.toFixed(6) : result.toFixed(2);
 
   return (
-    <div className={`glass rounded-2xl border border-black/8 ${compact ? 'p-4' : 'p-6 md:p-8'}`}>
+    <div className={\`glass rounded-2xl border border-black/8 \${compact ? 'p-4' : 'p-6 md:p-8'}\`}>
       {!compact && (
         <div className="flex items-center justify-between mb-6">
           <h3 className="font-display font-600 text-xl text-[#0A0B0D]">Live Calculator</h3>
@@ -39,7 +76,7 @@ export default function CurrencyCalculator({ compact = false }: { compact?: bool
         </div>
       )}
       
-      <div className={`flex ${compact ? 'flex-col gap-3' : 'flex-col md:flex-row items-center gap-4'}`}>
+      <div className={\`flex \${compact ? 'flex-col gap-3' : 'flex-col md:flex-row items-center gap-4'}\`}>
         <div className="flex-1 w-full bg-white border border-black/10 rounded-xl p-3 flex items-center gap-3">
           <input 
             type="number" 
@@ -56,7 +93,7 @@ export default function CurrencyCalculator({ compact = false }: { compact?: bool
           </select>
         </div>
         
-        <div className={`flex justify-center ${compact ? '' : 'px-2'}`}>
+        <div className={\`flex justify-center \${compact ? '' : 'px-2'}\`}>
           <button 
             onClick={() => { setFrom(to); setTo(from); }}
             className="w-8 h-8 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors"
@@ -81,3 +118,4 @@ export default function CurrencyCalculator({ compact = false }: { compact?: bool
     </div>
   );
 }
+`);

@@ -2,10 +2,10 @@
 import { ArrowRight } from 'lucide-react';
 
 const team = [
-  { name: 'Elena Vasquez', role: 'CEO & Co-founder', img: 'photo-1531746020798-e6953c6e8e04', bio: 'Former Goldman Sachs VP. Built 3 fintech startups, 2 acquired.' },
-  { name: 'James Osei', role: 'CTO & Co-founder', img: 'photo-1472099645785-5658abf4ff4e', bio: 'Ex-Stripe engineering lead. 12 years in payment infrastructure.' },
-  { name: 'Priya Sharma', role: 'Chief Compliance Officer', img: 'photo-1487412720507-e7ab37603c6f', bio: 'Former FCA regulator. Specialist in cross-border financial regulation.' },
-  { name: 'Luca Ferrari', role: 'Head of Design', img: 'photo-1463453091185-61582044d556', bio: 'Previously Figma and Monzo. Built interfaces for 50M+ users.' },
+  { name: 'Elena Vasquez', role: 'CEO & Co-founder', img: 'asset-1531746020', bio: 'Former Goldman Sachs VP. Built 3 fintech startups, 2 acquired.' },
+  { name: 'James Osei', role: 'CTO & Co-founder', img: 'asset-1472099645', bio: 'Ex-Stripe engineering lead. 12 years in payment infrastructure.' },
+  { name: 'Priya Sharma', role: 'Chief Compliance Officer', img: 'asset-1487412720', bio: 'Former FCA regulator. Specialist in cross-border financial regulation.' },
+  { name: 'Luca Ferrari', role: 'Head of Design', img: 'asset-1463453091', bio: 'Previously Figma and Monzo. Built interfaces for 50M+ users.' },
 ];
 
 const milestones = [
@@ -46,11 +46,7 @@ export default function About() {
               </p>
             </div>
             <div className="relative h-80 lg:h-96">
-              <img
-                src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=700&h=500&fit=crop&auto=format"
-                alt="Team working"
-                className="w-full h-full object-cover rounded-3xl"
-              />
+              <div className="w-full h-full bg-[#0A0B0D]/5 rounded-2xl" />
             </div>
           </div>
         </div>
@@ -83,11 +79,7 @@ export default function About() {
             {team.map(member => (
               <div key={member.name} className="text-center">
                 <div className="relative mb-5">
-                  <img
-                    src={`https://images.unsplash.com/${member.img}?w=200&h=200&fit=crop&crop=face&auto=format`}
-                    alt={member.name}
-                    className="w-full aspect-square object-cover rounded-2xl"
-                  />
+                  <div className="w-full h-full bg-[#0A0B0D]/5 flex items-center justify-center text-[#0A0B0D]/20 text-4xl font-display">{member.name.charAt(0)}</div>
                 </div>
                 <h3 className="font-display font-700 text-base text-[#0A0B0D]">{member.name}</h3>
                 <p className="text-xs text-[#2F6BFF] font-medium mt-1">{member.role}</p>

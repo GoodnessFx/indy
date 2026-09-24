@@ -61,11 +61,7 @@ export default function Login() {
     <div className="min-h-screen bg-[#F7F7F5] flex items-center justify-center px-6 relative overflow-hidden">
       {/* Animated background */}
       <div className="absolute inset-0">
-        <img
-          src="https://images.unsplash.com/photo-1614854262318-831574f15f1f?w=1920&h=1080&fit=crop&auto=format"
-          alt=""
-          className="w-full h-full object-cover opacity-10"
-        />
+        <div className="absolute inset-0 bg-[#0A0B0D]" />
         <div className="absolute inset-0 bg-gradient-to-br from-[#F7F7F5] via-[#0d1020] to-white" />
         {/* Particle dots */}
         {[...Array(12)].map((_, i) => (

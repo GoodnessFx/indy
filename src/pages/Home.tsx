@@ -48,31 +48,31 @@ function StatCounter({ value, label, prefix = '', suffix = '' }: { value: number
 const featuredAssets = [
   {
     id: 1, type: 'NFT', name: 'Quantum Orchid #042', return: '+214%', price: '$14,700',
-    image: 'photo-1634193295627-1cdddf751ebf',
+    image: 'asset-1634193295',
     desc: 'Rare 1-of-10 generative artwork. Verified on-chain provenance.',
     color: '#8B5CF6',
   },
   {
     id: 2, type: 'Stock', name: 'NVDA, NVIDIA Corp.', return: '+38.2%', price: '$875.20',
-    image: 'photo-1518770660439-4636190af475',
+    image: 'asset-1518770660',
     desc: 'AI chip dominance. Surpassed $2T market cap in 2025.',
     color: '#22C55E',
   },
   {
     id: 3, type: 'Investment', name: 'Manhattan Luxury Tower', return: '8.2% p.a.', price: '$18M raised',
-    image: 'photo-1486325212027-8081e485255e',
+    image: 'asset-1486325212',
     desc: 'Fractional real estate in Midtown NYC. REIT-structured.',
     color: '#F59E0B',
   },
   {
     id: 4, type: 'Stock', name: 'ASTS, AST SpaceMobile', return: '+312%', price: '$42.18',
-    image: 'photo-1451187580459-43490279c0fa',
+    image: 'asset-1451187580',
     desc: 'Space-based global broadband. SpaceX launch partner.',
     color: '#2F6BFF',
   },
   {
     id: 5, type: 'Investment', name: 'Gold Reserve Series IV', return: '5.4% p.a.', price: '$4.7M raised',
-    image: 'photo-1610375461369-d613b564f4c4',
+    image: 'asset-1610375461',
     desc: 'Allocated LBMA-certified gold. Swiss vault custody.',
     color: '#F59E0B',
   },
@@ -82,17 +82,17 @@ const testimonials = [
   {
     quote: "IndySolutions made me feel like I had access to a private wealth desk. The interface is unlike anything else in fintech, it just works.",
     name: 'Aisha Okafor', role: 'Portfolio Manager, Lagos',
-    avatar: 'photo-1531123897727-8f129e1688ce',
+    avatar: 'asset-1531123897',
   },
   {
     quote: "I moved from three different apps to IndySolutions in a week. One dashboard for NFTs, stocks, and my real estate fund. Clean, fast, trustworthy.",
     name: 'Henrik Larsson', role: 'Angel Investor, Stockholm',
-    avatar: 'photo-1472099645785-5658abf4ff4e',
+    avatar: 'asset-1472099645',
   },
   {
     quote: "The withdrawal flow is the best I've seen in any financial app. I knew exactly what I'd receive before I confirmed anything.",
     name: 'Priya Nair', role: 'Venture Analyst, Singapore',
-    avatar: 'photo-1531746020798-e6953c6e8e04',
+    avatar: 'asset-1531746020',
   },
 ];
 
@@ -127,7 +127,7 @@ export default function Home() {
         {/* Background */}
         <div className="absolute inset-0">
           <img
-            src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop&auto=format"
+            src="https://images.unsplash.com/asset-1451187580?w=1920&h=1080&fit=crop&auto=format"
             alt="Global markets at night"
             className="w-full h-full object-cover"
             style={{ transform: `translateY(${scrollY * 0.3}px)` }}
@@ -204,7 +204,7 @@ export default function Home() {
                 label="Curated digital collectibles"
                 className="absolute inset-0 w-full h-full opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
               />
-              <div className="absolute inset-0 photo-tint-bottom" />
+              <div className="absolute inset-0 asset-tint-botto" />
               <div className="absolute bottom-0 left-0 right-0 p-8">
                 <span className="chip-accent text-xs px-3 py-1 rounded-full font-mono font-500 mb-3 inline-block">NFTs</span>
                 <h3 className="font-display font-700 text-2xl text-white mb-2">Curated Digital Collectibles</h3>
@@ -223,7 +223,7 @@ export default function Home() {
                   label="Equities and ETFs"
                   className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
-                <div className="absolute inset-0 photo-tint-bottom" />
+                <div className="absolute inset-0 asset-tint-botto" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="chip-gain text-xs px-3 py-1 rounded-full font-mono font-500 mb-2 inline-block">Stocks</span>
                   <h3 className="font-display font-700 text-xl text-white mb-1">Equities & ETFs</h3>
@@ -239,7 +239,7 @@ export default function Home() {
                   label="Alternative assets"
                   className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
-                <div className="absolute inset-0 photo-tint-bottom" />
+                <div className="absolute inset-0 asset-tint-botto" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="chip-warning text-xs px-3 py-1 rounded-full font-mono font-500 mb-2 inline-block">Investments</span>
                   <h3 className="font-display font-700 text-xl text-white mb-1">Alternative Assets</h3>
@@ -254,6 +254,16 @@ export default function Home() {
       </section>
 
       {/* Calculator, currency and crypto estimate */}
+      <section className="bg-[#0A0B0D] py-16 px-6 border-y border-white/5">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-8">
+            <p className="font-mono text-xs text-[#7DA6FF] tracking-widest uppercase mb-3">Live Conversions</p>
+            <h2 className="font-display font-700 text-3xl lg:text-4xl text-white">Currency & Crypto Calculator</h2>
+          </div>
+          <CurrencyCalculator />
+        </div>
+      </section>
+
       <section className="bg-[#F7F7F5] py-24 px-6">
         <div className="max-w-[1440px] mx-auto">
           <div className="max-w-2xl mb-12 mx-auto text-center">
@@ -325,7 +335,7 @@ export default function Home() {
                 style={{ width: '180px', height: '100px' }}
               >
                 <AssetImage seed={asset.image} label={asset.name} showLabel={false} className="absolute inset-0 w-full h-full" />
-                <div className="absolute inset-0 photo-tint-bottom" />
+                <div className="absolute inset-0 asset-tint-botto" />
                 <div className="absolute bottom-2 left-2 right-2">
                   <p className="text-white text-xs font-medium truncate">{asset.name}</p>
                 </div>
@@ -478,11 +488,11 @@ export default function Home() {
             {/* Stylized map */}
             <div className="relative h-64 lg:h-80 bg-[#0d1020] rounded-2xl border border-white/5 overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop&auto=format"
+                src="https://images.unsplash.com/asset-1451187580?w=800&h=400&fit=crop&auto=format"
                 alt="World map"
                 className="absolute inset-0 w-full h-full object-cover opacity-45"
               />
-              <div className="absolute inset-0 photo-tint-bottom" />
+              <div className="absolute inset-0 asset-tint-botto" />
               <div className="absolute inset-0" style={{
                 background: 'radial-gradient(ellipse at 50% 50%, rgba(47,107,255,0.15) 0%, transparent 70%)',
               }} />

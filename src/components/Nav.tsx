@@ -167,7 +167,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                     onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); setLangOpen(false); }}
                     className="flex items-center gap-2 pl-1 pr-3 py-1 rounded-xl bg-black/5 hover:bg-black/10 transition-colors"
                   >
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face" alt="Profile" className="w-7 h-7 rounded-lg object-cover" />
+                    <div className="w-7 h-7 rounded-lg bg-black/10 flex items-center justify-center text-xs font-medium text-black/60">M</div>
                     <span className="text-sm font-medium text-black/80">Marcus</span>
                     <ChevronDown size={12} className={`text-black/40 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
                   </button>

@@ -64,7 +64,7 @@ export default function AdminKYC() {
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4 mb-5">
                       {sub.docs.map((doc, i) => (
                         <div key={i} className="rounded-lg overflow-hidden aspect-video bg-black/5">
-                          <img src={`https://images.unsplash.com/${doc}?w=200&h=120&fit=crop&auto=format`} alt={`Document ${i + 1}`} className="w-full h-full object-cover opacity-80" />
+                          <div className="w-full h-full bg-black/5 flex items-center justify-center text-xs text-black/30">Document Scan</div>
                         </div>
                       ))}
                     </div>

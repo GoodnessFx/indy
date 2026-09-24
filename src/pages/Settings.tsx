@@ -70,7 +70,7 @@ export default function Settings() {
                 {/* Avatar */}
                 <div className="flex items-center gap-5 mb-8">
                   <div className="relative">
-                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Profile" className="w-20 h-20 rounded-2xl object-cover" />
+                    <div className="w-20 h-20 rounded-2xl bg-[#2F6BFF]/20 flex items-center justify-center text-3xl font-medium text-[#2F6BFF]">M</div>
                     <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors">
                       <Upload size={12} className="text-[#0A0B0D]" />
                     </button>

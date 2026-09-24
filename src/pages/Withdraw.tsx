@@ -1,7 +1,8 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Info, AlertCircle, ScanLine, RefreshCw } from 'lucide-react';
 import { getPayoutMethods, type PayoutMethod } from '../lib/payoutMethods';
+import { getFXRate, getFXSymbol } from '../lib/fxRates';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -28,8 +29,8 @@ export default function Withdraw() {
   const selectedSource = sources.find(s => s.id === source) || sources[0];
   const selectedDest = methods.find(a => a.id === destination) || methods[0];
   const amt = parseFloat(amount) || 0;
-  const fxRate = selectedDest.currency === 'GBP' ? 0.79 : 0.92;
-  const fxSymbol = selectedDest.currency === 'GBP' ? 'GBP ' : 'EUR ';
+  const fxRate = getFXRate(selectedDest.currency);
+  const fxSymbol = getFXSymbol(selectedDest.currency);
   const serviceFee = amt * 0.004;
   const taxEstimate = amt * 0.02;
   const net = (amt - serviceFee - taxEstimate) * fxRate;

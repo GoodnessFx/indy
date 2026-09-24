@@ -57,12 +57,12 @@ const pick = <T,>(arr: T[], n: number) => arr[Math.floor(seed(n) * arr.length) %
 // --- NFTs: twelve collections, eighteen pieces each, plus the seed pieces ---
 
 const artImages = [
-  'photo-1634193295627-1cdddf751ebf', 'photo-1618005182384-a83a8bd57fbe',
-  'photo-1558618666-fcd25c85cd64', 'photo-1549317661-bd32c8ce0db2',
-  'photo-1500462918059-b1a0cb512f1d', 'photo-1535016120720-40c646be5580',
-  'photo-1531746020798-e6953c6e8e04', 'photo-1463453091185-61582044d556',
-  'photo-1487412720507-e7ab37603c6f', 'photo-1531123897727-8f129e1688ce',
-  'photo-1518770660439-4636190af475', 'photo-1472099645785-5658abf4ff4e',
+  'asset-1634193295', 'asset-1618005182',
+  'asset-1558618666', 'asset-1549317661',
+  'asset-1500462918', 'asset-1535016120',
+  'asset-1531746020', 'asset-1463453091',
+  'asset-1487412720', 'asset-1531123897',
+  'asset-1518770660', 'asset-1472099645',
 ];
 
 const collections = [
@@ -296,10 +296,10 @@ export const spaceEconomyIds = ['RKLB', 'ASTS', 'SPCE', 'LUNR', 'RDW', 'PL', 'IR
 // --- Alternative investments: 100+ across seven categories ---
 
 const altImages = [
-  'photo-1486325212027-8081e485255e', 'photo-1610375461369-d613b564f4c4',
-  'photo-1559757148-5c350d0d3c56', 'photo-1512453979798-5ea266f8880c',
-  'photo-1532996122724-e3c354a0b15b', 'photo-1454165804606-c3d57bc86b40',
-  'photo-1563013544-824ae1b704d3', 'photo-1526304640581-d334cdbbf45e',
+  'asset-1486325212', 'asset-1610375461',
+  'asset-1559757148', 'asset-1512453979',
+  'asset-1532996122', 'asset-1454165804',
+  'asset-1563013544', 'asset-1526304640',
 ];
 
 const cities = ['Lisbon', 'Austin', 'Rotterdam', 'Nairobi', 'Osaka', 'Toronto', 'Valencia', 'Busan', 'Medellin', 'Helsinki', 'Perth', 'Doha', 'Porto', 'Accra', 'Tallinn', 'Bogota', 'Lyon', 'Sharjah'];

@@ -18,8 +18,8 @@ export default function Dashboard() {
   const [loading] = useState(false);
 
   const holdings = [
-    { id: 'nft-1', type: 'NFT', name: 'Quantum Orchid #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'photo-1634193295627-1cdddf751ebf', status: 'active' },
-    { id: 'nft-2', type: 'NFT', name: 'Void Walker #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'photo-1618005182384-a83a8bd57fbe', status: 'active' },
+    { id: 'nft-1', type: 'NFT', name: 'Quantum Orchid #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'asset-1634193295', status: 'active' },
+    { id: 'nft-2', type: 'NFT', name: 'Void Walker #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'asset-1618005182', status: 'active' },
     { id: 'NVDA', type: 'Stock', name: 'NVDA, NVIDIA Corp.', value: 4376, cost: 3160, gain: 1216, gainPct: 38.5, image: null, status: 'active' },
     { id: 'ASTS', type: 'Stock', name: 'ASTS, AST SpaceMobile', value: 2109, cost: 1750, gain: 359, gainPct: 20.5, image: null, status: 'active' },
     { id: 'inv-1', type: 'Other', name: 'Manhattan Luxury Tower', value: 5200, cost: 5000, gain: 200, gainPct: 4.0, image: null, status: 'active' },
