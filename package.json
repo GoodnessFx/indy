@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "vite preview",
     "format": "oxfmt"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@solana/web3.js": "^1.99.0",
