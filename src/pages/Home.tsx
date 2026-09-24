@@ -4,6 +4,7 @@ import { ArrowRight, TrendingUp, Shield, Zap, Globe, Users, Clock, Star, Chevron
 import TickerStrip from '../components/TickerStrip';
 import AssetImage from '../components/AssetImage';
 import CurrencyCalculator from '../components/CurrencyCalculator';
+import { languages } from '../data/mock';
 
 function useCountUp(target: number, duration = 2000, prefix = '', suffix = '') {
   const [value, setValue] = useState(0);
@@ -203,7 +204,7 @@ export default function Home() {
                 label="Curated digital collectibles"
                 className="absolute inset-0 w-full h-full opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] via-[#0A0B0D]/40 to-transparent" />
+              <div className="absolute inset-0 photo-tint-bottom" />
               <div className="absolute bottom-0 left-0 right-0 p-8">
                 <span className="chip-accent text-xs px-3 py-1 rounded-full font-mono font-500 mb-3 inline-block">NFTs</span>
                 <h3 className="font-display font-700 text-2xl text-white mb-2">Curated Digital Collectibles</h3>
@@ -222,7 +223,7 @@ export default function Home() {
                   label="Equities and ETFs"
                   className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] to-transparent" />
+                <div className="absolute inset-0 photo-tint-bottom" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="chip-gain text-xs px-3 py-1 rounded-full font-mono font-500 mb-2 inline-block">Stocks</span>
                   <h3 className="font-display font-700 text-xl text-white mb-1">Equities & ETFs</h3>
@@ -238,7 +239,7 @@ export default function Home() {
                   label="Alternative assets"
                   className="absolute inset-0 w-full h-full opacity-60 group-hover:opacity-80 group-hover:scale-105 transition-all duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D] to-transparent" />
+                <div className="absolute inset-0 photo-tint-bottom" />
                 <div className="absolute bottom-0 left-0 right-0 p-6">
                   <span className="chip-warning text-xs px-3 py-1 rounded-full font-mono font-500 mb-2 inline-block">Investments</span>
                   <h3 className="font-display font-700 text-xl text-white mb-1">Alternative Assets</h3>
@@ -324,7 +325,7 @@ export default function Home() {
                 style={{ width: '180px', height: '100px' }}
               >
                 <AssetImage seed={asset.image} label={asset.name} showLabel={false} className="absolute inset-0 w-full h-full" />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D]/80 to-transparent" />
+                <div className="absolute inset-0 photo-tint-bottom" />
                 <div className="absolute bottom-2 left-2 right-2">
                   <p className="text-white text-xs font-medium truncate">{asset.name}</p>
                 </div>
@@ -464,10 +465,11 @@ export default function Home() {
               <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-sm">
                 From Lagos to Singapore, Dubai to Sao Paulo, IndySolutions is built for a world that doesn't stop at borders.
               </p>
-              <div className="grid grid-cols-3 gap-3">
-                {['English', 'Espanol', 'Francais', 'Portugues', 'Deutsch', 'AR'].map(lang => (
-                  <div key={lang} className="px-3 py-2.5 rounded-xl border border-white/8 text-xs text-white/50 text-center">
-                    {lang}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {languages.map(lang => (
+                  <div key={lang.code} className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-white/8 text-xs text-white/50">
+                    <Globe size={13} className="text-[#2F6BFF]" />
+                    <span>{lang.script}</span>
                   </div>
                 ))}
               </div>
@@ -478,8 +480,9 @@ export default function Home() {
               <img
                 src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop&auto=format"
                 alt="World map"
-                className="absolute inset-0 w-full h-full object-cover opacity-30"
+                className="absolute inset-0 w-full h-full object-cover opacity-45"
               />
+              <div className="absolute inset-0 photo-tint-bottom" />
               <div className="absolute inset-0" style={{
                 background: 'radial-gradient(ellipse at 50% 50%, rgba(47,107,255,0.15) 0%, transparent 70%)',
               }} />

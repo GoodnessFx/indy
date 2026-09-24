@@ -18,7 +18,7 @@ export default function InvestmentDetail() {
           label={inv.name}
           className="absolute inset-0 w-full h-full"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#F7F7F5] via-white/30 to-transparent" />
+        <div className="absolute inset-0 photo-tint-bottom" />
       </div>
 
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12 -mt-8 relative z-10">

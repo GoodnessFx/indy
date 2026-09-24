@@ -13,7 +13,8 @@ export default function SupportWidget() {
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [humanRequested, setHumanRequested] = useState(false);
   const [showingGate, setShowingGate] = useState(false);
-  const { signedIn } = useAuth();
+  const { signedIn, profile } = useAuth();
+  const firstName = (profile?.given_name || profile?.name || '').split(' ')[0];
 
   // Let the Contact page ("Talk to an agent") and any other surface open this
   // widget without reaching into its internals. The widget applies the gating.
@@ -24,7 +25,7 @@ export default function SupportWidget() {
   }, []);
 
   const [messages, setMessages] = useState([
-    { id: 1, from: 'support', text: 'Hi Marcus! How can we help you today?', time: '09:00' },
+    { id: 1, from: 'support', text: firstName ? `Hi ${firstName}, how can we help you today?` : 'Hi, how can we help you today?', time: '09:00' },
   ]);
   const [quickReplies] = useState([
     "Where's my withdrawal?",
@@ -160,16 +161,18 @@ export default function SupportWidget() {
       {open && (
         <div className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] glass rounded-2xl border border-black/8 shadow-2xl overflow-hidden slide-in-right flex flex-col" style={{ maxHeight: '520px' }}>
           {/* Header */}
-          <div className="px-4 py-3 border-b border-black/8 flex items-center justify-between bg-gradient-to-r from-[#ffffff] to-[#0d1020]">
+          <div className="px-4 py-3 border-b border-black/8 flex items-center justify-between bg-white">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-[#2F6BFF] flex items-center justify-center">
-                <MessageCircle size={14} className="text-[#0A0B0D]" />
+                <MessageCircle size={14} className="text-white" />
               </div>
               <div>
                 <p className="font-display font-600 text-sm text-[#0A0B0D]">IndySolutions Support</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
-                  <span className="text-[10px] text-black/40">Online, Avg. reply 3 min</span>
+                  <span className="text-[10px] text-black/40">
+                    {firstName ? `Signed in as ${firstName}` : 'Online, Avg. reply 3 min'}
+                  </span>
                 </div>
               </div>
             </div>

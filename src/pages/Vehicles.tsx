@@ -47,7 +47,7 @@ export default function Vehicles() {
           className="absolute inset-0 w-full h-full object-cover fade-in-up"
           loading="eager"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A0B0D]/80 via-[#0A0B0D]/15 to-transparent" />
+        <div className="absolute inset-0 photo-tint-bottom" />
 
         <div className="relative max-w-[1440px] mx-auto px-6 lg:px-12 w-full pb-12 lg:pb-16 pt-40">
           <p className="font-mono text-xs text-[#7DA6FF] tracking-widest uppercase mb-4 fade-in-up">Vehicle-Backed Fleet</p>

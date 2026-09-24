@@ -1,6 +1,8 @@
 ﻿import { useState } from 'react';
-import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff } from 'lucide-react';
+import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff, Globe, QrCode, ScanLine } from 'lucide-react';
 import { languages } from '../data/mock';
+import ScanCardModal from '../components/ScanCardModal';
+import { getPayoutMethods, removePayoutMethod, type PayoutMethod } from '../lib/payoutMethods';
 
 type Tab = 'profile' | 'security' | 'preferences' | 'payments' | 'verification' | 'danger';
 
@@ -25,6 +27,8 @@ export default function Settings() {
   const [currency, setCurrency] = useState('USD');
   const [language, setLanguage] = useState('en');
   const [savedProfile, setSavedProfile] = useState(false);
+  const [methods, setMethods] = useState<PayoutMethod[]>(() => getPayoutMethods());
+  const [scanOpen, setScanOpen] = useState(false);
 
   const saveProfile = () => { setSavedProfile(true); setTimeout(() => setSavedProfile(false), 2000); };
 
@@ -223,7 +227,7 @@ export default function Settings() {
                           className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm transition-colors ${
                             language === lang.code ? 'bg-[#2F6BFF]/15 text-[#2F6BFF] border border-[#2F6BFF]/30' : 'bg-black/5 text-black/50 border border-transparent hover:text-black hover:bg-black/10'
                           }`}>
-                          <span>{lang.flag}</span>
+                          <Globe size={13} className="text-black/30" />
                           <span>{lang.script}</span>
                         </button>
                       ))}
@@ -261,11 +265,8 @@ export default function Settings() {
               <div>
                 <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Payment Methods</h2>
                 <div className="space-y-3 mb-6">
-                  {[
-                    { label: 'Barclays Business', last4: '4521', type: 'bank', currency: 'GBP', default: true },
-                    { label: 'Revolut Debit', last4: '8834', type: 'card', currency: 'EUR', default: false },
-                  ].map(acc => (
-                    <div key={acc.label} className="flex items-center justify-between p-4 rounded-xl border border-black/8 bg-black/3">
+                  {methods.map(acc => (
+                    <div key={acc.id} className="flex items-center justify-between p-4 rounded-xl border border-black/8 bg-black/3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-black/5 flex items-center justify-center">
                           <CreditCard size={16} className="text-black/40" />
@@ -276,15 +277,26 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        {acc.default && <span className="text-xs chip-accent px-2.5 py-1 rounded-full">Default</span>}
-                        <button className="text-xs text-[#EF4444]/60 hover:text-[#EF4444] transition-colors">Remove</button>
+                        {acc.isDefault && <span className="text-xs chip-accent px-2.5 py-1 rounded-full">Default</span>}
+                        <button
+                          onClick={() => { removePayoutMethod(acc.id); setMethods(getPayoutMethods()); }}
+                          className="text-xs text-[#EF4444]/60 hover:text-[#EF4444] transition-colors"
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
                   ))}
                 </div>
-                <button className="flex items-center gap-2 border border-dashed border-black/15 rounded-xl px-5 py-3 text-sm text-black/40 hover:text-black/70 hover:border-black/30 transition-colors">
-                  + Add payment method
+                <button
+                  onClick={() => setScanOpen(true)}
+                  className="flex items-center gap-2 border border-dashed border-black/15 rounded-xl px-5 py-3 text-sm text-black/40 hover:text-black/70 hover:border-black/30 transition-colors"
+                >
+                  <ScanLine size={15} /> Scan or add a card
                 </button>
+                <p className="text-xs text-black/30 mt-3 leading-relaxed">
+                  Cards added here are available to select when you withdraw, so you do not need to rescan each time.
+                </p>
               </div>
             )}
 
@@ -351,6 +363,12 @@ export default function Settings() {
           </div>
         </div>
       </div>
+      {scanOpen && (
+        <ScanCardModal
+          onClose={() => setScanOpen(false)}
+          onSaved={() => { setMethods(getPayoutMethods()); setScanOpen(false); }}
+        />
+      )}
     </div>
   );
 }

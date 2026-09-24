@@ -57,7 +57,7 @@ export default function OtherInvestments() {
                     label={inv.name}
                     className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/60 md:to-white/90" />
+                  <div className="absolute inset-0 photo-tint-side" />
                   <div className="absolute top-4 left-4 flex items-center gap-2">
                     <span className="text-xs px-2.5 py-1 rounded-full bg-[#F59E0B]/20 text-[#F59E0B] font-medium">{inv.category}</span>
                     {inv.verified && (

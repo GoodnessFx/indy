@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Check, Info, AlertCircle, ScanLine, RefreshCw } from 'lucide-react';
+import { getPayoutMethods, type PayoutMethod } from '../lib/payoutMethods';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -12,15 +13,12 @@ const sources = [
   { id: 'other', label: 'Other Investments', balance: 7300 },
 ];
 
-const accounts = [
-  { id: 'barclays', label: 'Barclays', last4: '4521', type: 'bank', currency: 'GBP' },
-  { id: 'revolut', label: 'Revolut Debit', last4: '8834', type: 'card', currency: 'EUR' },
-];
-
 export default function Withdraw() {
   const [step, setStep] = useState<Step>(1);
   const [source, setSource] = useState('nft');
   const [amount, setAmount] = useState('3200');
+  // Destinations include any cards saved ahead of time in Settings.
+  const [methods] = useState<PayoutMethod[]>(() => getPayoutMethods());
   const [destination, setDestination] = useState('barclays');
   const [scanProgress, setScanProgress] = useState(0);
   const [scanComplete, setScanComplete] = useState(false);
@@ -28,7 +26,7 @@ export default function Withdraw() {
   const [failed] = useState(false);
 
   const selectedSource = sources.find(s => s.id === source) || sources[0];
-  const selectedDest = accounts.find(a => a.id === destination) || accounts[0];
+  const selectedDest = methods.find(a => a.id === destination) || methods[0];
   const amt = parseFloat(amount) || 0;
   const fxRate = selectedDest.currency === 'GBP' ? 0.79 : 0.92;
   const fxSymbol = selectedDest.currency === 'GBP' ? 'GBP ' : 'EUR ';
@@ -157,7 +155,7 @@ export default function Withdraw() {
               <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">Select destination</h2>
               <p className="text-sm text-black/40 mb-6">IndySolutions securely routes your withdrawal to your bank via our licensed payment partner.</p>
               <div className="space-y-3">
-                {accounts.map(acc => (
+                {methods.map(acc => (
                   <button key={acc.id} onClick={() => setDestination(acc.id)}
                     className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
                       destination === acc.id ? 'border-[#2F6BFF] bg-[#2F6BFF]/5' : 'border-black/8 hover:border-black/20'

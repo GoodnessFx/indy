@@ -117,7 +117,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                         currentLang.code === lang.code ? 'text-[#2F6BFF]' : 'text-black/80'
                       }`}
                     >
-                      <span>{lang.flag}</span>
+                      <Globe size={13} className="text-black/30" />
                       <span>{lang.script}</span>
                     </button>
                   ))}

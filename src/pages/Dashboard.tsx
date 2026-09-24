@@ -5,6 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { portfolioChartData, mockNFTs, mockStocks, mockInvestments } from '../data/mock';
 import FxCalculator from '../components/FxCalculator';
 import AssetImage from '../components/AssetImage';
+import CurrencyCalculator from '../components/CurrencyCalculator';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -287,6 +288,11 @@ export default function Dashboard() {
             </div>
             <p className="text-xs text-black/30 leading-relaxed">Live FX rates with full fee breakdown before you confirm.</p>
           </Link>
+        </div>
+
+        {/* Currency and crypto calculator widget, same shared live rate feed */}
+        <div className="mt-6">
+          <CurrencyCalculator compact />
         </div>
       </div>
     </div>
