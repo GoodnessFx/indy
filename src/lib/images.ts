@@ -55,7 +55,8 @@ export const PHOTOS = {
   'how-fund': U("photo-1556742049-0cfed4f6a45d"),
   'how-invest': U("photo-1611974789855-9c2a0a7236a3"),
   'how-withdraw': U("photo-1526304640581-d334cdbbf45e"),
-  // Testimonial avatars.
+  // Card payment surface for scanned-card previews in the admin console.
+  card: U("photo-1556742049-0cfed4f6a45d"),
   'avatar-1': U("photo-1494790108377-be9c29b29330", 400),
   'avatar-2': U("photo-1507003211169-0a1dd7228f2d", 400),
   'avatar-3': U("photo-1438761681033-6461ffad8d80", 400),

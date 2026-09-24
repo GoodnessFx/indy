@@ -150,7 +150,7 @@ export default function SupportWidget() {
                 <p className="text-sm text-black/45 leading-relaxed mb-5">
                   Your name and account context are carried automatically once you sign in.
                 </p>
-                <Link to="/login" className="btn-primary w-full py-3 rounded-xl text-sm">Sign in</Link>
+                <Link to="/login" className="btn-primary w-full py-3 rounded-xl text-sm block text-center">Sign in</Link>
               </div>
             </div>
           </div>
@@ -167,7 +167,7 @@ export default function SupportWidget() {
                 <MessageCircle size={14} className="text-white" />
               </div>
               <div>
-                <p className="font-display font-600 text-sm text-[#0A0B0D]">IndySolutions Support</p>
+                <p className="font-display font-600 text-sm text-[#0A0B0D]">Indy Digital Marketing Solutions Support</p>
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
                   <span className="text-[10px] text-black/40">

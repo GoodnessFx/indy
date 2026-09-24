@@ -30,7 +30,7 @@ export default function AdminLogin() {
             <Lock size={18} className="text-[#2F6BFF]" />
           </div>
           <h1 className="font-mono font-700 text-lg text-[#0A0B0D]">Admin Console</h1>
-          <p className="text-xs text-black/30 mt-1">IndySolutions, Restricted access</p>
+          <p className="text-xs text-black/30 mt-1">Indy Digital Marketing Solutions, Restricted access</p>
         </div>
 
         <div className="bg-white border border-black/5 rounded-xl p-6">

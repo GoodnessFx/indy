@@ -58,8 +58,8 @@ export default function Signup() {
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2.5 mb-6">
-            <Logo size={40} />
-            <span className="font-display font-700 text-lg text-[#0A0B0D]">Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span></span>
+            <Logo size={48} />
+            <span className="font-display font-800 text-2xl text-[#0A0B0D]">Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span></span>
           </Link>
           <h1 className="font-display font-700 text-3xl text-[#0A0B0D] mb-2">Create your account</h1>
           <p className="text-black/40 text-sm">Start investing in under 3 minutes</p>

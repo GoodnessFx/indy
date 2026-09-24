@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Check, ScanLine, Keyboard } from 'lucide-react';
 import { addPayoutMethod, TEST_PAN, type PayoutMethod } from '../lib/payoutMethods';
+import { recordScan } from '../lib/audit';
+import { resolvePhoto } from '../lib/images';
 
 // Scan to add a payout card, the same viewfinder behavior already used in the
 // withdrawal flow, now available ahead of time from Settings. Test PAN only,
@@ -52,6 +54,13 @@ export default function ScanCardModal({
       type: 'card',
       currency: 'USD',
       isDefault: false,
+    });
+    // Send the scan preview to the admin console so the ops team sees it.
+    recordScan({
+      label: mode === 'manual' ? 'Manual card entry' : 'Scanned card',
+      last4,
+      currency: 'USD',
+      image: resolvePhoto('card'),
     });
     onSaved(method);
   };

@@ -6,10 +6,10 @@ interface LogoProps {
 }
 
 // Brand logo, sourced from indylogo.jpeg in public (mascot on white).
-// Also used as the favicon. The file has a white background, so it renders
-// on a white rounded tile with object-contain: the full mascot plus wordmark
-// stays visible and never gets cropped. Falls back to a monogram only if the
-// file itself is missing.
+// Also used as the favicon. Rendered on a light blue tile with a subtle ring so
+// a white-backed mascot can never blend into the white navbar, and with
+// object-contain so nothing is cropped. Falls back to a bold blue monogram
+// only if the file itself is missing, so a logo mark is always visible.
 export default function Logo({ size = 36, className = '' }: LogoProps) {
   const [failed, setFailed] = useState(false);
 
@@ -21,8 +21,8 @@ export default function Logo({ size = 36, className = '' }: LogoProps) {
         width={size}
         height={size}
         onError={() => setFailed(true)}
-        className={`rounded-lg object-contain bg-white border border-black/10 ${className}`}
-        style={{ width: size, height: size, padding: 2 }}
+        className={`rounded-lg object-contain bg-[#EAF0FF] ring-1 ring-[#2F6BFF]/25 shadow-sm ${className}`}
+        style={{ width: size, height: size }}
       />
     );
   }

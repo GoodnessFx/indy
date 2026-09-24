@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 import { getActiveProfile, onAuthChange, rememberProfile, startGoogleSignIn } from '../lib/googleAuth';
+import { recordLogin } from '../lib/audit';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -35,7 +36,10 @@ export default function Login() {
     try {
       const profile = await startGoogleSignIn('/dashboard');
       // null means the browser is being redirected to Google (Supabase flow).
-      if (profile) navigate('/dashboard');
+      if (profile) {
+        recordLogin('google', profile.email, profile.name);
+        navigate('/dashboard');
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Google sign-in failed. Try again.');
       setGoogleLoading(false);
@@ -53,6 +57,7 @@ export default function Login() {
     // (for example Supabase signInWithPassword) once the backend is wired.
     const derived = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
     rememberProfile({ sub: `local-${Date.now()}`, email, name: derived || 'Investor' });
+    recordLogin('email', email, derived || 'Investor');
     window.dispatchEvent(new Event('indy-auth'));
     navigate('/dashboard');
   };
@@ -82,8 +87,8 @@ export default function Login() {
         {/* Logo */}
         <div className="text-center mb-10">
           <Link to="/" className="inline-flex items-center gap-2.5 mb-8">
-            <Logo size={40} />
-            <span className="font-display font-700 text-xl text-[#0A0B0D]">Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span></span>
+            <Logo size={48} />
+            <span className="font-display font-800 text-2xl text-[#0A0B0D]">Indy <span className="text-[#2F6BFF]">Digital Marketing Solutions</span></span>
           </Link>
           <h1 className="font-display font-700 text-3xl text-[#0A0B0D] mb-2">Welcome back</h1>
           <p className="text-black/40 text-sm">Sign in to your portfolio</p>

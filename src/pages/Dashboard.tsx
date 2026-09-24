@@ -2,12 +2,13 @@
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw, PieChart, BellRing, Receipt } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { portfolioChartData, mockNFTs, mockStocks, mockInvestments } from '../data/mock';
+import { portfolioChartData } from '../data/mock';
 import AssetImage from '../components/AssetImage';
 import CurrencyCalculator from '../components/CurrencyCalculator';
 import WatchlistPanel from '../components/WatchlistPanel';
 import { myOrders, type InvestmentOrder } from '../lib/orders';
 import { useOrdersSync } from '../lib/useOrdersSync';
+import { useAuth } from '../lib/useAuth';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -19,6 +20,8 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('1M');
   const [loading] = useState(false);
   const [orders] = useOrdersSync<InvestmentOrder[]>(() => myOrders());
+  const { profile } = useAuth();
+  const firstName = (profile?.given_name || profile?.name || 'Investor').split(' ')[0];
 
   const orderHoldings = orders.map(o => ({
     id: o.id,
@@ -32,15 +35,10 @@ export default function Dashboard() {
     status: o.status,
   }));
 
-  const holdings = [
-    { id: 'nft-1', type: 'NFT', name: 'Chromatic Tide #042', value: 14700, cost: 4700, gain: 10000, gainPct: 212.8, image: 'art-tide', status: 'active' },
-    { id: 'nft-2', type: 'NFT', name: 'Ember Passage #009', value: 6300, cost: 7200, gain: -900, gainPct: -12.5, image: 'art-ember', status: 'active' },
-    { id: 'NVDA', type: 'Stock', name: 'NVDA, NVIDIA Corp.', value: 4376, cost: 3160, gain: 1216, gainPct: 38.5, image: null, status: 'active' },
-    { id: 'ASTS', type: 'Stock', name: 'ASTS, AST SpaceMobile', value: 2109, cost: 1750, gain: 359, gainPct: 20.5, image: null, status: 'active' },
-    { id: 'inv-1', type: 'Other', name: 'Manhattan Luxury Tower', value: 5200, cost: 5000, gain: 200, gainPct: 4.0, image: null, status: 'active' },
-    { id: 'inv-2', type: 'Other', name: 'Gold Reserve Series IV', value: 2100, cost: 2000, gain: 100, gainPct: 5.0, image: null, status: 'active' },
-    ...orderHoldings,
-  ];
+  // New accounts start flat. Holdings only appear once a client places and
+  // pays for an investment, so there is never preloaded demo balance shown to
+  // a real user.
+  const holdings = orderHoldings;
 
   const filtered = segment === 'All' ? holdings : holdings.filter(h => {
     if (segment === 'NFTs') return h.type === 'NFT';
@@ -65,7 +63,7 @@ export default function Dashboard() {
         {/* Header */}
         <div className="flex items-start justify-between mb-10 flex-col md:flex-row gap-6">
           <div>
-            <p className="text-black/40 text-sm mb-2">Good morning, Marcus</p>
+            <p className="text-black/40 text-sm mb-2">Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {firstName}</p>
             <div className="flex items-end gap-4">
               <div>
                 <p className="text-xs text-black/30 mb-1 font-mono">TOTAL PORTFOLIO VALUE</p>
@@ -115,7 +113,26 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Empty state for new accounts */}
+        {totalBalance === 0 && (
+          <div className="glass rounded-2xl border border-black/8 p-8 mb-8 text-center">
+            <div className="w-12 h-12 rounded-xl bg-[#2F6BFF]/12 flex items-center justify-center mx-auto mb-4">
+              <Wallet size={22} className="text-[#2F6BFF]" />
+            </div>
+            <h3 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">Your portfolio is ready to build</h3>
+            <p className="text-sm text-black/45 max-w-md mx-auto leading-relaxed mb-6">
+              Nothing is loaded until you add it, which keeps your balance accurate from the start. Make your first
+              investment, add a payout card, or deposit and it will appear here.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link to="/nfts" className="btn-primary px-5 py-2.5 rounded-xl text-sm">Browse investments</Link>
+              <Link to="/settings" className="btn-ghost px-5 py-2.5 rounded-xl text-sm">Add a payment method</Link>
+            </div>
+          </div>
+        )}
+
         {/* Performance chart */}
+        {totalBalance > 0 && (
         <div className="glass rounded-2xl border border-black/8 p-6 mb-8">
           <div className="flex items-center justify-between mb-6 flex-col sm:flex-row gap-4">
             <h3 className="font-display font-600 text-lg text-[#0A0B0D]">Portfolio Performance</h3>
@@ -148,6 +165,7 @@ export default function Dashboard() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+        )}
 
         {/* Holdings */}
         <div className="glass rounded-2xl border border-black/8 overflow-hidden">
