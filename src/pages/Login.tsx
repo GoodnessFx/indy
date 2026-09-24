@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
+import { signInWithGooglePopup } from '../lib/googleAuth';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -9,7 +10,23 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleGoogle = async () => {
+    setError('');
+    setGoogleLoading(true);
+    try {
+      const profile = await signInWithGooglePopup();
+      localStorage.setItem('indy_user_email', profile.email);
+      localStorage.setItem('indy_user_name', profile.name);
+      navigate('/dashboard');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Google sign-in failed. Try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,15 +81,19 @@ export default function Login() {
         <div className="glass rounded-2xl border border-black/8 p-8">
           {/* SSO */}
           <div className="grid grid-cols-2 gap-3 mb-6">
-            {[
-              { label: 'Google', icon: 'G' },
-              { label: 'Apple', icon: '' },
-            ].map(sso => (
-              <button key={sso.label} className="btn-ghost px-4 py-3 rounded-xl text-sm flex items-center justify-center gap-2 font-medium">
-                <span className="font-mono text-xs">{sso.icon}</span>
-                Continue with {sso.label}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={handleGoogle}
+              disabled={googleLoading}
+              className="btn-ghost px-4 py-3 rounded-xl text-sm flex items-center justify-center gap-2 font-medium disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <span className="font-mono text-xs">G</span>
+              {googleLoading ? 'Connecting…' : 'Continue with Google'}
+            </button>
+            <button type="button" className="btn-ghost px-4 py-3 rounded-xl text-sm flex items-center justify-center gap-2 font-medium">
+              <span className="font-mono text-xs"></span>
+              Continue with Apple
+            </button>
           </div>
 
           <div className="flex items-center gap-3 mb-6">

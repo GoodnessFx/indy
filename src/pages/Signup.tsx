@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, ArrowRight, ArrowLeft, Check, Upload, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
+import { signInWithGooglePopup } from '../lib/googleAuth';
 
 type Step = 1 | 2 | 3;
 
@@ -12,7 +13,27 @@ const countries = ['United States', 'United Kingdom', 'Germany', 'France', 'Braz
 export default function Signup() {
   const [step, setStep] = useState<Step>(1);
   const [showPw, setShowPw] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleError, setGoogleError] = useState('');
   const navigate = useNavigate();
+
+  const handleGoogle = async () => {
+    setGoogleError('');
+    setGoogleLoading(true);
+    try {
+      const profile = await signInWithGooglePopup();
+      if (profile.email) update('email', profile.email);
+      if (profile.given_name) update('firstName', profile.given_name);
+      if (profile.family_name) update('lastName', profile.family_name);
+      localStorage.setItem('indy_user_email', profile.email);
+      localStorage.setItem('indy_user_name', profile.name);
+      setStep(2);
+    } catch (e) {
+      setGoogleError(e instanceof Error ? e.message : 'Google sign-in failed. Try again.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const [form, setForm] = useState({
     email: '', phone: '', password: '',
@@ -71,13 +92,21 @@ export default function Signup() {
             <div className="space-y-4">
               <h2 className="font-display font-600 text-lg text-[#0A0B0D] mb-6">Account details</h2>
               <div className="grid grid-cols-2 gap-3">
-                <button className="btn-ghost py-3 rounded-xl text-sm flex items-center justify-center gap-2">
-                  <span className="font-mono text-xs">G</span> Google
+                <button
+                  type="button"
+                  onClick={handleGoogle}
+                  disabled={googleLoading}
+                  className="btn-ghost py-3 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <span className="font-mono text-xs">G</span> {googleLoading ? 'Connecting…' : 'Google'}
                 </button>
-                <button className="btn-ghost py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+                <button type="button" className="btn-ghost py-3 rounded-xl text-sm flex items-center justify-center gap-2">
                   Apple
                 </button>
               </div>
+              {googleError && (
+                <p className="text-xs text-[#EF4444] bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-xl px-4 py-3">{googleError}</p>
+              )}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-black/8" />
                 <span className="text-xs text-black/30">or</span>
