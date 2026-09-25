@@ -50,9 +50,9 @@ function StatCounter({ value, label, prefix = '', suffix = '' }: { value: number
 
 const featuredAssets = [
   {
-    id: 1, type: 'NFT', name: 'Chromatic Tide #042', return: '+214%', price: '$14,700',
-    image: 'feat-nft',
-    desc: 'Rare 1-of-10 generative artwork. Verified on-chain provenance.',
+    id: 1, type: 'NFT', name: 'Mona Lisa, Restored Study', return: '+214%', price: '$14,700',
+    image: 'art-tide',
+    desc: 'Museum-grade scan of the Leonardo portrait, limited to ten editions.',
     color: '#8B5CF6',
   },
   {

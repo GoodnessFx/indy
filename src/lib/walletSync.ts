@@ -267,3 +267,61 @@ export function walletAddressShort(): string {
   const w = getConnectedWallet();
   return w ? shortAddr(w.address) : "";
 }
+
+// --- Admin visibility: every wallet sync is reported to the console ---
+
+export interface WalletPing {
+  id: string;
+  account: string;
+  address: string;
+  label: string;
+  chain: string;
+  source: string;
+  nfts: { name: string; collection: string; image: string | null; tokenType: string; tokenId: string }[];
+  activityCount: number;
+  nativeBalanceEth: number;
+  at: string;
+}
+
+const ADMIN_PING_KEY = "indy_admin_wallet_feed";
+
+export function adminWalletPings(): WalletPing[] {
+  try {
+    const raw = localStorage.getItem(ADMIN_PING_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as WalletPing[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Reports a completed sync so the admin console sees the wallet and its NFTs. */
+export function recordWalletSync(sync: WalletSync): WalletPing {
+  const wallet = getConnectedWallet();
+  const profile = getStoredGoogleUser();
+  const ping: WalletPing = {
+    id: `wp-${Date.now().toString(36)}`,
+    account: profile?.email ?? profile?.name ?? "Unknown client",
+    address: sync.address,
+    label: wallet?.label ?? "Wallet",
+    chain: sync.chain,
+    source: sync.source,
+    nfts: sync.nfts.map(n => ({
+      name: n.name,
+      collection: n.collection,
+      image: n.image,
+      tokenType: n.tokenType,
+      tokenId: n.tokenId,
+    })),
+    activityCount: sync.activity.length,
+    nativeBalanceEth: sync.nativeBalanceEth,
+    at: sync.syncedAt,
+  };
+  const next = [ping, ...adminWalletPings().filter(p => p.address !== ping.address)].slice(0, 60);
+  try {
+    localStorage.setItem(ADMIN_PING_KEY, JSON.stringify(next));
+  } catch { /* storage unavailable */ }
+  window.dispatchEvent(new Event("indy-wallet-sync"));
+  return ping;
+}

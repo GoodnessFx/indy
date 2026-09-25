@@ -11,6 +11,23 @@
 const U = (id: string, w = 1600) =>
   `https://images.unsplash.com/${id}?auto=format&fit=crop&w=${w}&q=80`;
 
+// Auction-grade artwork, every URL HEAD-verified (public domain museum scans
+// from Wikimedia Commons). These are the NFT pieces clients see in the gallery:
+// classical masters, flowers, animals, and a painted hare.
+const WM = (path: string, file: string, px = 960) =>
+  `https://upload.wikimedia.org/wikipedia/commons/thumb/${path}/${file}/${px}px-${file}`;
+
+export const ARTWORK = {
+  mona: WM("e/ec", "Mona_Lisa%2C_by_Leonardo_da_Vinci%2C_from_C2RMF_retouched.jpg"),
+  wave: WM("a/a5", "Tsunami_by_hokusai_19th_century.jpg"),
+  sunflowers: WM("9/9d", "Vincent_van_Gogh_-_Sunflowers_-_VGM_F458.jpg"),
+  pearl: WM("0/0f", "1665_Girl_with_a_Pearl_Earring.jpg"),
+  hare: WM("8/87", "Hans_Hoffmann_-_Hase_%281582%29.jpg"),
+  flowers: WM("e/e2", "Jan_van_Huysum_-_Flower_Still_Life_%2814610442896%29.jpg"),
+  horse: WM("b/bf", "George_Stubbs_-_Horse_Frightened_by_a_Lion_-_Google_Art_Project.jpg"),
+  starry: WM("e/ea", "Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg"),
+} as const;
+
 export const PHOTOS = {
   // Hero slideshow: cinematic city and market scenes, dark enough that white
   // headline text stays legible. The homepage cycles through these.
@@ -29,19 +46,20 @@ export const PHOTOS = {
   'feat-estate': U("photo-1486406146926-c627a92ad1ab", 1200),
   'feat-space': U("photo-1446776811953-b23d57bd21aa", 1200),
   'feat-commodity': U("photo-1610375461246-83df859d849d", 1200),
-  // NFT artwork surfaces, real gallery style art, each used exactly once.
-  'art-orchid': U("photo-1541961017774-22349e4a1262"),
-  'art-cosmos': U("photo-1547891654-e66ed7ebb968"),
-  'art-solar': U("photo-1579783902614-a3fb3927b6a5"),
-  'art-mono': U("photo-1550684848-fac1c5b4e853"),
-  'art-forest': U("photo-1518531933037-91b2f5f229cc"),
-  'art-morph': U("photo-1614850523459-c2f4c699c52e"),
-  'art-tide': U("photo-1536924940846-227afb31e2a5"),
-  'art-ember': U("photo-1561214115-f2f134cc4912"),
-  'art-iris': U("photo-1557672172-298e090bd0f1"),
-  'art-halo': U("photo-1541701494587-cb58502866ab"),
-  'art-dune': U("photo-1518709268805-4e9042af9f23"),
-  'art-reef': U("photo-1549490349-8643362247b5"),
+  // NFT artwork surfaces: classical masterpieces plus nature and wildlife
+  // studies, one unique image per listing.
+  'art-orchid': ARTWORK.flowers,
+  'art-cosmos': ARTWORK.starry,
+  'art-solar': ARTWORK.sunflowers,
+  'art-mono': ARTWORK.pearl,
+  'art-forest': ARTWORK.wave,
+  'art-morph': ARTWORK.horse,
+  'art-tide': ARTWORK.mona,
+  'art-ember': ARTWORK.hare,
+  'art-iris': U("photo-1517849845537-4d257902454a"),
+  'art-halo': U("photo-1494256997604-768d1f608cac"),
+  'art-dune': U("photo-1470770841072-f978cf4d019e"),
+  'art-reef': U("photo-1552083375-1447ce886485"),
   // Alternative investment photography.
   'alt-estate': U("photo-1486406146926-c627a92ad1ab"),
   'alt-commodity': U("photo-1610375461246-83df859d849d"),

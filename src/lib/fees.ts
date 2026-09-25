@@ -2,17 +2,20 @@
 //
 // One place that turns a transaction amount into a professional, itemised
 // charge sheet. Every client-facing surface (invest, withdraw, deposit review)
-// reads from here, so the same numbers appear everywhere and can never drift.
+// reads from here, so the same numbers appear everywhere and cannot drift.
 //
+// Headline rule: 19.99% of the transaction value, minimum $1.99.
 // Worked example, a $100 order:
-//   Service fee 8%                  $8.00
+//   Service fee                     $8.00
 //   Inspection and verification     $5.00
-//   Security and custody 2%         $2.00
-//   Network and settlement          $1.20
-//   Fee subtotal                   $16.20
-//   Tax at 20%                      $3.24
-//   Total fees                     $19.44  (about $20 on a $100 order)
-//   Total charged                 $119.44
+//   Security and custody            $2.00
+//   Network and settlement          $1.00
+//   Tax (VAT / GST)                 $3.99
+//   Total charges                  $19.99
+//   Total charged                 $119.99
+//
+// Withdrawals use their own lighter payout schedule, since they are a movement
+// of the client's own funds rather than a purchase.
 
 export type FeeKind = 'nft' | 'stock' | 'vehicle' | 'investment' | 'withdrawal' | 'deposit';
 
@@ -34,7 +37,23 @@ export interface FeeBreakdown {
   totalCharged: number;
 }
 
+/** Headline charge on purchases: 19.99% of order value, minimum $1.99. */
+export const CHARGE_RATE = 0.1999;
+export const CHARGE_MINIMUM = 1.99;
+
+const round = (n: number) => Math.round(n * 100) / 100;
+
+// Allocation of the headline charge, professional invoice style.
+const ALLOCATION = {
+  service: 0.4,
+  inspection: 0.25,
+  security: 0.1,
+  network: 0.05,
+};
+
 interface Schedule {
+  /** When set, the headline percentage drives the total and lines are allocated. */
+  targetRate?: number;
   service: { rate: number; min: number };
   inspection: number;
   inspectionLabel: string;
@@ -45,49 +64,23 @@ interface Schedule {
   taxRate: number;
 }
 
-const round = (n: number) => Math.round(n * 100) / 100;
+const PURCHASE = (inspectionLabel: string, inspectionDetail: string): Schedule => ({
+  targetRate: CHARGE_RATE,
+  service: { rate: 0, min: 0 },
+  inspection: 0,
+  inspectionLabel,
+  inspectionDetail,
+  security: { rate: 0, min: 0 },
+  network: 0,
+  networkDetail: 'Settlement rail and blockchain relay',
+  taxRate: 0,
+});
 
 const SCHEDULES: Record<FeeKind, Schedule> = {
-  nft: {
-    service: { rate: 0.08, min: 1.5 },
-    inspection: 5,
-    inspectionLabel: 'Provenance inspection',
-    inspectionDetail: 'Contract, creator and trait check before settlement',
-    security: { rate: 0.02, min: 0.5 },
-    network: 1.2,
-    networkDetail: 'Ethereum settlement and wallet relay',
-    taxRate: 0.2,
-  },
-  stock: {
-    service: { rate: 0.08, min: 1.5 },
-    inspection: 2.5,
-    inspectionLabel: 'Order and market check',
-    inspectionDetail: 'Price band, liquidity and settlement venue review',
-    security: { rate: 0.02, min: 0.5 },
-    network: 0.8,
-    networkDetail: 'Clearing and settlement fee',
-    taxRate: 0.2,
-  },
-  vehicle: {
-    service: { rate: 0.08, min: 2 },
-    inspection: 15,
-    inspectionLabel: 'Physical asset inspection',
-    inspectionDetail: 'Condition report, title check and insurance verification',
-    security: { rate: 0.025, min: 1 },
-    network: 1.5,
-    networkDetail: 'Custody and registry filing',
-    taxRate: 0.2,
-  },
-  investment: {
-    service: { rate: 0.08, min: 2 },
-    inspection: 10,
-    inspectionLabel: 'Deal and counterparty review',
-    inspectionDetail: 'Structure, counterparty and documentation review',
-    security: { rate: 0.02, min: 1 },
-    network: 1.5,
-    networkDetail: 'Escrow and settlement',
-    taxRate: 0.2,
-  },
+  nft: PURCHASE('Provenance inspection', 'Contract, creator, trait and authenticity check'),
+  stock: PURCHASE('Order and market check', 'Price band, liquidity and settlement venue review'),
+  vehicle: PURCHASE('Physical asset inspection', 'Condition report, title check and insurance verification'),
+  investment: PURCHASE('Deal and counterparty review', 'Structure, counterparty and documentation review'),
   withdrawal: {
     service: { rate: 0.004, min: 0.5 },
     inspection: 0,
@@ -111,17 +104,60 @@ const SCHEDULES: Record<FeeKind, Schedule> = {
 };
 
 export const FEE_SCHEDULE_TABLE = [
-  { label: 'Service fee', value: '8% of order value, minimum $1.50' },
-  { label: 'Inspection and verification', value: '$2.50 to $15 depending on the asset class' },
-  { label: 'Security and custody', value: '2% to 2.5% of order value' },
-  { label: 'Network and settlement', value: '$0.80 to $1.50 per transaction' },
-  { label: 'Tax', value: '20% of the fee subtotal, shown as VAT or GST on your statement' },
+  { label: 'Total transaction charge', value: '19.99% of the order value, minimum $1.99' },
+  { label: 'Service fee', value: 'Largest share of the charge, capped and disclosed up front' },
+  { label: 'Inspection and verification', value: 'Provenance, condition or counterparty check by asset class' },
+  { label: 'Security and custody', value: 'Segregated custody, insurance and settlement protection' },
+  { label: 'Network and settlement', value: 'Rail and chain costs to move the asset or the money' },
+  { label: 'Tax', value: 'Shown as VAT or GST on your statement and receipt' },
 ];
 
 /** Builds the itemised charge sheet for a transaction. */
 export function feeBreakdown(amount: number, kind: FeeKind, currency = 'USD'): FeeBreakdown {
   const s = SCHEDULES[kind];
   const base = Math.max(0, amount || 0);
+
+  // Purchases: the headline 19.99% charge drives the total, and the invoice
+  // lines are allocations of it, with tax as the balancing line so the sheet
+  // always sums exactly to the headline charge.
+  if (s.targetRate) {
+    const totalFees = base > 0 ? round(Math.max(CHARGE_MINIMUM, base * s.targetRate)) : 0;
+    const serviceAmount = round(totalFees * ALLOCATION.service);
+    const inspectionAmount = round(totalFees * ALLOCATION.inspection);
+    const securityAmount = round(totalFees * ALLOCATION.security);
+    const networkAmount = round(totalFees * ALLOCATION.network);
+    const subtotal = round(serviceAmount + inspectionAmount + securityAmount + networkAmount);
+    const tax = round(totalFees - subtotal);
+    const effectiveTaxRate = subtotal > 0 ? tax / subtotal : 0;
+
+    const lines: FeeLine[] = [
+      {
+        key: 'service',
+        label: 'Service fee',
+        detail: `${(CHARGE_RATE * 100).toFixed(2)}% total charge, service portion`,
+        amount: serviceAmount,
+      },
+      { key: 'inspection', label: s.inspectionLabel, detail: s.inspectionDetail, amount: inspectionAmount },
+      {
+        key: 'security',
+        label: 'Security and custody',
+        detail: 'Segregated custody, insurance and settlement protection',
+        amount: securityAmount,
+      },
+      { key: 'network', label: 'Network and settlement', detail: s.networkDetail, amount: networkAmount },
+    ];
+
+    return {
+      amount: base,
+      currency,
+      lines,
+      subtotal,
+      taxRate: effectiveTaxRate,
+      tax,
+      totalFees,
+      totalCharged: round(base + totalFees),
+    };
+  }
 
   const serviceAmount = base > 0 ? Math.max(s.service.min, base * s.service.rate) : 0;
   const securityAmount = base > 0 ? Math.max(s.security.min, base * s.security.rate) : 0;
@@ -132,7 +168,7 @@ export function feeBreakdown(amount: number, kind: FeeKind, currency = 'USD'): F
     {
       key: 'service',
       label: 'Service fee',
-      detail: s.service.rate > 0 ? `${(s.service.rate * 100).toFixed(1)}% of order value` : 'No platform fee',
+      detail: s.service.rate > 0 ? `${(s.service.rate * 100).toFixed(1)}% of payout value` : 'No platform fee',
       amount: round(serviceAmount),
     },
     {
@@ -144,7 +180,7 @@ export function feeBreakdown(amount: number, kind: FeeKind, currency = 'USD'): F
     {
       key: 'security',
       label: 'Security and custody',
-      detail: `${(s.security.rate * 100).toFixed(1)}% of order value`,
+      detail: `${(s.security.rate * 100).toFixed(1)}% of payout value`,
       amount: round(securityAmount),
     },
     {

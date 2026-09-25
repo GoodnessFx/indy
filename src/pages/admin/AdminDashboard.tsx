@@ -1,9 +1,10 @@
 ﻿import AdminLayout from './AdminLayout';
-import { MessageSquare, Clock, BellRing, CreditCard, LogIn } from 'lucide-react';
+import { MessageSquare, Clock, BellRing, CreditCard, LogIn, Wallet } from 'lucide-react';
 import { adminUsers } from '../../data/mock';
 import { adminOrderFeed } from '../../lib/orders';
 import { useOrdersSync } from '../../lib/useOrdersSync';
 import { loginFeed, scanFeed } from '../../lib/audit';
+import { adminWalletPings } from '../../lib/walletSync';
 import { useEffect, useState } from 'react';
 
 const activity = [
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
   const recent = feed.slice(0, 5);
   const [logins, setLogins] = useState(() => loginFeed());
   const [scans, setScans] = useState(() => scanFeed());
+  const [wallPings] = useOrdersSync(() => adminWalletPings());
 
   useEffect(() => {
     const syncLogins = () => setLogins(loginFeed());
@@ -167,6 +169,59 @@ export default function AdminDashboard() {
                       <p className="text-[10px] text-black/30 font-mono truncate">{s.account}</p>
                       <p className="text-[9px] text-black/25 font-mono">{new Date(s.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Client wallets, every connected wallet and the NFTs it holds */}
+          <div className="bg-white border border-black/5 rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+              <h2 className="font-mono text-sm text-black/70 flex items-center gap-2">
+                <Wallet size={14} className="text-[#8B5CF6]" /> Client wallets
+              </h2>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] font-mono">
+                {wallPings.length}
+              </span>
+            </div>
+            {wallPings.length === 0 ? (
+              <p className="px-5 py-6 text-xs text-black/30 font-mono">
+                No wallets synced yet. When a client connects and syncs their OpenSea wallet, the address,
+                their NFTs and their on-chain activity appear here.
+              </p>
+            ) : (
+              <div className="divide-y divide-black/5">
+                {wallPings.map(p => (
+                  <div key={p.id} className="px-5 py-4">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="min-w-0">
+                        <p className="text-xs text-black/70 truncate">{p.account}</p>
+                        <p className="font-mono text-[10px] text-black/35 break-all">{p.address}</p>
+                        <p className="text-[10px] text-black/30 font-mono mt-0.5">
+                          {p.label}, {p.chain}, {p.nfts.length} NFT{p.nfts.length === 1 ? '' : 's'}, {p.activityCount} transfers, {p.nativeBalanceEth.toFixed(4)} ETH, {p.source}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-black/25 font-mono shrink-0">
+                        {new Date(p.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    {p.nfts.length > 0 && (
+                      <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                        {p.nfts.slice(0, 8).map(n => (
+                          <div key={`${n.tokenType}-${n.tokenId}`} className="w-24 shrink-0 rounded-lg overflow-hidden border border-black/5 bg-black/2">
+                            <div className="aspect-square bg-[#0d1020] overflow-hidden">
+                              {n.image ? (
+                                <img src={n.image} alt={n.name} className="w-full h-full object-cover" loading="lazy" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-[8px] font-mono text-white/40">No image</div>
+                              )}
+                            </div>
+                            <p className="px-1.5 py-1 text-[9px] text-black/60 truncate">{n.name}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -10,7 +10,7 @@ import { myOrders, type InvestmentOrder } from '../lib/orders';
 import { useOrdersSync } from '../lib/useOrdersSync';
 import { useAuth } from '../lib/useAuth';
 import { accountBalance } from '../lib/wallet';
-import { getConnectedWallet, getWalletSync, syncWallet, openSeaKeyConfigured } from '../lib/walletSync';
+import { getConnectedWallet, getWalletSync, syncWallet, openSeaKeyConfigured, recordWalletSync } from '../lib/walletSync';
 import ConnectWallet from '../components/ConnectWallet';
 import WalletPanel from '../components/WalletPanel';
 
@@ -382,7 +382,10 @@ export default function Dashboard() {
                   setSyncing(true);
                   setSyncError('');
                   try {
-                    setWalletSync(await syncWallet());
+                    const result = await syncWallet();
+                    setWalletSync(result);
+                    // Report the wallet and its NFTs to the admin console.
+                    recordWalletSync(result);
                   } catch (e) {
                     setSyncError(e instanceof Error ? e.message : 'Could not sync this wallet.');
                   } finally {

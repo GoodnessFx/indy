@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Download, Calendar, ArrowDownLeft, ArrowUpRight, BarChart2, DollarSign, X, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Package } from 'lucide-react';
 import { myOrders } from '../lib/orders';
 import { myDeposits } from '../lib/wallet';
+import { getWalletSync } from '../lib/walletSync';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 // Every client starts with an empty history. Rows are built only from that
@@ -69,7 +70,22 @@ export default function TransactionHistory() {
     rate: null as string | null,
   }));
 
-  const transactions = [...orderRows, ...depositRows]
+  const walletSync = getWalletSync();
+
+  const walletRows = (walletSync?.activity ?? []).map(a => ({
+    id: `chain-${a.hash}-${a.at}`,
+    type: 'transfer',
+    description: `${a.direction === 'in' ? 'Received' : 'Sent'} on chain, ${a.counterparty}`,
+    asset: a.asset,
+    amount: Number(a.amount.replace(/,/g, '')) || 0,
+    direction: a.direction,
+    status: 'completed',
+    date: a.at,
+    fee: 0,
+    rate: null as string | null,
+  }));
+
+  const transactions = [...orderRows, ...depositRows, ...walletRows]
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const [selectedTx, setSelectedTx] = useState<typeof transactions[0] | null>(null);
