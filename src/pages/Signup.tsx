@@ -2,13 +2,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, ArrowRight, ArrowLeft, Check, Upload, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
-import { startGoogleSignIn } from '../lib/googleAuth';
+import { startGoogleSignIn, rememberProfile } from '../lib/googleAuth';
+import { saveAccountProfile } from '../lib/account';
 
 type Step = 1 | 2 | 3;
 
 const steps = ['Account', 'Identity', 'Verification'];
 
-const countries = ['United States', 'United Kingdom', 'Germany', 'France', 'Brazil', 'United Arab Emirates', 'Singapore', 'Nigeria', 'India', 'Australia'];
+const countries = ['United States','Afghanistan','Albania','Algeria','Angola','Argentina','Australia','Austria','Belgium','Brazil','Bulgaria','Canada','Chile','China','Colombia','Croatia','Czechia','Denmark','Egypt','Estonia','Finland','France','Germany','Ghana','Greece','Hong Kong','Hungary','Iceland','India','Indonesia','Ireland','Israel','Italy','Japan','Kenya','Latvia','Lithuania','Luxembourg','Malta','Mexico','Morocco','Netherlands','New Zealand','Norway','Philippines','Poland','Portugal','Qatar','Romania','Saudi Arabia','Singapore','Slovakia','South Africa','South Korea','Spain','Sweden','Switzerland','Thailand','Turkey','United Arab Emirates','United Kingdom','Vietnam'];
 
 export default function Signup() {
   const [step, setStep] = useState<Step>(1);
@@ -44,8 +45,21 @@ export default function Signup() {
   const update = (k: string, v: string | boolean) => setForm(p => ({ ...p, [k]: v }));
 
   const next = () => {
-    if (step < 3) setStep((step + 1) as Step);
-    else navigate('/dashboard');
+    if (step < 3) { setStep((step + 1) as Step); return; }
+    // Persist the account profile so the dashboard and settings carry it over.
+    const name = `${form.firstName} ${form.lastName}`.trim();
+    rememberProfile({ sub: `local-${Date.now()}`, email: form.email, name: name || 'Investor' });
+    saveAccountProfile({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      dob: form.dob,
+      country: form.country,
+      phone: form.phone,
+      email: form.email,
+      idType: form.idType,
+    });
+    window.dispatchEvent(new Event('indy-auth'));
+    navigate('/dashboard');
   };
 
   return (

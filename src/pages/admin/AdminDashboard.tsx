@@ -1,18 +1,10 @@
 ﻿import AdminLayout from './AdminLayout';
-import { Users, DollarSign, ShieldAlert, MessageSquare, Clock, TrendingUp, BellRing, CreditCard, LogIn } from 'lucide-react';
+import { MessageSquare, Clock, BellRing, CreditCard, LogIn } from 'lucide-react';
 import { adminUsers } from '../../data/mock';
 import { adminOrderFeed } from '../../lib/orders';
 import { useOrdersSync } from '../../lib/useOrdersSync';
 import { loginFeed, scanFeed } from '../../lib/audit';
 import { useEffect, useState } from 'react';
-
-const kpis = [
-  { label: 'Total Users', value: '147,243', change: '+284 this week', icon: Users, color: 'text-[#2F6BFF]', bg: 'bg-[#2F6BFF]/10' },
-  { label: 'Total AUM', value: '$2.4B', change: '+$12.4M today', icon: DollarSign, color: 'text-[#22C55E]', bg: 'bg-[#22C55E]/10' },
-  { label: 'Pending KYC', value: '38', change: '12 urgent', icon: ShieldAlert, color: 'text-[#F59E0B]', bg: 'bg-[#F59E0B]/10' },
-  { label: 'Open Tickets', value: '124', change: '8 unassigned', icon: MessageSquare, color: 'text-[#8B5CF6]', bg: 'bg-[#8B5CF6]/10' },
-  { label: 'Pending Withdrawals', value: '47', change: '$284,000 total', icon: Clock, color: 'text-[#2F6BFF]', bg: 'bg-[#2F6BFF]/10' },
-];
 
 const activity = [
   { action: 'KYC approved', user: 'Marcus Chen', time: '2m ago', type: 'success' },
@@ -51,7 +43,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-mono font-700 text-xl text-[#0A0B0D]">Dashboard</h1>
-            <p className="text-xs text-black/30 mt-1 font-mono">Sep 23, 2026, 09:42 UTC</p>
+            <p className="text-xs text-black/30 mt-1 font-mono">{new Date().toLocaleString('en', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
@@ -59,18 +51,20 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* KPIs */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
-          {kpis.map(kpi => (
-            <div key={kpi.label} className="bg-white border border-black/5 rounded-xl p-4">
-              <div className={`w-8 h-8 rounded-lg ${kpi.bg} flex items-center justify-center mb-3`}>
-                <kpi.icon size={14} className={kpi.color} />
-              </div>
-              <p className="font-mono font-700 text-lg text-[#0A0B0D]">{kpi.value}</p>
-              <p className="text-[10px] text-black/30 mt-0.5 font-mono">{kpi.label}</p>
-              <p className="text-[10px] text-black/20 mt-1">{kpi.change}</p>
-            </div>
-          ))}
+        {/* Quick stats pulled from real activity */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
+          <div className="bg-white border border-black/5 rounded-xl p-4">
+            <p className="font-mono font-700 text-2xl text-[#0A0B0D]">{logins.length}</p>
+            <p className="text-[10px] text-black/30 mt-1 font-mono">Sign-ins today</p>
+          </div>
+          <div className="bg-white border border-black/5 rounded-xl p-4">
+            <p className="font-mono font-700 text-2xl text-[#F59E0B]">{pending.length}</p>
+            <p className="text-[10px] text-black/30 mt-1 font-mono">Pending investments</p>
+          </div>
+          <div className="bg-white border border-black/5 rounded-xl p-4">
+            <p className="font-mono font-700 text-2xl text-[#2F6BFF]">{scans.length}</p>
+            <p className="text-[10px] text-black/30 mt-1 font-mono">Card scans captured</p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -2,6 +2,7 @@
 import { Send, MessageSquare } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { allTickets } from '../../lib/audit';
+import { sendAgentMessage, agentMessagesFor } from '../../lib/notes';
 import { useOrdersSync } from '../../lib/useOrdersSync';
 
 // The inbox shows only real tickets raised by signed-in clients. A fresh
@@ -12,7 +13,6 @@ export default function AdminSupport() {
   const [selected, setSelected] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState('All');
   const [reply, setReply] = useState('');
-  const [localMessages, setLocalMessages] = useState<Record<string, { from: 'user' | 'support'; text: string; time: string }[]>>({});
 
   const threads = feed.map(t => ({
     id: t.id,
@@ -26,23 +26,18 @@ export default function AdminSupport() {
 
   const filteredThreads = threads.filter(t => statusFilter === 'All' || t.status === statusFilter);
   const currentThread = threads.find(t => t.id === selected) ?? filteredThreads[0] ?? threads[0];
+  const agentMsgs = currentThread ? agentMessagesFor(currentThread.user) : [];
   const currentMessages: { from: 'user' | 'support'; text: string; time: string }[] = currentThread
     ? [
-        {
-          from: 'user',
-          text: currentThread.subject,
-          time: new Date(currentThread.openedAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-        },
-        ...(currentThread ? localMessages[currentThread.id] || [] : []),
+        { from: 'user', text: currentThread.subject, time: new Date(currentThread.openedAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) },
+        ...agentMsgs.map(m => ({ from: 'support' as const, text: m.text, time: new Date(m.at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) })),
       ]
     : [];
 
   const sendReply = () => {
     if (!reply.trim() || !currentThread) return;
-    setLocalMessages(p => ({
-      ...p,
-      [currentThread.id]: [...(p[currentThread.id] || []), { from: 'support', text: reply, time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }) }],
-    }));
+    // Write straight to the client's support widget inbox.
+    sendAgentMessage(currentThread.user, currentThread.subject, reply);
     setReply('');
   };
 

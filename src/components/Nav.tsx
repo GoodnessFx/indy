@@ -7,6 +7,7 @@ import ConnectWallet from './ConnectWallet';
 import { useAuth } from '../lib/useAuth';
 import { myOrders } from '../lib/orders';
 import { getTriggers } from '../lib/watchlist';
+import { userNotes, broadcasts, markUserNotesRead, markBroadcastsRead } from '../lib/notes';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 interface NavProps {
@@ -64,12 +65,26 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
     ? isDark ? 'bg-[#F7F7F5]/95 backdrop-blur-xl border-b border-black/5' : 'bg-[#F7F7F5]/95 backdrop-blur-xl border-b border-black/5'
     : 'bg-transparent';
 
-  // Notifications are built from this account's own activity: pending
-  // investments and triggered price alerts. A new account sees nothing to read
-  // rather than seeded demo messages.
+  // Notifications are built from this account's own activity: admin
+  // broadcasts, in-app notes (uploads, scans), pending investments, and
+  // triggered price alerts. A new account sees nothing to read.
   const [orders] = useOrdersSync(() => myOrders());
   const [triggers] = useOrdersSync(() => getTriggers());
+  const [notes] = useOrdersSync(() => userNotes());
+  const [bcast] = useOrdersSync(() => broadcasts());
   const notifications = [
+    ...bcast.map(b => ({
+      id: b.id,
+      text: `${b.title}: ${b.body}`,
+      time: new Date(b.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      read: false,
+    })),
+    ...notes.map(n => ({
+      id: n.id,
+      text: n.text,
+      time: new Date(n.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      read: false,
+    })),
     ...orders.filter(o => o.status === 'pending').map(o => ({
       id: o.id,
       text: `${o.assetName} is awaiting payment`,
@@ -82,7 +97,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
       time: new Date(t.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
       read: t.read,
     })),
-  ].slice(0, 8);
+  ].slice(0, 10);
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navBg}`}>
@@ -148,10 +163,12 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
 
             {isAuthenticated ? (
               <>
+                {/* Connect wallet, available to signed-in clients */}
+                <ConnectWallet />
                 {/* Notifications */}
                 <div className="relative">
                   <button
-                    onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); setLangOpen(false); }}
+                    onClick={() => { if (!notifOpen) { markUserNotesRead(); markBroadcastsRead(); } setNotifOpen(!notifOpen); setProfileOpen(false); setLangOpen(false); setLangOpen(false); }}
                     className="relative w-9 h-9 flex items-center justify-center rounded-lg text-black/60 hover:text-black hover:bg-black/5 transition-colors"
                   >
                     <Bell size={17} />

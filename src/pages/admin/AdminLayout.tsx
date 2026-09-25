@@ -1,11 +1,12 @@
 ﻿import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, MessageSquare, ShieldCheck, FileText, LogOut, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, ShieldCheck, FileText, LogOut, TrendingUp, BellRing } from 'lucide-react';
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/kyc', label: 'KYC Queue', icon: ShieldCheck },
   { to: '/admin/support', label: 'Support Inbox', icon: MessageSquare },
+  { to: '/admin/notifications', label: 'Notifications', icon: BellRing },
   { to: '/admin/audit', label: 'Audit Log', icon: FileText },
 ];
 

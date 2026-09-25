@@ -6,6 +6,8 @@ import { getPayoutMethods, removePayoutMethod, type PayoutMethod } from '../lib/
 import { getReferralCode } from '../lib/watchlist';
 import { myOrders } from '../lib/orders';
 import { useAuth } from '../lib/useAuth';
+import { fileToDataUrl, saveAccountProfile, exportAccountData, getAccountProfile } from '../lib/account';
+import { pushUserNote } from '../lib/notes';
 
 type Tab = 'profile' | 'security' | 'preferences' | 'payments' | 'verification' | 'danger';
 
@@ -21,7 +23,6 @@ const tabs: { id: Tab; label: string; icon: typeof User }[] = [
 export default function Settings() {
   const [tab, setTab] = useState<Tab>('profile');
   const [twoFaEnabled, setTwoFaEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(true);
   const [notifications, setNotifications] = useState({
     emailDeposit: true, emailWithdrawal: true, emailSecurity: true,
     pushDeposit: false, pushWithdrawal: true, pushSecurity: true,
@@ -34,7 +35,34 @@ export default function Settings() {
   const [scanOpen, setScanOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [statementDone, setStatementDone] = useState(false);
+  const [avatar, setAvatar] = useState<string | undefined>(getAccountProfile().avatar);
+  const [docPreview, setDocPreview] = useState<Record<string, string>>({});
   const referralCode = getReferralCode();
+
+  const uploadAvatar = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const data = await fileToDataUrl(file, 320, 0.78);
+      setAvatar(data);
+      saveAccountProfile({ avatar: data, avatarName: file.name });
+      pushUserNote('Profile photo updated');
+    } catch { /* invalid image */ }
+  };
+
+  const uploadDocument = async (kind: string, label: string, file: File | undefined) => {
+    if (!file) return;
+    try {
+      const data = await fileToDataUrl(file, 1100, 0.7);
+      setDocPreview(d => ({ ...d, [kind]: data }));
+      const p = getAccountProfile();
+      const documents = [
+        ...p.documents.filter(d => d.kind !== kind),
+        { kind, label, name: file.name, at: new Date().toISOString(), dataUrl: data },
+      ];
+      saveAccountProfile({ documents });
+      pushUserNote(`${label} uploaded for review`);
+    } catch { /* invalid image */ }
+  };
   const { profile } = useAuth();
   const fullName = (profile?.name || profile?.email || 'Account').trim();
   const [firstName, ...rest] = fullName.split(' ');
@@ -75,12 +103,6 @@ export default function Settings() {
 
   const saveProfile = () => { setSavedProfile(true); setTimeout(() => setSavedProfile(false), 2000); };
 
-  const sessions = [
-    { device: 'Chrome on macOS', location: 'London, UK', time: 'Active now', current: true },
-    { device: 'Safari on iPhone', location: 'London, UK', time: '2h ago', current: false },
-    { device: 'Chrome on Windows', location: 'Dubai, AE', time: '5d ago', current: false },
-  ];
-
   return (
     <div className="min-h-screen bg-[#F7F7F5] pt-20">
       <div className="max-w-[1440px] mx-auto px-6 lg:px-12 py-10">
@@ -110,17 +132,27 @@ export default function Settings() {
             {tab === 'profile' && (
               <div>
                 <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Profile</h2>
-                {/* Avatar */}
+                {/* Avatar, upload from the device */ }
                 <div className="flex items-center gap-5 mb-8">
                   <div className="relative">
-                    <div className="w-20 h-20 rounded-2xl bg-[#2F6BFF]/20 flex items-center justify-center text-3xl font-medium text-[#2F6BFF]">{profileInitial}</div>
-                    <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors">
+                    <label className="block cursor-pointer">
+                      {avatar ? (
+                        <div className="w-20 h-20 rounded-2xl overflow-hidden">
+                          <img src={avatar} alt="Profile" className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 rounded-2xl bg-[#2F6BFF]/20 flex items-center justify-center text-3xl font-medium text-[#2F6BFF]">{profileInitial}</div>
+                      )}
+                      <input type="file" accept="image/*" className="sr-only" onChange={e => uploadAvatar(e.target.files?.[0])} />
+                    </label>
+                    <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors cursor-pointer">
                       <Upload size={12} className="text-[#0A0B0D]" />
-                    </button>
+                      <input type="file" accept="image/*" className="sr-only" onChange={e => uploadAvatar(e.target.files?.[0])} />
+                    </label>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-[#0A0B0D]">Profile photo</p>
-                    <p className="text-xs text-black/30 mt-1">JPG or PNG, max 4MB. Circular crop applied.</p>
+                    <p className="text-xs text-black/30 mt-1">Choose an image from your device. Only you and support see it.</p>
                   </div>
                 </div>
 
@@ -210,45 +242,23 @@ export default function Settings() {
                   )}
                 </div>
 
-                {/* Sessions */}
-                <div className="p-6 rounded-xl bg-black/3 border border-black/8">
-                  <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-5">Active sessions</h3>
-                  <div className="space-y-3">
-                    {sessions.map(s => (
-                      <div key={s.device} className="flex items-center justify-between py-3 border-b border-black/5 last:border-0">
-                        <div>
-                          <p className="text-sm text-black/80">{s.device}</p>
-                          <p className="text-xs text-black/30 mt-0.5">{s.location}, {s.time}</p>
-                        </div>
-                        {s.current ? (
-                          <span className="text-xs chip-gain px-2.5 py-1 rounded-full">Current</span>
-                        ) : (
-                          <button className="text-xs text-[#EF4444]/60 hover:text-[#EF4444] transition-colors">Log out</button>
-                        )}
-                      </div>
-                    ))}
+                  <div className="p-6 rounded-xl bg-black/3 border border-black/8">
+                    <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-3">Login history</h3>
+                    <p className="text-xs text-black/30 leading-relaxed">
+                      Sign-ins on this account are recorded and reviewed by the support and compliance team.
+                      A full timeline is available to that team from the admin console; individual device
+                      sessions are only shown there once full session tracking is live in your region.
+                    </p>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {tab === 'preferences' && (
               <div>
                 <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Preferences</h2>
 
                 <div className="space-y-6">
-                  <div className="flex items-center justify-between py-4 border-b border-black/5">
-                    <div>
-                      <p className="text-sm font-medium text-[#0A0B0D]">Dark mode</p>
-                      <p className="text-xs text-black/30 mt-0.5">Toggle between dark and light theme</p>
-                    </div>
-                    <button onClick={() => setDarkMode(!darkMode)}
-                      className={`w-12 h-6 rounded-full transition-all relative ${darkMode ? 'bg-[#2F6BFF]' : 'bg-black/10'}`}>
-                      <span className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${darkMode ? 'left-7' : 'left-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="py-4 border-b border-black/5">
+                  <div className="py-4">
                     <p className="text-sm font-medium text-[#0A0B0D] mb-3">Display currency</p>
                     <div className="grid grid-cols-4 gap-2">
                       {['USD', 'EUR', 'GBP', 'AED'].map(c => (
@@ -396,18 +406,31 @@ export default function Settings() {
                 </div>
                 <div className="space-y-3">
                   {[
-                    { label: 'Government ID', status: 'verified', date: 'Submitted Mar 14, 2025' },
-                    { label: 'Selfie verification', status: 'verified', date: 'Submitted Mar 14, 2025' },
-                    { label: 'Address proof', status: 'pending', date: 'Submitted Sep 15, 2026' },
+                    { kind: 'government', label: 'Government ID' },
+                    { kind: 'selfie', label: 'Selfie verification' },
+                    { kind: 'address', label: 'Proof of address' },
                   ].map(doc => (
-                    <div key={doc.label} className="flex items-center justify-between p-4 rounded-xl border border-black/8 bg-black/3">
-                      <div>
+                    <div key={doc.kind} className="flex items-center justify-between gap-3 p-4 rounded-xl border border-black/8 bg-black/3">
+                      <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-[#0A0B0D]">{doc.label}</p>
-                        <p className="text-xs text-black/30 mt-0.5">{doc.date}</p>
+                        <p className="text-xs text-black/30 mt-0.5 truncate">
+                          {getAccountProfile().documents.find(d => d.kind === doc.kind)?.name || (docPreview[doc.kind] ? 'Uploaded, pending review' : 'Not uploaded yet')}
+                        </p>
                       </div>
-                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${doc.status === 'verified' ? 'chip-gain' : 'chip-warning'}`}>
-                        {doc.status.charAt(0).toUpperCase() + doc.status.slice(1)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <label className="flex items-center gap-1.5 text-xs border border-black/15 rounded-lg px-3 py-2 text-black/60 hover:border-black/30 cursor-pointer">
+                          <Upload size={12} /> Upload
+                          <input type="file" accept="image/*" className="sr-only"
+                            onChange={e => uploadDocument(doc.kind, doc.label, e.target.files?.[0])} />
+                        </label>
+                        <span className={
+                          getAccountProfile().documents.find(d => d.kind === doc.kind) || docPreview[doc.kind]
+                            ? 'text-xs chip-warning px-2.5 py-1 rounded-full'
+                            : 'text-xs px-2.5 py-1 rounded-full border border-black/10 text-black/30'
+                        }>
+                          {getAccountProfile().documents.find(d => d.kind === doc.kind) || docPreview[doc.kind] ? 'Pending' : 'Missing'}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -421,8 +444,9 @@ export default function Settings() {
                   <div className="p-5 rounded-2xl border border-[#EF4444]/20 bg-[#EF4444]/5">
                     <h3 className="font-display font-600 text-base text-[#0A0B0D] mb-2">Download my data</h3>
                     <p className="text-xs text-black/40 mb-4">Export all your account data including transactions, profile, and investment history.</p>
-                    <button className="px-5 py-2.5 rounded-xl border border-black/15 text-sm text-black/70 hover:text-black hover:border-black/30 transition-colors">
-                      Request data export
+                    <button onClick={() => { exportAccountData(); }}
+                      className="px-5 py-2.5 rounded-xl border border-black/15 text-sm text-black/70 hover:text-black hover:border-black/30 transition-colors">
+                      Download my data
                     </button>
                   </div>
                   <div className="p-5 rounded-2xl border border-[#EF4444]/20 bg-[#EF4444]/5">
