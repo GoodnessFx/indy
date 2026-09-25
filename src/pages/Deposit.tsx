@@ -1,9 +1,12 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, CreditCard, Bitcoin, ArrowLeft, ArrowRight, Check, Copy, QrCode } from 'lucide-react';
+import { Building2, CreditCard, Bitcoin, ArrowLeft, ArrowRight, Check, Copy, QrCode, Wallet2 } from 'lucide-react';
+import { DEPOSIT_ADDRESSES, recordDeposit } from '../lib/wallet';
+import { pushUserNote } from '../lib/notes';
 
 type Step = 1 | 2 | 3 | 4;
 type Method = 'bank' | 'card' | 'crypto';
+type Network = 'eth' | 'btc';
 
 const steps = ['Method', 'Amount', 'Instructions', 'Confirmation'];
 
@@ -13,18 +16,38 @@ export default function Deposit() {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USD');
   const [copied, setCopied] = useState(false);
+  const [network, setNetwork] = useState<Network>('eth');
+  const [recorded, setRecorded] = useState(false);
 
-  const next = () => step < 4 && setStep((step + 1) as Step);
-  const back = () => step > 1 && setStep((step - 1) as Step);
-
+  const address = network === 'eth' ? DEPOSIT_ADDRESSES.eth : DEPOSIT_ADDRESSES.btc;
   const referenceCode = 'INDY-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-  const walletAddress = 'TXhGZ9pR8KmQvV2cY4NsLwBiJuF3dE6oMn';
 
   const copy = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // Moving past the instructions step records the deposit, so the account
+  // balance and transaction history reflect it right away.
+  const next = () => {
+    if (step === 4) return;
+    if (step === 3 && !recorded) {
+      const value = parseFloat(amount) || 0;
+      if (value > 0) {
+        recordDeposit({
+          amount: value,
+          currency,
+          method,
+          network: method === 'crypto' ? network : undefined,
+        });
+        pushUserNote(`Deposit of ${currency} ${value.toLocaleString()} recorded via ${method === 'crypto' ? network.toUpperCase() : method === 'bank' ? 'bank transfer' : 'card'}`);
+        setRecorded(true);
+      }
+    }
+    setStep((step + 1) as Step);
+  };
+  const back = () => step > 1 && setStep((step - 1) as Step);
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] pt-20">
@@ -193,21 +216,30 @@ export default function Deposit() {
               {method === 'crypto' && (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
-                    {['USDT', 'BTC'].map(c => (
-                      <button key={c} className="px-4 py-2 rounded-xl text-sm font-mono bg-black/5 text-black/40 hover:text-black hover:bg-black/10 transition-colors">{c}</button>
+                    {([['eth', 'ETH'], ['btc', 'BTC']] as const).map(([id, label]) => (
+                      <button key={id} onClick={() => setNetwork(id)}
+                        className={`px-4 py-2 rounded-xl text-sm font-mono transition-colors ${
+                          network === id ? 'bg-[#F59E0B] text-[#0A0B0D]' : 'bg-black/5 text-black/40 hover:text-black hover:bg-black/10'
+                        }`}>{label}</button>
                     ))}
                   </div>
                   <div className="p-4 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/20">
                     <p className="text-xs text-[#F59E0B] font-medium mb-1">Network warning</p>
-                    <p className="text-xs text-black/50">Send only USDT on the TRC-20 network. Sending on the wrong network will result in permanent loss of funds.</p>
+                    <p className="text-xs text-black/50">
+                      Send only {network === 'eth' ? 'ETH or ERC-20 tokens on the Ethereum network' : 'BTC on the Bitcoin network'}.
+                      Sending on the wrong network will result in permanent loss of funds.
+                    </p>
                   </div>
                   <div className="flex flex-col items-center gap-4 py-4">
                     <div className="w-32 h-32 bg-white rounded-xl flex items-center justify-center">
                       <QrCode size={80} className="text-[#0A0B0D]" />
                     </div>
                     <div className="w-full p-3 rounded-xl bg-black/5 border border-black/8 flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-black/60 truncate">{walletAddress}</span>
-                      <button onClick={() => copy(walletAddress)} className={`shrink-0 transition-colors ${copied ? 'text-[#22C55E]' : 'text-black/30 hover:text-black/60'}`}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Wallet2 size={14} className="text-black/30 shrink-0" />
+                        <span className="font-mono text-xs text-black/60 break-all">{address}</span>
+                      </div>
+                      <button onClick={() => copy(address)} className={`shrink-0 transition-colors ${copied ? 'text-[#22C55E]' : 'text-black/30 hover:text-black/60'}`}>
                         {copied ? <Check size={14} /> : <Copy size={14} />}
                       </button>
                     </div>

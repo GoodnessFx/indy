@@ -2,10 +2,12 @@
 import { Link } from 'react-router-dom';
 import { Download, Calendar, ArrowDownLeft, ArrowUpRight, BarChart2, DollarSign, X, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Package } from 'lucide-react';
 import { myOrders } from '../lib/orders';
+import { myDeposits } from '../lib/wallet';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 // Every client starts with an empty history. Rows are built only from that
-// client's own submitted investments, so nothing demo or shared appears here.
+// client's own deposits and submitted investments, so nothing demo or shared
+// appears here.
 const filters = ['All', 'Deposits', 'Withdrawals', 'Buys', 'Sells', 'Fees'];
 
 function txIcon(type: string) {
@@ -39,7 +41,7 @@ export default function TransactionHistory() {
   const [dateRange, setDateRange] = useState('This month');
   const [orders] = useOrdersSync(() => myOrders());
 
-  const transactions = orders.map(o => ({
+  const orderRows = orders.map(o => ({
     id: o.id,
     type: 'buy',
     description: `${o.kind} investment, ${o.assetName}`,
@@ -51,6 +53,24 @@ export default function TransactionHistory() {
     fee: Math.round(o.amount * 0.01 * 100) / 100,
     rate: null as string | null,
   }));
+
+  const depositRows = myDeposits().map(d => ({
+    id: d.id,
+    type: 'deposit',
+    description: d.method === 'crypto'
+      ? `Crypto deposit (${d.network === 'btc' ? 'BTC' : 'ETH'})`
+      : d.method === 'bank' ? 'Bank transfer deposit' : 'Card deposit',
+    asset: d.currency,
+    amount: d.amount,
+    direction: 'in',
+    status: 'completed',
+    date: d.at,
+    fee: 0,
+    rate: null as string | null,
+  }));
+
+  const transactions = [...orderRows, ...depositRows]
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const [selectedTx, setSelectedTx] = useState<typeof transactions[0] | null>(null);
 

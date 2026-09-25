@@ -1,16 +1,20 @@
 ﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus } from 'lucide-react';
+import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus, Smile } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
 import { createTicket, myTickets } from '../lib/audit';
+import { currentAccount, sendClient, threadFor, refreshChat } from '../lib/notes';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 type Tab = 'chat' | 'tickets' | 'help';
+
+const EMOJIS = ['👍', '🙏', '😊', '🎉', '✅', '👋', '💰', '📈', '🔒', '⚡', '🤝', '🔥'];
 
 export default function SupportWidget() {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('chat');
   const [input, setInput] = useState('');
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const [helpSearch, setHelpSearch] = useState('');
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   const [humanRequested, setHumanRequested] = useState(false);
@@ -26,9 +30,49 @@ export default function SupportWidget() {
     return () => window.removeEventListener('indy-open-support', openMe);
   }, []);
 
-  const [messages, setMessages] = useState([
-    { id: 1, from: 'support', text: firstName ? `Hi ${firstName}, how can we help you today?` : 'Hi, how can we help you today?', time: '09:00' },
-  ]);
+  // The conversation is stored, so it survives sign out, refresh, and new
+  // sessions: the client always continues from where they left off. Remote
+  // messages are pulled in every 8 seconds when Supabase is configured, which
+  // is how an admin on another device reaches this thread.
+  const [thread, setThread] = useState(() => threadFor(currentAccount().account));
+  const [acks, setAcks] = useState<{ id: string; from: 'support'; text: string; time: string }[]>([]);
+
+  useEffect(() => {
+    const sync = () => setThread(threadFor(currentAccount().account));
+    window.addEventListener('indy-chat', sync);
+    window.addEventListener('storage', sync);
+    window.addEventListener('indy-auth', sync);
+    void refreshChat();
+    const t = window.setInterval(() => {
+      void refreshChat();
+      sync();
+    }, 8000);
+    return () => {
+      window.removeEventListener('indy-chat', sync);
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('indy-auth', sync);
+      window.clearInterval(t);
+    };
+  }, []);
+
+  const messages: { id: string; from: string; text: string; time: string }[] = [
+    ...(thread.length === 0
+      ? [{
+          id: 'welcome',
+          from: 'support',
+          text: firstName ? `Hi ${firstName}, how can we help you today?` : 'Hi, how can we help you today?',
+          time: '09:00',
+        }]
+      : []),
+    ...thread.map(m => ({
+      id: m.id,
+      from: m.from === 'client' ? 'user' : 'support',
+      text: m.text,
+      time: new Date(m.at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+    })),
+    ...acks,
+  ];
+
   const [quickReplies] = useState([
     "Where's my withdrawal?",
     'How do fees work?',
@@ -75,30 +119,35 @@ export default function SupportWidget() {
 
   const sendMessage = (text: string) => {
     if (!text.trim()) return;
-    const time = new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev => [...prev, { id: Date.now(), from: 'user', text, time }]);
+    if (!signedIn) {
+      setShowingGate(true);
+      setOpen(false);
+      return;
+    }
+    sendClient(text.trim());
     setInput('');
+    setEmojiOpen(false);
 
     if (text === 'Talk to an agent') {
       setHumanRequested(true);
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
+      window.setTimeout(() => {
+        setAcks(prev => [...prev, {
+          id: `ack-${Date.now()}`,
           from: 'support',
           text: 'Connecting you to a human agent. Estimated wait time: 3 minutes.',
           time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
         }]);
       }, 1000);
-    } else {
-      setTimeout(() => {
-        setMessages(prev => [...prev, {
-          id: Date.now() + 1,
-          from: 'support',
-          text: 'Thanks for your message. A support agent will respond shortly. In the meantime, check our Help Center for quick answers.',
-          time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-        }]);
-      }, 1200);
+      return;
     }
+    window.setTimeout(() => {
+      setAcks(prev => [...prev, {
+        id: `ack-${Date.now()}`,
+        from: 'support',
+        text: 'Thanks for your message. A support agent will respond shortly. In the meantime, check our Help Center for quick answers.',
+        time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+      }]);
+    }, 1200);
   };
 
   const ticketStatusIcon = (status: string) => {
@@ -187,7 +236,7 @@ export default function SupportWidget() {
                 }`}
               >
                 {t === 'tickets' ? 'My Tickets' : t === 'help' ? 'Help Center' : 'Chat'}
-                {t === 'tickets' && <span className="ml-1 text-[10px] bg-black/10 px-1.5 py-0.5 rounded-full">3</span>}
+                {t === 'tickets' && tickets.length > 0 && <span className="ml-1 text-[10px] bg-black/10 px-1.5 py-0.5 rounded-full">{tickets.length}</span>}
               </button>
             ))}
           </div>
@@ -214,8 +263,8 @@ export default function SupportWidget() {
                   </div>
                 )}
 
-                {/* Quick replies */}
-                {messages.length === 1 && (
+                {/* Quick replies, only before the client has spoken */}
+                {thread.length === 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {quickReplies.map(qr => (
                       <button
@@ -230,16 +279,37 @@ export default function SupportWidget() {
                 )}
               </div>
               <div className="p-3 border-t border-black/8">
+                {emojiOpen && (
+                  <div className="mb-2 grid grid-cols-6 gap-1 rounded-xl border border-black/8 bg-white p-2 shadow-lg">
+                    {EMOJIS.map(e => (
+                      <button
+                        key={e}
+                        onClick={() => setInput(v => v + e)}
+                        className="h-8 text-lg leading-none rounded hover:bg-black/5 transition-colors"
+                        aria-label={`Insert ${e}`}
+                      >
+                        {e}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex items-center gap-2 bg-black/5 rounded-xl px-3 py-2">
                   <input
                     value={input}
                     onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
                     placeholder="Type a message..."
-                    className="flex-1 bg-transparent text-sm text-[#0A0B0D] placeholder-black/25 outline-none"
+                    className="flex-1 bg-transparent text-sm text-[#0A0B0D] placeholder-black/25 outline-none min-w-0"
                   />
-                  <button className="text-black/30 hover:text-black/60 transition-colors"><Paperclip size={14} /></button>
-                  <button onClick={() => sendMessage(input)} className="w-7 h-7 bg-[#2F6BFF] rounded-lg flex items-center justify-center hover:bg-[#4F82FF] transition-colors">
+                  <button
+                    onClick={() => setEmojiOpen(o => !o)}
+                    className={`transition-colors ${emojiOpen ? 'text-[#2F6BFF]' : 'text-black/30 hover:text-black/60'}`}
+                    aria-label="Add emoji"
+                  >
+                    <Smile size={15} />
+                  </button>
+                  <button className="text-black/30 hover:text-black/60 transition-colors" aria-label="Attach a file"><Paperclip size={14} /></button>
+                  <button onClick={() => sendMessage(input)} className="w-7 h-7 bg-[#2F6BFF] rounded-lg flex items-center justify-center hover:bg-[#4F82FF] transition-colors shrink-0">
                     <Send size={12} className="text-[#0A0B0D]" />
                   </button>
                 </div>

@@ -21,15 +21,15 @@ export default function AdminNotifications() {
 
   return (
     <AdminLayout>
-      <div className="max-w-3xl">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+      <div className="max-w-3xl w-full min-w-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+          <div className="min-w-0">
             <h1 className="font-mono font-700 text-xl text-[#0A0B0D]">Notifications</h1>
             <p className="text-xs text-black/30 font-mono mt-1">
               Send a broadcast that appears in every user's notification bell
             </p>
           </div>
-          <BellRing size={16} className="text-[#2F6BFF]" />
+          <BellRing size={16} className="text-[#2F6BFF] shrink-0" />
         </div>
 
         <div className="bg-white border border-black/5 rounded-xl p-6">

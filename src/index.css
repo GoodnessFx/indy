@@ -32,6 +32,33 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Nothing in the layout should ever push the viewport sideways on a phone. */
+body {
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* Phones and small tablets: tighter headings and no orphaned columns. */
+@media (max-width: 640px) {
+  h1,
+  h2 {
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 body {

@@ -9,6 +9,7 @@ import WatchlistPanel from '../components/WatchlistPanel';
 import { myOrders, type InvestmentOrder } from '../lib/orders';
 import { useOrdersSync } from '../lib/useOrdersSync';
 import { useAuth } from '../lib/useAuth';
+import { accountBalance } from '../lib/wallet';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('1M');
   const [loading] = useState(false);
   const [orders] = useOrdersSync<InvestmentOrder[]>(() => myOrders());
+  const [balance] = useOrdersSync(() => accountBalance());
   const { profile } = useAuth();
   const firstName = (profile?.given_name || profile?.name || 'Investor').split(' ')[0];
 
@@ -76,6 +78,12 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+              <div className="pb-2">
+                <p className="text-xs text-black/30 mb-1 font-mono">AVAILABLE BALANCE</p>
+                <p className="font-mono font-700 text-xl text-[#22C55E] tabular-nums">
+                  {hideBalance ? '******' : `$${balance.toLocaleString()}`}
+                </p>
+              </div>
               <div className={`flex items-center gap-1.5 pb-2 ${totalGain >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>
                 {totalGain >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 <span className="font-mono text-sm font-600">
@@ -119,14 +127,17 @@ export default function Dashboard() {
             <div className="w-12 h-12 rounded-xl bg-[#2F6BFF]/12 flex items-center justify-center mx-auto mb-4">
               <Wallet size={22} className="text-[#2F6BFF]" />
             </div>
-            <h3 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">Your portfolio is ready to build</h3>
+            <h3 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">
+              {balance > 0 ? 'Your portfolio is ready to build' : 'Your account starts at zero'}
+            </h3>
             <p className="text-sm text-black/45 max-w-md mx-auto leading-relaxed mb-6">
-              Nothing is loaded until you add it, which keeps your balance accurate from the start. Make your first
-              investment, add a payout card, or deposit and it will appear here.
+              {balance > 0
+                ? `You have $${balance.toLocaleString()} funded and waiting. Put it to work across NFTs, stocks, vehicles, or private deals.`
+                : 'Nothing is loaded until you add it. Fund your account with a bank transfer, card, or crypto deposit and your balance updates immediately.'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              <Link to="/nfts" className="btn-primary px-5 py-2.5 rounded-xl text-sm">Browse investments</Link>
-              <Link to="/settings" className="btn-ghost px-5 py-2.5 rounded-xl text-sm">Add a payment method</Link>
+              <Link to="/deposit" className="btn-primary px-5 py-2.5 rounded-xl text-sm">Fund my account</Link>
+              <Link to="/nfts" className="btn-ghost px-5 py-2.5 rounded-xl text-sm">Browse investments</Link>
             </div>
           </div>
         )}
