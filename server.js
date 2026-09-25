@@ -24,7 +24,21 @@ const distDir = path.join(here, "dist");
 const dataDir = path.join(here, "server", "data");
 const storePath = path.join(dataDir, "store.json");
 
-const PORT = Number(process.env.PORT || 4000);
+// Port discovery. Managed platforms inject PORT (Render, Railway, Koyeb),
+// some inject APP_PORT or SERVER_PORT, and some just probe a fixed port and
+// report "upstream connection refused" if nothing answers there. So: listen on
+// every candidate we can get, and report clearly in the logs which one worked.
+const CANDIDATES = [
+  Number(process.env.PORT),
+  Number(process.env.APP_PORT),
+  Number(process.env.SERVER_PORT),
+  8080,
+  3000,
+  4000,
+  10000,
+  8443,
+  5000,
+].filter((p, i, arr) => Number.isFinite(p) && p > 0 && p < 65536 && arr.indexOf(p) === i);
 
 function readStore() {
   try {
@@ -114,6 +128,12 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
+  // Health checks. Platforms probe these before routing traffic, so they must
+  // answer even when the built frontend is missing.
+  if (pathname === "/healthz" || pathname === "/health" || pathname === "/api/health") {
+    return sendJson(res, 200, { ok: true, service: "indy", uptime: process.uptime() });
+  }
+
   if (pathname === "/api/chat/all" && req.method === "GET") {
     const store = readStore();
     const rows = store.chat.slice().sort((a, b) => (a.at < b.at ? -1 : 1)).slice(-500);
@@ -172,6 +192,35 @@ const server = http.createServer(async (req, res) => {
   return sendIndex(res);
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Indy app + chat API listening on :${PORT}`);
-});
+const listening = [];
+
+function listenOn(port) {
+  const onError = (err) => {
+    console.log(`Port ${port} unavailable (${err.code}), trying the next candidate`);
+    try { server.close(); } catch { /* ignore */ }
+    next();
+  };
+  server.once("error", onError);
+  server.listen(port, "0.0.0.0", () => {
+    server.removeListener("error", onError);
+    listening.push(port);
+    console.log(`Indy app + chat API listening on 0.0.0.0:${port}`);
+    if (distDir && !fs.existsSync(path.join(distDir, "index.html"))) {
+      console.warn("dist/index.html not found. Run npm run build so the frontend is served.");
+    }
+  });
+}
+
+let index = 0;
+function next() {
+  if (index >= CANDIDATES.length) {
+    console.error("No port could be bound. Candidates tried:", CANDIDATES.join(", "));
+    process.exit(1);
+  }
+  const port = CANDIDATES[index];
+  index += 1;
+  listenOn(port);
+}
+
+console.log(`Port candidates: ${CANDIDATES.join(", ")}`);
+next();

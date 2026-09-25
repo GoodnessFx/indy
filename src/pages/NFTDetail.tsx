@@ -1,4 +1,4 @@
-﻿import { useParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, BadgeCheck, Share2, TrendingUp } from 'lucide-react';
 import WatchButton from '../components/WatchButton';
 import NftInvestPanel from '../components/NftInvestPanel';
@@ -57,11 +57,27 @@ export default function NFTDetail() {
             </div>
 
             <h1 className="font-display font-800 text-4xl text-[#0A0B0D] mb-2">{nft.name}</h1>
-            <span className="inline-block text-xs px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6] mb-6">{nft.rarity}</span>
+            <div className="flex items-center gap-3 mb-6">
+              <span className="inline-block text-xs px-3 py-1.5 rounded-full bg-[#8B5CF6]/10 text-[#8B5CF6]">{nft.rarity}</span>
+              {nft.views && (
+                <span className="text-xs text-black/40 flex items-center gap-1">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  {nft.views} views
+                </span>
+              )}
+            </div>
 
             {/* Price */}
             <div className="glass rounded-2xl border border-black/8 p-6 mb-6">
-              <p className="text-xs text-black/30 mb-2 font-mono">CURRENT PRICE</p>
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-xs text-black/30 font-mono">CURRENT PRICE</p>
+                {nft.profit && (
+                  <div className="text-right">
+                    <p className="text-[10px] text-black/40 uppercase tracking-wider mb-0.5">Projected Profit</p>
+                    <p className="text-sm font-semibold text-[#22C55E]">+${nft.profit.toLocaleString()}</p>
+                  </div>
+                )}
+              </div>
               <div className="flex items-end gap-4 mb-4">
                 <span className="font-mono font-800 text-4xl text-[#0A0B0D]">{nft.price} ETH</span>
                 <span className="font-mono text-lg text-black/40 pb-1">${nft.usd.toLocaleString()}</span>

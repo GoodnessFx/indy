@@ -140,10 +140,12 @@ const LEGACY: Record<string, PhotoKey | ""> = {
 export function resolvePhoto(seed: string): string {
   if (!seed) return "";
   if (/^https?:\/\//.test(seed)) return seed;
+  if (seed.startsWith('/') || seed.startsWith('./')) return seed;
   const key = (Object.keys(PHOTOS) as string[]).includes(seed)
     ? (seed as PhotoKey)
     : undefined;
   if (key) return PHOTOS[key];
+  if (seed === 'bored-ape' || seed === 'art-bored-ape' || seed === 'art-ape') return '/bored-ape-square.jpg';
   // Bare photo ids (for example a How It Works step id) resolve directly.
   if (/^photo-[a-z0-9-]+$/i.test(seed)) return U(seed);
   const legacy = LEGACY[seed];

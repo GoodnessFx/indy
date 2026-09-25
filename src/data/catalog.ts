@@ -16,6 +16,10 @@ export interface NFTItem {
   image: string;
   verified: boolean;
   rarity: string;
+  views?: number;
+  owner?: string;
+  profit?: number;
+  saleEnds?: string;
   traits: { trait: string; value: string }[];
 }
 

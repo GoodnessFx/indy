@@ -95,6 +95,10 @@ export function FeeBreakdownBlock({ amount, kind, currency = "USD" }: { amount: 
           <span className="text-xs text-black/60">Total charged to you</span>
           <span className="font-mono font-700 text-[#0A0B0D]">{money(fees.totalCharged, currency)}</span>
         </div>
+        <div className="text-[10px] text-black/40 text-center mt-2 flex items-center justify-center gap-1">
+           <Landmark size={10} className="inline-block" />
+           Fees are securely routed to the company address
+        </div>
       </div>
     </div>
   );
