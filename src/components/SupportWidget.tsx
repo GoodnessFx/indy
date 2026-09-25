@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { CheckCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus, Smile } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
@@ -18,6 +19,8 @@ export default function SupportWidget() {
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [helpSearch, setHelpSearch] = useState('');
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+  // Track IDs of client messages that are awaiting server acknowledgment
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
   const [humanRequested, setHumanRequested] = useState(false);
   const [showingGate, setShowingGate] = useState(false);
   const { signedIn, profile } = useAuth();
@@ -84,6 +87,8 @@ export default function SupportWidget() {
       const fresh = await refreshThread(currentAccount().account);
       if (fresh.length) {
         setThread([...fresh]);
+        // Remove any pending IDs that now appear in the fresh thread (i.e., delivered)
+        setPendingIds(prev => prev.filter(id => !fresh.some(m => m.id === id)));
       } else {
         syncLocal();
       }
@@ -170,7 +175,10 @@ export default function SupportWidget() {
       setOpen(false);
       return;
     }
-    sendClient(text.trim());
+    // sendClient returns the created ChatMessage with an ID
+    const msg = sendClient(text.trim());
+    // Track this ID as pending until we receive it back from the server
+    setPendingIds(prev => [...prev, msg.id]);
     setInput('');
     setEmojiOpen(false);
 
@@ -309,7 +317,12 @@ export default function SupportWidget() {
                     <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
                       msg.from === 'user' ? 'bg-[#2F6BFF] text-white rounded-br-md' : 'bg-black/8 text-black/85 rounded-bl-md'
                     }`}>
-                      <p>{msg.text}</p>
+                      <p className="flex items-center">
+                        {msg.text}
+                        {msg.from === 'user' && !pendingIds.includes(msg.id) && (
+                          <CheckCheck size={12} className="ml-1 text-white/70" />
+                        )}
+                      </p>
                       <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-black/60' : 'text-black/30'}`}>{msg.time}</p>
                     </div>
                   </div>
