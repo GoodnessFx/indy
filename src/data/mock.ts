@@ -9,7 +9,7 @@ export const mockNFTs = [
     currency: 'ETH',
     usd: 5000,
     change: 48.6,
-    image: '/bored-ape-square.jpg',
+    image: '/boredapelogo.jpeg',
     verified: true,
     rarity: 'Legendary',
     views: 68,
