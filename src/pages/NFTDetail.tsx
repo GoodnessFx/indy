@@ -1,10 +1,12 @@
+import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, BadgeCheck, Share2, TrendingUp } from 'lucide-react';
+import { ArrowLeft, BadgeCheck, Share2, TrendingUp, X, Landmark } from 'lucide-react';
 import WatchButton from '../components/WatchButton';
 import NftInvestPanel from '../components/NftInvestPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { allNFTs } from '../data/catalog';
 import AssetImage from '../components/AssetImage';
+import { useAuth } from '../lib/useAuth';
 
 const priceHistory = [
   { date: 'Mar', price: 1.2 }, { date: 'Apr', price: 1.8 }, { date: 'May', price: 1.4 },
@@ -15,6 +17,11 @@ const priceHistory = [
 export default function NFTDetail() {
   const { id } = useParams();
   const nft = allNFTs.find(n => n.id === id) || allNFTs[0];
+  const { signedIn, profile } = useAuth();
+  const firstName = (profile?.given_name || profile?.name || '').split(' ')[0];
+  const isOwner = signedIn && firstName && nft.owner && firstName.toLowerCase() === nft.owner.toLowerCase();
+  
+  const [sellModalOpen, setSellModalOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] pt-20">
@@ -87,12 +94,69 @@ export default function NFTDetail() {
                 <span className="font-mono text-sm">{nft.change >= 0 ? '+' : ''}{nft.change}% past 30 days</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <NftInvestPanel
-                  target={{ assetId: nft.id, assetName: nft.name, kind: 'nft', price: nft.usd, currency: 'USD' }}
-                />
-                <button className="btn-ghost py-3.5 rounded-xl text-sm">Make offer</button>
+                {isOwner ? (
+                  <button onClick={() => setSellModalOpen(true)} className="btn-primary py-3.5 rounded-xl text-sm col-span-2">Sell NFT</button>
+                ) : (
+                  <>
+                    <NftInvestPanel
+                      target={{ assetId: nft.id, assetName: nft.name, kind: 'nft', price: nft.usd, currency: 'USD' }}
+                    />
+                    <button className="btn-ghost py-3.5 rounded-xl text-sm">Make offer</button>
+                  </>
+                )}
               </div>
             </div>
+
+            {/* Sell Modal */}
+            {sellModalOpen && (
+              <>
+                <div className="fixed inset-0 bg-black/50 z-[80]" onClick={() => setSellModalOpen(false)} aria-hidden="true" />
+                <div className="fixed inset-x-0 bottom-0 sm:inset-0 z-[81] flex sm:items-center sm:justify-center sm:p-6">
+                  <div className="w-full sm:max-w-md bg-white rounded-t-2xl sm:rounded-2xl border border-black/10 shadow-2xl overflow-hidden slide-up">
+                    <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+                      <p className="font-display font-600 text-base text-[#0A0B0D]">Sell {nft.name}</p>
+                      <button onClick={() => setSellModalOpen(false)} className="text-black/40 hover:text-black/70">
+                        <X size={18} />
+                      </button>
+                    </div>
+                    <div className="p-5">
+                      <div className="rounded-xl bg-black/3 border border-black/8 p-4 mb-4">
+                        <p className="font-mono text-[10px] text-black/40 uppercase tracking-wider mb-3">Charges breakdown</p>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-black/50">Projected Sale Price</span>
+                            <span className="font-mono text-[#0A0B0D]">${nft.profit?.toLocaleString() || nft.usd.toLocaleString()}</span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span className="text-black/45">
+                              Platform fees & Tax
+                              <span className="block text-[10px] text-black/25">Includes all transaction, security, network costs and tax</span>
+                            </span>
+                            <span className="font-mono text-black/70 shrink-0">$2,500.00</span>
+                          </div>
+                          <div className="flex justify-between border-t border-black/8 pt-2 mt-2">
+                            <span className="font-medium text-[#0A0B0D]">Total charges</span>
+                            <span className="font-mono font-600 text-[#0A0B0D]">$2,500.00</span>
+                          </div>
+                          <div className="flex justify-between items-center rounded-lg bg-[#EF4444]/10 px-3 py-2 border border-[#EF4444]/20 mt-2">
+                            <span className="text-xs text-[#EF4444]">Total fee charged</span>
+                            <span className="font-mono font-700 text-[#EF4444]">$2,500.00</span>
+                          </div>
+                          <div className="text-[10px] text-black/40 text-center mt-2 flex items-center justify-center gap-1">
+                             <Landmark size={10} className="inline-block" />
+                             Fees are securely routed to the company address
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <button className="btn-primary w-full py-3.5 rounded-xl text-sm bg-[#EF4444] border-transparent hover:bg-[#DC2626]">
+                        Confirm Listing
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
 
             {/* Traits */}
             <div className="mb-6">

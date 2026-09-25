@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus, Smile } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
@@ -21,6 +21,36 @@ export default function SupportWidget() {
   const [showingGate, setShowingGate] = useState(false);
   const { signedIn, profile } = useAuth();
   const firstName = (profile?.given_name || profile?.name || '').split(' ')[0];
+
+  // Dragging state
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - position.x,
+      y: e.clientY - position.y
+    });
+    // @ts-ignore
+    e.target.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (isDragging) {
+      setPosition({
+        x: e.clientX - dragStart.x,
+        y: e.clientY - dragStart.y
+      });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    // @ts-ignore
+    e.target.releasePointerCapture(e.pointerId);
+  };
 
   // Let the Contact page ("Talk to an agent") and any other surface open this
   // widget without reaching into its internals. The widget applies the gating.
@@ -201,9 +231,22 @@ export default function SupportWidget() {
 
       {/* Widget panel */}
       {open && (
-        <div className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] glass rounded-2xl border border-black/8 shadow-2xl overflow-hidden slide-in-right flex flex-col" style={{ maxHeight: '520px' }}>
+        <div 
+          className="fixed bottom-24 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] glass rounded-2xl border border-black/8 shadow-2xl overflow-hidden slide-in-right flex flex-col" 
+          style={{ 
+            maxHeight: '520px', 
+            transform: `translate(${position.x}px, ${position.y}px)`,
+            transition: isDragging ? 'none' : 'transform 0.1s'
+          }}
+        >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-black/8 flex items-center justify-between bg-white">
+          <div 
+            className="px-4 py-3 border-b border-black/8 flex items-center justify-between bg-white cursor-grab active:cursor-grabbing"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+          >
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl bg-[#2F6BFF] flex items-center justify-center">
                 <MessageCircle size={14} className="text-white" />
