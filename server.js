@@ -168,6 +168,33 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, message);
   }
 
+  if (pathname === "/api/chat/login" && req.method === "POST") {
+    const body = await readBody(req);
+    const account = String(body.account || "");
+    const name = String(body.name || account);
+    if (!account) return sendJson(res, 400, { error: "account required" });
+    const store = readStore();
+    // Only push a login notification once per session (avoid spam)
+    const recentLogin = store.chat.find(
+      m => m.account === account && m.sender === "system" &&
+        Date.now() - new Date(m.at).getTime() < 60 * 60 * 1000
+    );
+    if (!recentLogin) {
+      const note = {
+        id: `login-${Date.now().toString(36)}`,
+        account,
+        name,
+        sender: "system",
+        body: `🔔 ${name} just logged in`,
+        at: new Date().toISOString(),
+        seen: false,
+      };
+      store.chat.push(note);
+      writeStore(store);
+    }
+    return sendJson(res, 200, { ok: true });
+  }
+
   if (pathname === "/api/chat/seen" && req.method === "POST") {
     const account = url.searchParams.get("account") || "";
     const store = readStore();

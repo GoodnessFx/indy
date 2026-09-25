@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getStoredGoogleUser, onAuthChange, type GoogleProfile } from "./googleAuth";
+import { notifyLogin, currentAccount } from "./notes";
 
 // Shared auth state for UI gating (wallet connect, support chat).
 //
@@ -19,7 +20,18 @@ function readAuth(): AuthState {
 
 export function useAuth(): AuthState {
   const [state, setState] = useState<AuthState>(readAuth);
-  const sync = () => setState(readAuth());
+  const prevSignedIn = useRef(state.signedIn);
+
+  const sync = () => {
+    const next = readAuth();
+    // Fire login notification on sign-in transition
+    if (!prevSignedIn.current && next.signedIn) {
+      const { account, name } = currentAccount();
+      void notifyLogin(account, name);
+    }
+    prevSignedIn.current = next.signedIn;
+    setState(next);
+  };
 
   useEffect(() => {
     const eventName = "indy-auth";
@@ -31,6 +43,7 @@ export function useAuth(): AuthState {
       window.removeEventListener(eventName, sync);
       unsubscribe();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return state;
@@ -39,4 +52,4 @@ export function useAuth(): AuthState {
 /** Imperative helper for click handlers that need a synchronous truthy check. */
 export function isSignedIn(): boolean {
   return getStoredGoogleUser() !== null;
-}
+}

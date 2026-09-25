@@ -4,6 +4,7 @@ import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCir
 import { useAuth } from '../lib/useAuth';
 import { createTicket, myTickets } from '../lib/audit';
 import { currentAccount, sendClient, threadFor, refreshThread } from '../lib/notes';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 type Tab = 'chat' | 'tickets' | 'help';
@@ -64,21 +65,38 @@ export default function SupportWidget() {
   // sessions: the client always continues from where they left off. Remote
   // messages are pulled in every 8 seconds when Supabase is configured, which
   // is how an admin on another device reaches this thread.
-  const [thread, setThread] = useState(() => threadFor(currentAccount().account));
+  const [thread, setThread] = useState(() => {
+  const account = currentAccount().account;
+  if (isSupabaseConfigured && supabase) {
+    return threadFor(account);
+  }
+  try {
+    return JSON.parse(localStorage.getItem(`support_thread_${account}`) || '[]');
+  } catch {
+    return [];
+  }
+});
   const [acks, setAcks] = useState<{ id: string; from: 'support'; text: string; time: string }[]>([]);
 
   useEffect(() => {
-    const sync = () => setThread(threadFor(currentAccount().account));
-    const pull = () => void refreshThread(currentAccount().account).then(sync);
-    window.addEventListener('indy-chat', sync);
-    window.addEventListener('storage', sync);
-    window.addEventListener('indy-auth', sync);
-    pull();
-    const t = window.setInterval(pull, 5000);
+    const syncLocal = () => setThread(threadFor(currentAccount().account));
+    const pull = async () => {
+      const fresh = await refreshThread(currentAccount().account);
+      if (fresh.length) {
+        setThread([...fresh]);
+      } else {
+        syncLocal();
+      }
+    };
+    window.addEventListener('indy-chat', syncLocal);
+    window.addEventListener('storage', syncLocal);
+    window.addEventListener('indy-auth', syncLocal);
+    void pull();
+    const t = window.setInterval(pull, 3000);
     return () => {
-      window.removeEventListener('indy-chat', sync);
-      window.removeEventListener('storage', sync);
-      window.removeEventListener('indy-auth', sync);
+      window.removeEventListener('indy-chat', syncLocal);
+      window.removeEventListener('storage', syncLocal);
+      window.removeEventListener('indy-auth', syncLocal);
       window.clearInterval(t);
     };
   }, []);

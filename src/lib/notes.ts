@@ -93,11 +93,45 @@ function toChatMessage(row: {
 
 async function pullThread(account: string): Promise<ChatMessage[]> {
   try {
-    const rows = (await apiRequest(`/api/chat/thread?account=${encodeURIComponent(account)}`)) as unknown;
+    const rows = (await apiRequest(`/api/chat/thread?account=${encodeURIComponent(account)}&t=${Date.now()}`)) as unknown;
     if (!Array.isArray(rows)) return [];
     return (rows as Parameters<typeof toChatMessage>[0][]).map(toChatMessage);
   } catch {
     return [];
+  }
+}
+
+/**
+ * Fetch all conversations directly from the server and return them, bypassing
+ * localStorage. Used by the admin inbox for true cross-device visibility.
+ */
+export async function fetchAllFromServer(): Promise<{ account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[]> {
+  try {
+    const rows = (await apiRequest(`/api/chat/all?t=${Date.now()}`)) as unknown;
+    if (!Array.isArray(rows)) return [];
+    const byAccount = new Map<string, ChatMessage[]>();
+    for (const m of (rows as Parameters<typeof toChatMessage>[0][]).map(toChatMessage)) {
+      const list = byAccount.get(m.account) ?? [];
+      list.push(m);
+      byAccount.set(m.account, list);
+    }
+    const result: { account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[] = [];
+    for (const [account, messages] of byAccount) {
+      const sorted = messages.sort((a, b) => (a.at < b.at ? -1 : 1));
+      result.push({
+        account,
+        name: sorted.find(m => m.from === 'client')?.name || account,
+        messages: sorted,
+        lastAt: sorted[sorted.length - 1]?.at ?? '',
+        unread: sorted.filter(m => m.from === 'client' && !m.seen).length,
+      });
+    }
+    // Also merge into local store so offline fallback stays warm
+    for (const [account, messages] of byAccount) mergeServer(account, messages);
+    return result.sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
+  } catch {
+    // Fallback: read from local mirror
+    return conversations();
   }
 }
 
@@ -222,12 +256,29 @@ function mergeServer(account: string, messages: ChatMessage[]): boolean {
 }
 
 /**
- * Pull one thread (client side) from the API and merge it locally, including
- * any agent replies sent from another device. Silently no-ops when the API is
- * down, the local mirror stays the source of truth.
+ * Pull one thread from the API, merge locally, and return the merged list.
+ * This is the authoritative read path for the client widget.
  */
-export async function refreshThread(account: string): Promise<void> {
-  for (const m of await pullThread(account)) mergeServer(account, [m]);
+export async function refreshThread(account: string): Promise<ChatMessage[]> {
+  const server = await pullThread(account);
+  if (server.length) {
+    for (const m of server) mergeServer(account, [m]);
+  }
+  // Return the freshest data: prefer server rows if we got any, else local
+  return server.length ? server.sort((a, b) => (a.at < b.at ? -1 : 1)) : threadFor(account);
+}
+
+/**
+ * Notify the admin that a client just logged in. Called once per session from
+ * the auth hook. Silently no-ops if the API is unavailable.
+ */
+export async function notifyLogin(account: string, name: string): Promise<void> {
+  try {
+    await apiRequest('/api/chat/login', {
+      method: 'POST',
+      body: JSON.stringify({ account, name }),
+    });
+  } catch { /* API optional */ }
 }
 
 /**

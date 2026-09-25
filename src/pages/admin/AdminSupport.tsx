@@ -1,54 +1,71 @@
-import { useState, useEffect } from 'react';
-import { Send, MessageSquare, Smile, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Send, MessageSquare, Smile, RefreshCw, Wifi, WifiOff, Bell } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import {
-  chatIsRemote,
   conversations,
   markThreadSeen,
-  refreshChat,
   markThreadSeenRemote,
   sendAgent,
   threadFor,
+  fetchAllFromServer,
   type ChatMessage,
 } from '../../lib/notes';
 
-// Support inbox built on the same chat store the client widget writes to. A
-// message a signed-in client sends shows up here immediately, the admin can
-// reply with emoji included, and the conversation is kept so it can be picked
-// up again later from the same or another device, because every row also lives
-// in the shared JSON store served at /api/chat by server.js.
+// Support inbox with real cross-device sync. Every poll hits the server API
+// directly so messages from clients on any device / country appear immediately.
 
 const EMOJIS = ['👍', '🙏', '😊', '🎉', '✅', '👋', '💰', '📈', '🔒', '⚡', '🤝', '🔥'];
+
+type Convo = { account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number };
 
 export default function AdminSupport() {
   const [selected, setSelected] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
-  const [list, setList] = useState(() => conversations());
+  const [list, setList] = useState<Convo[]>(() => conversations());
+  const [isRemote, setIsRemote] = useState(false);
   const [, setTick] = useState(0);
+  const [newAlert, setNewAlert] = useState<string | null>(null);
+  const prevCountRef = useRef<Record<string, number>>({});
 
-  const sync = () => setList(conversations());
+  // Poll the server directly — works from any device, any country.
+  const doSync = async () => {
+    const fresh = await fetchAllFromServer();
+    setIsRemote(true);
+
+    // Detect newly arrived client messages and notify the admin
+    for (const convo of fresh) {
+      const prev = prevCountRef.current[convo.account] ?? 0;
+      const clientMsgs = convo.messages.filter(m => m.from === 'client').length;
+      if (clientMsgs > prev && prev !== 0) {
+        setNewAlert(`New message from ${convo.name || convo.account}`);
+        setTimeout(() => setNewAlert(null), 5000);
+      }
+      prevCountRef.current[convo.account] = clientMsgs;
+    }
+
+    setList(fresh);
+  };
 
   useEffect(() => {
-    void refreshChat();
-    sync();
-    const local = () => sync();
+    void doSync();
+    const timer = window.setInterval(doSync, 3000); // poll every 3 s
+    const local = () => setList(conversations());
     window.addEventListener('indy-chat', local);
     window.addEventListener('storage', local);
-    const timer = window.setInterval(() => {
-      void refreshChat();
-      sync();
-    }, 8000);
     return () => {
+      window.clearInterval(timer);
       window.removeEventListener('indy-chat', local);
       window.removeEventListener('storage', local);
-      window.clearInterval(timer);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const activeAccount = selected ?? list[0]?.account ?? null;
   const activeName = list.find(c => c.account === activeAccount)?.name ?? activeAccount ?? '';
-  const messages: ChatMessage[] = activeAccount ? threadFor(activeAccount) : [];
+  // Prefer the freshest messages from the list (server-sourced), fall back to local mirror
+  const activeConvo = list.find(c => c.account === activeAccount);
+  const messages: ChatMessage[] = activeConvo?.messages ?? (activeAccount ? threadFor(activeAccount) : []);
 
   useEffect(() => {
     if (activeAccount && messages.some(m => m.from === 'client' && !m.seen)) {
@@ -64,19 +81,27 @@ export default function AdminSupport() {
     sendAgent(activeAccount, reply.trim());
     setReply('');
     setEmojiOpen(false);
-    sync();
+    void doSync();
   };
 
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto w-full">
+        {/* New message toast */}
+        {newAlert && (
+          <div className="fixed top-6 right-6 z-[200] flex items-center gap-2 bg-[#0A0B0D] text-white text-xs px-4 py-3 rounded-xl shadow-2xl border border-white/10 animate-bounce">
+            <Bell size={13} className="text-[#2F6BFF]" />
+            {newAlert}
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
           <div>
             <h1 className="font-mono font-700 text-xl text-[#0A0B0D]">Support Inbox</h1>
-            <p className="text-xs text-black/30 font-mono mt-1">
-              {chatIsRemote
-                ? 'Synced, reachable from any device'
-                : 'Local store, add Supabase env vars for cross device sync'}
+            <p className="text-xs text-black/30 font-mono mt-1 flex items-center gap-1.5">
+              {isRemote
+                ? <><Wifi size={11} className="text-[#22C55E]" /> Live server sync — reachable from any device, any country</>
+                : <><WifiOff size={11} className="text-[#EF4444]" /> Local mode — messages only visible on this browser</>}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -84,7 +109,7 @@ export default function AdminSupport() {
               {list.length} conversation{list.length === 1 ? '' : 's'}
             </span>
             <button
-              onClick={() => { void refreshChat(); sync(); }}
+              onClick={() => void doSync()}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-black/8 text-[11px] text-black/40 hover:text-black/70 transition-colors font-mono"
               aria-label="Refresh conversations"
             >
@@ -92,6 +117,7 @@ export default function AdminSupport() {
             </button>
           </div>
         </div>
+
         <div className="bg-white border border-black/5 rounded-xl overflow-hidden flex flex-col md:flex-row min-h-[440px]">
           {/* Conversation list */}
           <div className="md:w-72 shrink-0 border-b md:border-b-0 md:border-r border-black/5 flex flex-col max-h-[40vh] md:max-h-none overflow-y-auto">
@@ -100,7 +126,7 @@ export default function AdminSupport() {
                 <MessageSquare size={26} className="text-black/15 mx-auto mb-3" />
                 <p className="text-xs text-black/40 mb-1">No conversations yet</p>
                 <p className="text-[11px] text-black/25 leading-relaxed">
-                  Every message a signed-in client sends arrives here immediately.
+                  Every message a signed-in client sends arrives here in real time.
                 </p>
               </div>
             )}
@@ -111,7 +137,7 @@ export default function AdminSupport() {
               return (
                 <button
                   key={c.account}
-                  onClick={() => { setSelected(c.account); markThreadSeen(c.account); void markThreadSeenRemote(c.account); sync(); setTick(t => t + 1); }}
+                  onClick={() => { setSelected(c.account); markThreadSeen(c.account); void markThreadSeenRemote(c.account); void doSync(); setTick(t => t + 1); }}
                   className={`w-full text-left px-4 py-3.5 border-b border-black/3 hover:bg-black/2 transition-colors ${active ? 'bg-[#2F6BFF]/5' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">
@@ -130,7 +156,8 @@ export default function AdminSupport() {
               );
             })}
           </div>
-          {/* Conversation */}
+
+          {/* Conversation view */}
           {activeAccount && list.length > 0 ? (
             <div className="flex-1 flex flex-col min-w-0">
               <div className="px-4 sm:px-6 py-4 border-b border-black/5 bg-white flex items-center justify-between gap-3">
