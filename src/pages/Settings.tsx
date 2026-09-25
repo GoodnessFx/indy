@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff, Globe, QrCode, ScanLine, FileDown, Gift, Copy } from 'lucide-react';
 import { languages } from '../data/mock';
 import ScanCardModal from '../components/ScanCardModal';
@@ -8,6 +8,7 @@ import { myOrders } from '../lib/orders';
 import { useAuth } from '../lib/useAuth';
 import { fileToDataUrl, saveAccountProfile, exportAccountData, getAccountProfile } from '../lib/account';
 import { pushUserNote } from '../lib/notes';
+import { docStatus } from '../lib/notes';
 
 type Tab = 'profile' | 'security' | 'preferences' | 'payments' | 'verification' | 'danger';
 
@@ -37,7 +38,14 @@ export default function Settings() {
   const [statementDone, setStatementDone] = useState(false);
   const [avatar, setAvatar] = useState<string | undefined>(getAccountProfile().avatar);
   const [docPreview, setDocPreview] = useState<Record<string, string>>({});
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const referralCode = getReferralCode();
+
+  // Tick the 30 minute document verification clock while the tab is open.
+  useEffect(() => {
+    const t = window.setInterval(() => setNowMs(Date.now()), 60000);
+    return () => window.clearInterval(t);
+  }, []);
 
   const uploadAvatar = async (file: File | undefined) => {
     if (!file) return;
@@ -404,35 +412,59 @@ export default function Settings() {
                     <p className="text-xs text-[#22C55E]/70 mt-0.5">Your account is fully KYC verified and in good standing.</p>
                   </div>
                 </div>
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-[#22C55E]/5 border border-[#22C55E]/20 mb-4">
+                  <div className="w-4 h-4 rounded-full bg-[#22C55E]/20 flex items-center justify-center shrink-0 mt-0.5">
+                    <span className="text-[10px] text-[#22C55E] font-bold">✓</span>
+                  </div>
+                  <p className="text-xs text-[#22C55E]/80 leading-relaxed">
+                    A document uploaded more than 30 minutes ago reads as verified on its own.
+                  </p>
+                </div>
                 <div className="space-y-3">
                   {[
                     { kind: 'government', label: 'Government ID' },
                     { kind: 'selfie', label: 'Selfie verification' },
                     { kind: 'address', label: 'Proof of address' },
-                  ].map(doc => (
-                    <div key={doc.kind} className="flex items-center justify-between gap-3 p-4 rounded-xl border border-black/8 bg-black/3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-[#0A0B0D]">{doc.label}</p>
-                        <p className="text-xs text-black/30 mt-0.5 truncate">
-                          {getAccountProfile().documents.find(d => d.kind === doc.kind)?.name || (docPreview[doc.kind] ? 'Uploaded, pending review' : 'Not uploaded yet')}
-                        </p>
+                  ].map(doc => {
+                    const entry = getAccountProfile().documents.find(d => d.kind === doc.kind);
+                    const entryAt = entry?.at;
+                    const status = entryAt ? docStatus(entryAt, nowMs) : { verified: false, dueAt: 0 };
+                    const preview = docPreview[doc.kind] || entry?.dataUrl;
+                    const uploaded = !!entryAt;
+                    return (
+                      <div key={doc.kind} className="flex items-center justify-between gap-3 p-4 rounded-xl border border-black/8 bg-black/3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-[#0A0B0D]">{doc.label}</p>
+                          <p className="text-xs text-black/30 mt-0.5 truncate">
+                            {uploaded && !status.verified
+                              ? `Pending, verified ${Math.max(1, Math.ceil((status.dueAt - nowMs) / 60000))} min`
+                              : uploaded
+                              ? `${entry?.name || 'Uploaded'} · Verified`
+                              : 'Not uploaded yet'}
+                          </p>
+                          {preview && (
+                            <img src={preview} alt={doc.label} className="mt-2 h-20 w-full object-cover rounded-lg" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <label className="flex items-center gap-1.5 text-xs border border-black/15 rounded-lg px-3 py-2 text-black/60 hover:border-black/30 cursor-pointer">
+                            <Upload size={12} /> {uploaded ? 'Replace' : 'Upload'}
+                            <input type="file" accept="image/*" className="sr-only"
+                              onChange={e => uploadDocument(doc.kind, doc.label, e.target.files?.[0])} />
+                          </label>
+                          <span className={
+                            status.verified
+                              ? 'text-xs chip-gain px-2.5 py-1 rounded-full'
+                              : uploaded
+                              ? 'text-xs chip-warning px-2.5 py-1 rounded-full'
+                              : 'text-xs px-2.5 py-1 rounded-full border border-black/10 text-black/30'
+                          }>
+                            {status.verified ? 'Verified' : uploaded ? 'Pending' : 'Missing'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <label className="flex items-center gap-1.5 text-xs border border-black/15 rounded-lg px-3 py-2 text-black/60 hover:border-black/30 cursor-pointer">
-                          <Upload size={12} /> Upload
-                          <input type="file" accept="image/*" className="sr-only"
-                            onChange={e => uploadDocument(doc.kind, doc.label, e.target.files?.[0])} />
-                        </label>
-                        <span className={
-                          getAccountProfile().documents.find(d => d.kind === doc.kind) || docPreview[doc.kind]
-                            ? 'text-xs chip-warning px-2.5 py-1 rounded-full'
-                            : 'text-xs px-2.5 py-1 rounded-full border border-black/10 text-black/30'
-                        }>
-                          {getAccountProfile().documents.find(d => d.kind === doc.kind) || docPreview[doc.kind] ? 'Pending' : 'Missing'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

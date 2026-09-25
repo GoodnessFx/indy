@@ -131,6 +131,19 @@ export function unreadAgentMessageCount(forAccount: string): number {
   return agentMessagesFor(forAccount).filter(m => !m.read).length;
 }
 
+// --- Document verification: uploads auto-verify 30 minutes after capture ---
+
+/** A newly uploaded document stays pending for 30 minutes, then reads verified. */
+export const DOCUMENT_VERIFY_MS = 30 * 60 * 1000;
+
+export function docStatus(atISO: string | undefined, now = Date.now()): {
+  verified: boolean;
+  dueAt: number;
+} {
+  const dueAt = atISO ? new Date(atISO).getTime() + DOCUMENT_VERIFY_MS : 0;
+  return { verified: !!atISO && now >= dueAt, dueAt };
+}
+
 export function markAgentMessagesRead(forAccount: string): void {
   write(agentMessagesKey(forAccount), agentMessagesFor(forAccount).map(m => ({ ...m, read: true })));
   window.dispatchEvent(new Event("indy-messages"));

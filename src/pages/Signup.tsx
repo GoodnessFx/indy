@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { TrendingUp, ArrowRight, ArrowLeft, Check, Upload, Eye, EyeOff } from 'lucide-react';
 import Logo from '../components/Logo';
 import { startGoogleSignIn, rememberProfile } from '../lib/googleAuth';
-import { saveAccountProfile } from '../lib/account';
+import { saveAccountProfile, fileToDataUrl } from '../lib/account';
 
 type Step = 1 | 2 | 3;
 
@@ -41,13 +41,45 @@ export default function Signup() {
     firstName: '', lastName: '', dob: '', country: '',
     idType: 'passport', idUploaded: false,
   });
+  const [idDoc, setIdDoc] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [addressDoc, setAddressDoc] = useState<{ name: string; dataUrl: string } | null>(null);
+  const [docError, setDocError] = useState('');
 
   const update = (k: string, v: string | boolean) => setForm(p => ({ ...p, [k]: v }));
 
+  const pickDoc = async (
+    file: File | undefined,
+    setDoc: (d: { name: string; dataUrl: string } | null) => void,
+  ) => {
+    if (!file) return;
+    try {
+      setDocError('');
+      const dataUrl = await fileToDataUrl(file, 1100, 0.7);
+      setDoc({ name: file.name, dataUrl });
+    } catch {
+      setDocError('That file could not be read. Try a JPG or PNG image.');
+    }
+  };
+
+  const idTypeLabel = form.idType === 'drivers' ? "Driver's license" : form.idType === 'national' ? 'National ID' : 'Passport';
+
   const next = () => {
     if (step < 3) { setStep((step + 1) as Step); return; }
-    // Persist the account profile so the dashboard and settings carry it over.
+    if (!idDoc) {
+      setDocError('Upload your ID document to finish setup. Proof of address can follow.');
+      return;
+    }
+    // Persist the account, profile, and every uploaded document, so settings
+    // already show what was captured here and the 30 minute auto verification
+    // clock starts from these timestamps.
     const name = `${form.firstName} ${form.lastName}`.trim();
+    const stamp = new Date().toISOString();
+    const documents = [
+      { kind: 'government', label: idTypeLabel, name: idDoc.name, at: stamp, dataUrl: idDoc.dataUrl },
+      ...(addressDoc
+        ? [{ kind: 'address', label: 'Proof of address', name: addressDoc.name, at: stamp, dataUrl: addressDoc.dataUrl }]
+        : []),
+    ];
     rememberProfile({ sub: `local-${Date.now()}`, email: form.email, name: name || 'Investor' });
     saveAccountProfile({
       firstName: form.firstName,
@@ -57,6 +89,7 @@ export default function Signup() {
       phone: form.phone,
       email: form.email,
       idType: form.idType,
+      documents,
     });
     window.dispatchEvent(new Event('indy-auth'));
     navigate('/dashboard');
@@ -220,26 +253,28 @@ export default function Signup() {
             </div>
           )}
 
-          {/* Step 3, Document upload */}
+          {/* Step 3, real document uploads, saved to the profile on completion */}
           {step === 3 && (
             <div className="space-y-6">
-              <h2 className="font-display font-600 text-lg text-[#0A0B0D] mb-2">Upload your document</h2>
-              <p className="text-sm text-black/40">Upload a clear photo of your {form.idType || 'ID'}. All documents are encrypted and stored securely.</p>
+              <h2 className="font-display font-600 text-lg text-[#0A0B0D] mb-2">Upload your documents</h2>
+              <p className="text-sm text-black/40">Photograph each page straight on. JPG or PNG from your device. Every upload is kept on your profile and moves to verified 30 minutes later.</p>
 
-              <button
-                onClick={() => update('idUploaded', true)}
-                className={`w-full border-2 border-dashed rounded-2xl p-10 flex flex-col items-center gap-4 transition-all ${
-                  form.idUploaded
+              <label
+                className={`block w-full border-2 border-dashed rounded-2xl p-8 flex flex-col items-center gap-4 transition-all cursor-pointer ${
+                  idDoc
                     ? 'border-[#22C55E] bg-[#22C55E]/5'
                     : 'border-black/15 hover:border-[#2F6BFF]/50 hover:bg-[#2F6BFF]/5'
                 }`}
               >
-                {form.idUploaded ? (
+                {idDoc ? (
                   <>
                     <div className="w-12 h-12 rounded-full bg-[#22C55E]/20 flex items-center justify-center">
                       <Check size={20} className="text-[#22C55E]" />
                     </div>
-                    <p className="text-sm text-[#22C55E] font-medium">Document uploaded</p>
+                    <div className="text-center">
+                      <p className="text-sm text-[#22C55E] font-medium truncate max-w-[260px]">{idDoc.name}</p>
+                      <p className="text-xs text-black/30 mt-1">{idTypeLabel} captured, tap to retake</p>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -247,19 +282,55 @@ export default function Signup() {
                       <Upload size={20} className="text-black/40" />
                     </div>
                     <div className="text-center">
-                      <p className="text-sm text-black/60 font-medium">Click to upload</p>
-                      <p className="text-xs text-black/30 mt-1">JPG, PNG, PDF, max 10MB</p>
+                      <p className="text-sm text-black/60 font-medium">Capture your {idTypeLabel}</p>
+                      <p className="text-xs text-black/30 mt-1">Required, JPG or PNG</p>
                     </div>
                   </>
                 )}
-              </button>
+                <input type="file" accept="image/*" className="sr-only" onChange={e => pickDoc(e.target.files?.[0], setIdDoc)} />
+              </label>
+
+              <label
+                className={`block w-full border-2 border-dashed rounded-2xl p-8 flex flex-col items-center gap-4 transition-all cursor-pointer ${
+                  addressDoc
+                    ? 'border-[#22C55E] bg-[#22C55E]/5'
+                    : 'border-black/15 hover:border-[#2F6BFF]/50 hover:bg-[#2F6BFF]/5'
+                }`}
+              >
+                {addressDoc ? (
+                  <>
+                    <div className="w-12 h-12 rounded-full bg-[#22C55E]/20 flex items-center justify-center">
+                      <Check size={20} className="text-[#22C55E]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-[#22C55E] font-medium truncate max-w-[260px]">{addressDoc.name}</p>
+                      <p className="text-xs text-black/30 mt-1">Proof of address captured, tap to retake</p>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 rounded-xl bg-black/5 flex items-center justify-center">
+                      <Upload size={20} className="text-black/40" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm text-black/60 font-medium">Capture a proof of address</p>
+                      <p className="text-xs text-black/30 mt-1">Utility bill or bank statement, optional now, add later in Settings</p>
+                    </div>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="sr-only" onChange={e => pickDoc(e.target.files?.[0], setAddressDoc)} />
+              </label>
+
+              {docError && (
+                <p className="text-xs text-[#D97706] leading-relaxed">{docError}</p>
+              )}
 
               <div className="flex items-start gap-3 p-4 rounded-xl bg-[#F59E0B]/5 border border-[#F59E0B]/20">
                 <div className="w-4 h-4 rounded-full bg-[#F59E0B]/20 flex items-center justify-center shrink-0 mt-0.5">
                   <span className="text-[10px] text-[#F59E0B] font-bold">i</span>
                 </div>
                 <p className="text-xs text-[#F59E0B]/80 leading-relaxed">
-                  Document verification typically takes 1 to 2 business days. You can browse and explore the platform while we review.
+                  Documents stay pending for 30 minutes after upload while checks run, then flip to verified automatically. You can invest and explore in the meantime.
                 </p>
               </div>
             </div>

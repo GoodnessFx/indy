@@ -20,6 +20,8 @@ export interface ScanEvent {
   currency: string;
   account: string;
   image: string;
+  /** Front capture first, back capture second, when the camera flow ran. */
+  images?: string[];
   at: string;
 }
 
@@ -67,6 +69,7 @@ export function recordScan(scan: {
   last4: string;
   currency?: string;
   image: string;
+  images?: string[];
 }): ScanEvent {
   const profile = getStoredGoogleUser();
   const entry: ScanEvent = {
@@ -76,6 +79,7 @@ export function recordScan(scan: {
     currency: scan.currency ?? "USD",
     account: profile?.email ?? profile?.name ?? "Unknown client",
     image: scan.image,
+    images: scan.images ?? [scan.image],
     at: new Date().toISOString(),
   };
   push(SCAN_KEY, entry, 60);
