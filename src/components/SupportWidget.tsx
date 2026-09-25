@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus, Smile } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
 import { createTicket, myTickets } from '../lib/audit';
-import { currentAccount, sendClient, threadFor, refreshChat } from '../lib/notes';
+import { currentAccount, sendClient, threadFor, refreshThread } from '../lib/notes';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 type Tab = 'chat' | 'tickets' | 'help';
@@ -39,14 +39,12 @@ export default function SupportWidget() {
 
   useEffect(() => {
     const sync = () => setThread(threadFor(currentAccount().account));
+    const pull = () => void refreshThread(currentAccount().account).then(sync);
     window.addEventListener('indy-chat', sync);
     window.addEventListener('storage', sync);
     window.addEventListener('indy-auth', sync);
-    void refreshChat();
-    const t = window.setInterval(() => {
-      void refreshChat();
-      sync();
-    }, 8000);
+    pull();
+    const t = window.setInterval(pull, 5000);
     return () => {
       window.removeEventListener('indy-chat', sync);
       window.removeEventListener('storage', sync);

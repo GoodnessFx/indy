@@ -6,6 +6,7 @@ import {
   conversations,
   markThreadSeen,
   refreshChat,
+  markThreadSeenRemote,
   sendAgent,
   threadFor,
   type ChatMessage,
@@ -14,7 +15,8 @@ import {
 // Support inbox built on the same chat store the client widget writes to. A
 // message a signed-in client sends shows up here immediately, the admin can
 // reply with emoji included, and the conversation is kept so it can be picked
-// up again later from the same or another device (with Supabase configured).
+// up again later from the same or another device, because every row also lives
+// in the shared JSON store served at /api/chat by server.js.
 
 const EMOJIS = ['👍', '🙏', '😊', '🎉', '✅', '👋', '💰', '📈', '🔒', '⚡', '🤝', '🔥'];
 
@@ -51,6 +53,7 @@ export default function AdminSupport() {
   useEffect(() => {
     if (activeAccount && messages.some(m => m.from === 'client' && !m.seen)) {
       markThreadSeen(activeAccount);
+      void markThreadSeenRemote(activeAccount);
       setTick(t => t + 1);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -108,7 +111,7 @@ export default function AdminSupport() {
               return (
                 <button
                   key={c.account}
-                  onClick={() => { setSelected(c.account); markThreadSeen(c.account); sync(); setTick(t => t + 1); }}
+                  onClick={() => { setSelected(c.account); markThreadSeen(c.account); void markThreadSeenRemote(c.account); sync(); setTick(t => t + 1); }}
                   className={`w-full text-left px-4 py-3.5 border-b border-black/3 hover:bg-black/2 transition-colors ${active ? 'bg-[#2F6BFF]/5' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">

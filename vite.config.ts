@@ -34,6 +34,12 @@ react(),
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
+      proxy: {
+        '/api': {
+          target: 'http://127.0.0.1:4000',
+          changeOrigin: true,
+        },
+      },
       // Dev/preview servers are reached through proxied hostnames (Figma Make
       // preview, Render, ngrok, ...) which Vite's host check would otherwise
       // reject with 403 "Blocked request. This host ... is not allowed."

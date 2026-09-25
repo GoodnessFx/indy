@@ -1,16 +1,23 @@
-// Support chat shared by the client widget and the admin inbox.
+// Shared chat layer: client widget <-> admin inbox.
 //
 // One conversation per client account. Both sides read and write the same
-// thread, so a client can send a message, close the browser, come back later,
-// and the conversation continues from where it stopped.
+// conversation, so a client can send a message from one device, the admin can
+// reply from anywhere else in the world, and the client resumes exactly where
+// they stopped.
 //
-// Storage: always writes to localStorage first (works offline and on a fresh
-// browser), and when VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY are set every
-// message also goes to the support_messages table, so an admin can sign in from
-// any device anywhere and reply to the same thread. See supabase/chat.sql.
+// Where it lives, in order of preference:
+//   1. Local API (/api/chat/...). On Render the Web Service runs server.js next
+//      to the built frontend, so every device shares one message store.
+//      The server entrypoint only uses the Node standard library (no new
+//      dependencies), and server/data/store.json is the single file holding
+//      every chat row.
+//   2. localStorage mirror per account, so the thread opens instantly, works
+//      offline, and survives a server restart on this device.
+//
+// No database, no tables, no SDK. Plain HTTP JSON rows keyed by account email,
+// the same pattern as the reference repo.
 
 import { getStoredGoogleUser } from "./googleAuth";
-import { supabase, isSupabaseConfigured } from "./supabase";
 
 export interface ChatMessage {
   id: string;
@@ -24,7 +31,6 @@ export interface ChatMessage {
 }
 
 const LOCAL_KEY = "indy_chat_threads";
-const REMOTE_TABLE = "support_messages";
 
 type Threads = Record<string, ChatMessage[]>;
 
@@ -51,6 +57,64 @@ export function currentAccount(): { account: string; name: string } {
   const account = profile?.email ?? profile?.sub ?? "guest";
   const name = profile?.name || profile?.email || "Client";
   return { account, name };
+}
+
+// --- JSON API helpers (server.js /api/chat) ---
+
+async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
+  const res = await fetch(path, {
+    ...init,
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+  });
+  if (!res.ok) throw new Error(`Chat API ${res.status}`);
+  return res.json();
+}
+
+function toChatMessage(row: {
+  id?: string;
+  account?: string;
+  name?: string;
+  sender?: string;
+  body?: string;
+  at?: string;
+  sent_at?: string;
+  seen?: boolean;
+}): ChatMessage {
+  return {
+    id: String(row.id ?? `m-${Date.now().toString(36)}`),
+    account: String(row.account ?? ""),
+    name: String(row.name ?? row.account ?? ""),
+    from: row.sender === "agent" ? "agent" : "client",
+    text: String(row.body ?? ""),
+    at: String(row.at ?? row.sent_at ?? new Date().toISOString()),
+    seen: row.seen ?? false,
+  };
+}
+
+async function pullThread(account: string): Promise<ChatMessage[]> {
+  try {
+    const rows = (await apiRequest(`/api/chat/thread?account=${encodeURIComponent(account)}`)) as unknown;
+    if (!Array.isArray(rows)) return [];
+    return (rows as Parameters<typeof toChatMessage>[0][]).map(toChatMessage);
+  } catch {
+    return [];
+  }
+}
+
+async function pushServer(payload: {
+  id?: string;
+  account: string;
+  name: string;
+  sender: "client" | "agent";
+  body: string;
+  at?: string;
+}): Promise<boolean> {
+  try {
+    await apiRequest("/api/chat/send", { method: "POST", body: JSON.stringify(payload) });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function threadFor(account: string): ChatMessage[] {
@@ -91,7 +155,14 @@ export function sendClient(text: string): ChatMessage {
     at: new Date().toISOString(),
   };
   append(account, message);
-  void pushRemote(message);
+  void pushServer({
+    id: message.id,
+    account,
+    name,
+    sender: "client",
+    body: text,
+    at: message.at,
+  });
   return message;
 }
 
@@ -105,7 +176,14 @@ export function sendAgent(account: string, text: string): ChatMessage {
     at: new Date().toISOString(),
   };
   append(account, message);
-  void pushRemote(message);
+  void pushServer({
+    id: message.id,
+    account,
+    name: "Indy Support",
+    sender: "agent",
+    body: text,
+    at: message.at,
+  });
   return message;
 }
 
@@ -117,57 +195,78 @@ export function markThreadSeen(account: string): void {
   writeAll(threads);
 }
 
-// --- Remote sync (Supabase), optional but enabled by env vars ---
+// --- Server sync (local API), automatic when the API is up ---
 
-async function pushRemote(message: ChatMessage): Promise<void> {
-  if (!isSupabaseConfigured || !supabase) return;
-  try {
-    await supabase.from(REMOTE_TABLE).upsert({
-      id: message.id,
-      account: message.account,
-      name: message.name,
-      sender: message.from,
-      body: message.text,
-      sent_at: message.at,
-    });
-  } catch { /* remote optional, local copy already saved */ }
-}
-
-/** Pull remote messages down and merge them into the local thread store. */
-export async function refreshChat(): Promise<void> {
-  if (!isSupabaseConfigured || !supabase) return;
-  try {
-    const { data, error } = await supabase
-      .from(REMOTE_TABLE)
-      .select("id, account, name, sender, body, sent_at")
-      .order("sent_at", { ascending: true })
-      .limit(500);
-    if (error || !data?.length) return;
-    const threads = readAll();
-    let changed = false;
-    for (const row of data as { id: string; account: string; name: string; sender: string; body: string; sent_at: string }[]) {
-      const account = row.account;
-      const list = threads[account] ?? [];
-      if (list.some(m => m.id === row.id)) continue;
-      const existing = list.find(m => m.id === row.id);
-      list.push({
-        id: row.id,
-        account,
-        name: row.name,
-        from: row.sender === "agent" ? "agent" : "client",
-        text: row.body,
-        at: row.sent_at,
-        seen: existing?.seen ?? false,
-      });
-      threads[account] = list.sort((a, b) => (a.at < b.at ? -1 : 1));
-      changed = true;
+/** Merge a server thread into the local mirror. */
+function mergeServer(account: string, messages: ChatMessage[]): boolean {
+  const threads = readAll();
+  const list = threads[account] ?? [];
+  let changed = false;
+  for (const m of messages) {
+    const known = list.find(x => x.id === m.id);
+    if (known) {
+      if (m.from === "client" && !known.seen && m.seen) {
+        known.seen = true;
+        changed = true;
+      }
+      continue;
     }
-    if (changed) writeAll(threads);
-  } catch { /* remote optional */ }
+    list.push(m);
+    changed = true;
+  }
+  if (changed) {
+    threads[account] = list.sort((a, b) => (a.at < b.at ? -1 : 1));
+    writeAll(threads);
+  }
+  return changed;
 }
 
-/** True when messages will also be shared across devices. */
-export const chatIsRemote = isSupabaseConfigured;
+/**
+ * Pull one thread (client side) from the API and merge it locally, including
+ * any agent replies sent from another device. Silently no-ops when the API is
+ * down, the local mirror stays the source of truth.
+ */
+export async function refreshThread(account: string): Promise<void> {
+  for (const m of await pullThread(account)) mergeServer(account, [m]);
+}
+
+/**
+ * Pull every thread (admin side), mark threads you open as seen on the
+ * server so the badge clears everywhere, and mirror the results locally.
+ */
+export async function refreshChat(): Promise<void> {
+  try {
+    const rows = (await apiRequest("/api/chat/all")) as unknown;
+    if (!Array.isArray(rows)) return;
+    const byAccount = new Map<string, ChatMessage[]>();
+    for (const m of (rows as Parameters<typeof toChatMessage>[0][]).map(toChatMessage)) {
+      const list = byAccount.get(m.account) ?? [];
+      list.push(m);
+      byAccount.set(m.account, list);
+    }
+    for (const [account, messages] of byAccount) mergeServer(account, messages);
+  } catch { /* API optional, local mirror already works */ }
+}
+
+export async function markThreadSeenRemote(account: string): Promise<void> {
+  try {
+    await apiRequest(`/api/chat/seen?account=${encodeURIComponent(account)}`, { method: "POST" });
+  } catch { /* API optional */ }
+}
+
+/** True when messages reach the shared server, i.e. across devices. */
+export let chatIsRemote = false;
+
+async function probeApi(): Promise<void> {
+  try {
+    await apiRequest("/api/chat/all");
+    chatIsRemote = true;
+  } catch {
+    chatIsRemote = false;
+  }
+}
+
+void probeApi();
 
 // ============================================================================
 // Account notes, admin broadcasts, agent messages, document verification
