@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Wallet, LogOut, ChevronDown, X } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
+import { saveConnectedWallet } from '../lib/walletSync';
 
 // One connect flow for two wallet families:
 //  - EVM browser wallets (MetaMask, Coinbase, Trust, Rainbow, WalletConnect)
@@ -84,8 +85,10 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
         setConnectingId(w.id);
         const res = await window.solana.connect();
         if (res?.publicKey) {
-          setAddress(res.publicKey.toString());
+          const addr = res.publicKey.toString();
+          setAddress(addr);
           setKind('solana');
+          saveConnectedWallet({ address: addr, kind: 'solana', label: w.name });
           setOpen(false);
         }
       } catch {
@@ -106,6 +109,8 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
       if (accounts?.length) {
         setAddress(accounts[0]);
         setKind('evm');
+        // Publish the address so the portfolio can sync this wallet's NFTs.
+        saveConnectedWallet({ address: accounts[0], kind: 'evm', label: w.name });
         setOpen(false);
       }
     } catch {
@@ -123,6 +128,7 @@ export default function ConnectWallet({ variant = 'nav' }: { variant?: 'nav' | '
     setKind(null);
     setOpen(false);
     setCopied(false);
+    saveConnectedWallet(null);
   };
 
   const copyAddress = () => {

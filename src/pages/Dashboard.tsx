@@ -10,6 +10,9 @@ import { myOrders, type InvestmentOrder } from '../lib/orders';
 import { useOrdersSync } from '../lib/useOrdersSync';
 import { useAuth } from '../lib/useAuth';
 import { accountBalance } from '../lib/wallet';
+import { getConnectedWallet, getWalletSync, syncWallet, openSeaKeyConfigured } from '../lib/walletSync';
+import ConnectWallet from '../components/ConnectWallet';
+import WalletPanel from '../components/WalletPanel';
 
 const timeRanges = ['1D', '1W', '1M', '1Y', 'All'];
 
@@ -22,6 +25,10 @@ export default function Dashboard() {
   const [loading] = useState(false);
   const [orders] = useOrdersSync<InvestmentOrder[]>(() => myOrders());
   const [balance] = useOrdersSync(() => accountBalance());
+  const [wallet] = useOrdersSync(() => getConnectedWallet());
+  const [walletSync, setWalletSync] = useState(() => getWalletSync());
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState('');
   const { profile } = useAuth();
   const firstName = (profile?.given_name || profile?.name || 'Investor').split(' ')[0];
 
@@ -343,6 +350,48 @@ export default function Dashboard() {
             </div>
             <p className="text-xs text-black/30 leading-relaxed">Live FX rates with full fee breakdown before you confirm.</p>
           </Link>
+        </div>
+
+        {/* Connected wallet and on chain NFT holdings */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Wallet size={16} className="text-[#8B5CF6]" />
+            <h2 className="font-display font-600 text-lg text-[#0A0B0D]">Wallet and NFT portfolio</h2>
+          </div>
+          <div className="glass rounded-2xl border border-black/8 p-5">
+            {!wallet ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-[#0A0B0D] mb-1">Connect the wallet you use on OpenSea</p>
+                  <p className="text-xs text-black/40 leading-relaxed max-w-xl">
+                    Connect an Ethereum wallet and the NFTs and on chain activity it holds are pulled into this
+                    portfolio, so everything you own sits in one account.
+                  </p>
+                </div>
+                <div className="sm:w-56 shrink-0">
+                  <ConnectWallet variant="deposit" />
+                </div>
+              </div>
+            ) : (
+              <WalletPanel
+                wallet={wallet}
+                walletSync={walletSync}
+                syncing={syncing}
+                syncError={syncError}
+                onSync={async () => {
+                  setSyncing(true);
+                  setSyncError('');
+                  try {
+                    setWalletSync(await syncWallet());
+                  } catch (e) {
+                    setSyncError(e instanceof Error ? e.message : 'Could not sync this wallet.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              />
+            )}
+          </div>
         </div>
 
         {/* Currency and crypto calculator widget, same shared live rate feed */}

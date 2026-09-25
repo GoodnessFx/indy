@@ -7,6 +7,8 @@ import {
   InvestShell,
   InvestSignInGate,
   useInvestFlow,
+  FeeBreakdownBlock,
+  FeeScheduleNote,
 } from '../components/InvestModal';
 import { useAuth } from '../lib/useAuth';
 import { allInvestments } from '../data/catalog';
@@ -143,6 +145,8 @@ export default function InvestmentDetail() {
                       <button onClick={invest.submit} disabled={invest.amt < 1000} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
                         Submit investment
                       </button>
+                      <FeeBreakdownBlock amount={invest.amt} kind="investment" />
+                      <FeeScheduleNote />
                     </>
                   ) : invest.phase === 'submitted' ? (
                     <InvestAwaitingPayment onPay={invest.pay} onLater={() => setInvestOpen(false)} />

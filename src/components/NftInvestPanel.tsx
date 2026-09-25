@@ -5,6 +5,8 @@ import {
   InvestShell,
   InvestSignInGate,
   useInvestFlow,
+  FeeBreakdownBlock,
+  FeeScheduleNote,
   type InvestTarget,
 } from "../components/InvestModal";
 
@@ -40,6 +42,8 @@ export default function NftInvestPanel({ target }: { target: InvestTarget }) {
               <button onClick={flow.submit} disabled={flow.amt <= 0} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
                 Submit investment
               </button>
+              <FeeBreakdownBlock amount={flow.amt} kind={target.kind} currency={target.currency ?? 'USD'} />
+              <FeeScheduleNote />
             </>
           ) : flow.phase === "submitted" ? (
             <InvestAwaitingPayment onPay={flow.pay} onLater={() => setOpen(false)} />

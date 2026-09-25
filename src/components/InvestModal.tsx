@@ -3,6 +3,7 @@ import { Lock, X, Landmark } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/useAuth";
 import { confirmOrderPaid, myOrders, placeOrder, type OrderKind } from "../lib/orders";
+import { feeBreakdown, money, FEE_SCHEDULE_TABLE } from "../lib/fees";
 
 export interface InvestTarget {
   assetId: string;
@@ -51,6 +52,68 @@ export function useInvestFlow(target: InvestTarget, onDone?: () => void) {
   };
 
   return { amount, setAmount, amt, phase, submit, pay };
+}
+
+/** The itemised charge sheet shown before any transaction is confirmed. */
+export function FeeBreakdownBlock({ amount, kind, currency = "USD" }: { amount: number; kind: OrderKind; currency?: string }) {
+  const fees = feeBreakdown(amount, kind, currency);
+  return (
+    <div className="rounded-xl bg-black/3 border border-black/8 p-4 mb-4">
+      <p className="font-mono text-[10px] text-black/40 uppercase tracking-wider mb-3">Charges breakdown</p>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-black/50">Transaction amount</span>
+          <span className="font-mono text-[#0A0B0D]">{money(fees.amount, currency)}</span>
+        </div>
+        {fees.lines.map(line => (
+          <div key={line.key} className="flex justify-between gap-3">
+            <span className="text-black/45">
+              {line.label}
+              <span className="block text-[10px] text-black/25">{line.detail}</span>
+            </span>
+            <span className="font-mono text-black/70 shrink-0">{money(line.amount, currency)}</span>
+          </div>
+        ))}
+        <div className="flex justify-between border-t border-black/8 pt-2">
+          <span className="text-black/45">Fee subtotal</span>
+          <span className="font-mono text-black/70">{money(fees.subtotal, currency)}</span>
+        </div>
+        {fees.tax > 0 && (
+          <div className="flex justify-between">
+            <span className="text-black/45">
+              Tax (VAT / GST)
+              <span className="block text-[10px] text-black/25">{(fees.taxRate * 100).toFixed(0)}% on the fee subtotal</span>
+            </span>
+            <span className="font-mono text-black/70">{money(fees.tax, currency)}</span>
+          </div>
+        )}
+        <div className="flex justify-between border-t border-black/8 pt-2">
+          <span className="font-medium text-[#0A0B0D]">Total charges</span>
+          <span className="font-mono font-600 text-[#0A0B0D]">{money(fees.totalFees, currency)}</span>
+        </div>
+        <div className="flex justify-between items-center rounded-lg bg-[#2F6BFF]/8 px-3 py-2 border border-[#2F6BFF]/20">
+          <span className="text-xs text-black/60">Total charged to you</span>
+          <span className="font-mono font-700 text-[#0A0B0D]">{money(fees.totalCharged, currency)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function FeeScheduleNote() {
+  return (
+    <details className="mb-4 rounded-xl border border-black/8 bg-black/2 p-3">
+      <summary className="text-[11px] text-black/45 cursor-pointer font-mono">View the standard fee schedule</summary>
+      <div className="mt-3 space-y-1.5">
+        {FEE_SCHEDULE_TABLE.map(row => (
+          <div key={row.label} className="flex justify-between gap-3 text-[11px]">
+            <span className="text-black/50">{row.label}</span>
+            <span className="text-black/35 text-right">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </details>
+  );
 }
 
 export function InvestShell({

@@ -7,6 +7,8 @@ import {
   InvestShell,
   InvestSignInGate,
   useInvestFlow,
+  FeeBreakdownBlock,
+  FeeScheduleNote,
 } from '../components/InvestModal';
 import { useAuth } from '../lib/useAuth';
 import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Bar } from 'recharts';
@@ -205,6 +207,8 @@ export default function StockDetail() {
                       <button onClick={invest.submit} disabled={invest.amt <= 0} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
                         Submit investment
                       </button>
+                      <FeeBreakdownBlock amount={invest.amt} kind="stock" />
+                      <FeeScheduleNote />
                     </>
                   ) : invest.phase === 'submitted' ? (
                     <InvestAwaitingPayment onPay={invest.pay} onLater={() => setInvestOpen(false)} />

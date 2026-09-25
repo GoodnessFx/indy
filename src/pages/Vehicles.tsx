@@ -7,6 +7,8 @@ import {
   InvestShell,
   InvestSignInGate,
   useInvestFlow,
+  FeeBreakdownBlock,
+  FeeScheduleNote,
 } from '../components/InvestModal';
 import { useAuth } from '../lib/useAuth';
 
@@ -110,6 +112,8 @@ export default function Vehicles() {
                     <button onClick={invest.submit} disabled={invest.amt < 1000} className="btn-primary w-full py-3.5 rounded-xl text-sm disabled:opacity-50">
                       Submit allocation
                     </button>
+                    <FeeBreakdownBlock amount={invest.amt} kind="vehicle" />
+                    <FeeScheduleNote />
                   </>
                 ) : invest.phase === 'submitted' ? (
                   <InvestAwaitingPayment onPay={invest.pay} onLater={() => setInvestOpen(false)} />
