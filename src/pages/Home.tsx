@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, TrendingUp, Shield, Zap, Globe, Users, Clock, Star, ChevronRight, Play, Lock, BadgeCheck, Newspaper, ArrowUpRight, CalendarDays } from 'lucide-react';
 import TickerStrip from '../components/TickerStrip';
@@ -84,7 +84,7 @@ const featuredAssets = [
 const testimonials = [
   {
     quote: "IndySolutions made me feel like I had access to a private wealth desk. The interface is unlike anything else in fintech, it just works.",
-    name: 'Aisha Okafor', role: 'Portfolio Manager, Lagos',
+    name: 'Aisha Okafor', role: 'Portfolio Manager, London',
     avatar: 'avatar-1',
   },
   {
@@ -509,7 +509,7 @@ export default function Home() {
                 68 countries.<br />6 languages.
               </h2>
               <p className="text-white/40 text-sm leading-relaxed mb-8 max-w-sm">
-                From Lagos to Singapore, Dubai to Sao Paulo, Indy Digital Marketing Solutions is built for a world that doesn't stop at borders.
+                From London to Singapore, Dubai to Sao Paulo, Indy Digital Marketing Solutions is built for a world that doesn't stop at borders.
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {languages.map(lang => (
