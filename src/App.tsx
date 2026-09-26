@@ -37,6 +37,7 @@ import AdminUserDetail from './pages/admin/AdminUserDetail';
 import AdminKYC from './pages/admin/AdminKYC';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminSupport from './pages/admin/AdminSupport';
+import AdminNFTs from './pages/admin/AdminNFTs';
 import AdminAudit from './pages/admin/AdminAudit';
 import { useAuth } from './lib/useAuth';
 
@@ -107,6 +108,7 @@ function AppShell() {
         <Route path="/admin/users/:id" element={<AdminUserDetail />} />
         <Route path="/admin/kyc" element={<AdminKYC />} />
         <Route path="/admin/support" element={<AdminSupport />} />
+        <Route path="/admin/nfts" element={<AdminNFTs />} />
         <Route path="/admin/notifications" element={<AdminNotifications />} />
         <Route path="/admin/audit" element={<AdminAudit />} />
       </Routes>

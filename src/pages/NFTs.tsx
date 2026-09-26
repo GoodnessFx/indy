@@ -1,7 +1,8 @@
 ﻿import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, SlidersHorizontal, BadgeCheck, TrendingUp, TrendingDown, X } from 'lucide-react';
-import { allNFTs, nftCollections } from '../data/catalog';
+import { nftCollections } from '../data/catalog';
+import { useNFTCatalog } from '../lib/adminItems';
 import AssetImage from '../components/AssetImage';
 
 const sortOptions = ['Trending', 'Price: High', 'Price: Low', 'Recently listed'];
@@ -16,8 +17,10 @@ export default function NFTs() {
   const [priceRange, setPriceRange] = useState('Any');
   const [rarity, setRarity] = useState('Any');
   const [filterOpen, setFilterOpen] = useState(false);
+  // Full catalog = built-in NFTs + admin-added listings (pushed live).
+  const { items } = useNFTCatalog();
 
-  const filtered = allNFTs.filter(nft => {
+  const filtered = items.filter(nft => {
     if (search && !nft.name.toLowerCase().includes(search.toLowerCase()) && !nft.collection.toLowerCase().includes(search.toLowerCase())) return false;
     if (collection !== 'All' && nft.collection !== collection) return false;
     return true;
@@ -145,11 +148,18 @@ export default function NFTs() {
                     style={{ marginBottom: '1rem' }}
                   >
                     <div className="relative overflow-hidden" style={{ height: cardHeights[i % cardHeights.length] }}>
-                      <AssetImage
-                        seed={nft.image}
-                        label={nft.name}
-                        className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
-                      />
+                      {nft.image.startsWith('data:') || nft.image.startsWith('http')
+                        ? (
+                          <img src={nft.image} alt={nft.name}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        )
+                        : (
+                          <AssetImage
+                            seed={nft.image}
+                            label={nft.name}
+                            className="absolute inset-0 w-full h-full group-hover:scale-105 transition-transform duration-500"
+                          />
+                        )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
                       {nft.verified && (
                         <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-[#2F6BFF]/20 border border-[#2F6BFF]/30 rounded-full px-2.5 py-1">
@@ -168,7 +178,7 @@ export default function NFTs() {
                       </div>
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-mono font-600 text-sm text-[#0A0B0D]">{nft.price} ETH</p>
+                          <p className="font-mono font-600 text-sm text-[#0A0B0D]">{nft.price} {nft.currency}</p>
                           <p className="font-mono text-xs text-black/30">${nft.usd.toLocaleString()}</p>
                         </div>
                         <div className={`flex items-center gap-1 text-xs font-mono font-600 ${nft.change >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}`}>

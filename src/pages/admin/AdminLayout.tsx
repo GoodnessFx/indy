@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Users, MessageSquare, ShieldCheck, FileText, LogOut, TrendingUp, BellRing, PanelLeftClose, PanelLeftOpen, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Users, MessageSquare, ShieldCheck, FileText, LogOut, TrendingUp, BellRing, PanelLeftClose, PanelLeftOpen, Menu, X, ImagePlus } from 'lucide-react';
 import { totalUnreadForAdmin, conversations } from '../../lib/notes';
 import { signOutEverywhere } from '../../lib/supabase';
 
@@ -9,6 +9,7 @@ const navItems = [
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/kyc', label: 'KYC Queue', icon: ShieldCheck },
   { to: '/admin/support', label: 'Support Inbox', icon: MessageSquare },
+  { to: '/admin/nfts', label: 'NFT Listings', icon: ImagePlus },
   { to: '/admin/notifications', label: 'Notifications', icon: BellRing },
   { to: '/admin/audit', label: 'Audit Log', icon: FileText },
 ];

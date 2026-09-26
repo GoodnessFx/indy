@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS chat_users (email TEXT PRIMARY KEY, data JSONB NOT NU
 CREATE TABLE IF NOT EXISTS chat_logins (id TEXT PRIMARY KEY, data JSONB NOT NULL);
 CREATE TABLE IF NOT EXISTS user_records (email TEXT PRIMARY KEY, data JSONB NOT NULL);
 CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS catalog_items (id TEXT PRIMARY KEY, data JSONB NOT NULL);
 `;
 
 let dbReady = false;
@@ -193,6 +194,43 @@ async function appendAudit(entry) {
   return full;
 }
 
+async function readItems(kind) {
+  const rows = await dbAll("catalog_items");
+  if (rows) {
+    const all = rows.sort((a, b) => (String(a.createdAt) < String(b.createdAt || "") ? 1 : -1));
+    return kind ? all.filter((i) => i.kind === kind) : all;
+  }
+  const store = readStore();
+  const all = (store.items || []).sort((a, b) => (String(a.createdAt) < String(b.createdAt || "") ? 1 : -1));
+  return kind ? all.filter((i) => i.kind === kind) : all;
+}
+
+async function saveItem(item) {
+  const payload = { ...item, updatedAt: new Date().toISOString() };
+  const ok = await dbUpsert("catalog_items", "id", payload.id, payload);
+  if (ok) return payload;
+  const store = readStore();
+  store.items = store.items || [];
+  const idx = store.items.findIndex((i) => i.id === payload.id);
+  if (idx >= 0) store.items[idx] = payload;
+  else store.items.unshift(payload);
+  writeStore(store);
+  return payload;
+}
+
+async function deleteItem(id) {
+  if (pool && dbReady) {
+    try {
+      await pool.query("DELETE FROM catalog_items WHERE id = $1", [id]);
+      return true;
+    } catch { /* fall through */ }
+  }
+  const store = readStore();
+  store.items = (store.items || []).filter((i) => i.id !== id);
+  writeStore(store);
+  return true;
+}
+
 async function readUsers() {
   const users = await dbAll("chat_users");
   const logins = await dbAll("chat_logins");
@@ -255,7 +293,7 @@ const CANDIDATES = [
 ].filter((p, i, arr) => Number.isFinite(p) && p > 0 && p < 65536 && arr.indexOf(p) === i);
 
 function readStore() {
-  const empty = { chat: [], users: [], logins: [], records: [], audit: [] };
+  const empty = { chat: [], users: [], logins: [], records: [], audit: [], items: [] };
   try {
     const raw = fs.readFileSync(storePath, "utf8");
     const parsed = JSON.parse(raw);
@@ -267,6 +305,7 @@ function readStore() {
       logins: arr(parsed.logins),
       records: arr(parsed.records),
       audit: arr(parsed.audit),
+      items: arr(parsed.items),
     };
   } catch {
     return empty;
@@ -451,6 +490,40 @@ const server = http.createServer(async (req, res) => {
     const entry = await appendAudit(body);
     broadcastChat({ type: "audit", account: String(body.target || "") });
     return sendJson(res, 200, entry);
+  }
+
+  // Admin-managed catalog items (NFT list inserts). Stored server-side so a
+  // listing added here is visible to every client on every device.
+  if (pathname === "/api/items" && req.method === "GET") {
+    const kind = url.searchParams.get("kind") || "";
+    return sendJson(res, 200, await readItems(kind || undefined));
+  }
+
+  if (pathname === "/api/items" && req.method === "POST") {
+    const body = await readBody(req);
+    // `audit` is metadata for the trail, never part of the stored listing.
+    const { audit, ...rest } = body && typeof body === "object" ? body : {};
+    const id = String(rest.id || `item-${Date.now().toString(36)}`);
+    const saved = await saveItem({
+      ...rest,
+      id,
+      kind: rest.kind || "nft",
+      createdAt: rest.createdAt || new Date().toISOString(),
+    });
+    if (audit && typeof audit === "object") {
+      await appendAudit({ ...audit, target: id });
+    }
+    broadcastChat({ type: "item", account: "" });
+    return sendJson(res, 200, saved);
+  }
+
+  if (pathname === "/api/items" && req.method === "DELETE") {
+    const id = url.searchParams.get("id") || "";
+    if (!id) return sendJson(res, 400, { error: "id required" });
+    await deleteItem(id);
+    await appendAudit({ action: "Delete listing", target: id, detail: { id }, admin: url.searchParams.get("admin") || "admin" });
+    broadcastChat({ type: "item", account: "" });
+    return sendJson(res, 200, { ok: true });
   }
 
   if (pathname === "/api/users/all" && req.method === "GET") {

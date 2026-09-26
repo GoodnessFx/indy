@@ -4,7 +4,7 @@ import { ArrowLeft, BadgeCheck, Share2, TrendingUp, X, Landmark } from 'lucide-r
 import WatchButton from '../components/WatchButton';
 import NftInvestPanel from '../components/NftInvestPanel';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { allNFTs } from '../data/catalog';
+import { useNFTCatalog } from '../lib/adminItems';
 import AssetImage from '../components/AssetImage';
 import { useAuth } from '../lib/useAuth';
 
@@ -16,7 +16,8 @@ const priceHistory = [
 
 export default function NFTDetail() {
   const { id } = useParams();
-  const nft = allNFTs.find(n => n.id === id) || allNFTs[0];
+  const { items } = useNFTCatalog();
+  const nft = items.find(n => n.id === id) || items[0];
   const { signedIn, profile } = useAuth();
   const firstName = (profile?.given_name || profile?.name || '').split(' ')[0];
   const isOwner = signedIn && firstName && nft.owner && firstName.toLowerCase() === nft.owner.toLowerCase();
@@ -34,7 +35,13 @@ export default function NFTDetail() {
           {/* Artwork */}
           <div>
             <div className="rounded-3xl overflow-hidden border border-black/8 aspect-square bg-white relative">
-              <AssetImage seed={nft.image} label={nft.name} verified={nft.verified} className="absolute inset-0 w-full h-full" />
+              {nft.image.startsWith('data:') || nft.image.startsWith('http')
+                ? (
+                  <img src={nft.image} alt={nft.name} className="absolute inset-0 w-full h-full object-cover" />
+                )
+                : (
+                  <AssetImage seed={nft.image} label={nft.name} verified={nft.verified} className="absolute inset-0 w-full h-full" />
+                )}
             </div>
             <div className="flex items-center gap-3 mt-4">
               <WatchButton

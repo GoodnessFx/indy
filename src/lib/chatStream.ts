@@ -21,7 +21,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 //   safety poll keeps history converging until the stream recovers.
 
 export interface ChatStreamEvent {
-  type: "chat" | "read" | "typing" | "record" | "audit";
+  type: "chat" | "read" | "typing" | "record" | "audit" | "item";
   account: string;
   message?: {
     id?: string;
@@ -132,6 +132,9 @@ export function useChatStream({
             // Admin changed this account's record (balance/cards/KYC). Let
             // the client re-fetch its record with no refresh.
             window.dispatchEvent(new Event("indy-record"));
+          } else if (evt.type === "item") {
+            // A listing was added/removed in the admin console.
+            window.dispatchEvent(new Event("indy-items"));
           }
         } catch { /* malformed frame, ignore */ }
       });
