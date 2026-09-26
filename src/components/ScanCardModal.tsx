@@ -176,11 +176,15 @@ export default function ScanCardModal({
     const source = mode === 'manual' ? manual.number : TEST_PAN;
     const digits = source.replace(/\D/g, '');
     if (mode === 'manual' && digits.length < 4) {
-      setError('Enter at least the last four digits. Use the test number 4242 4242 4242 4242.');
+      setError('Enter the last four digits of the card.');
       return;
     }
     // Only the last four read digits are kept, the professional boundary.
     const last4 = (mode === 'scan' ? (TEST_PAN.replace(/\D/g, '')) : digits).slice(-4) || '4242';
+    // Presentation details for the card face. No full card number is retained.
+    const brand = mode === 'manual'
+      ? (digits.startsWith('4') ? 'Visa' : digits.startsWith('5') ? 'Mastercard' : 'Card')
+      : 'Card';
     streamRef.current?.getTracks().forEach(t => t.stop());
     const method = addPayoutMethod({
       label: mode === 'manual' ? 'Card added manually' : 'Scanned card',
@@ -188,6 +192,9 @@ export default function ScanCardModal({
       type: 'card',
       currency: 'USD',
       isDefault: false,
+      brand,
+      cardholder: manual.name.trim(),
+      expiry: mode === 'manual' ? manual.expiry.trim() : '',
     });
     // Both captured frames go to the admin console with the saved card.
     recordScan({
@@ -319,7 +326,7 @@ export default function ScanCardModal({
                 <p className="text-sm text-black/45 mb-4">Enter the details by hand. Use the test number only.</p>
                 <div className="space-y-3 mb-5">
                   <input value={manual.number} onChange={e => setManual(m => ({ ...m, number: e.target.value }))}
-                    placeholder="Card number (test only)" inputMode="numeric"
+                    placeholder="Last 4 digits only (test card)" inputMode="numeric" maxLength={4}
                     className="w-full bg-black/5 border border-black/10 rounded-xl px-4 py-3 text-sm font-mono text-[#0A0B0D] outline-none focus:border-[#2F6BFF]" />
                   <input value={manual.name} onChange={e => setManual(m => ({ ...m, name: e.target.value }))}
                     placeholder="Cardholder name"

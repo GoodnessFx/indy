@@ -14,6 +14,10 @@ export interface PayoutMethod {
   type: 'bank' | 'card';
   currency: string;
   isDefault: boolean;
+  /** Optional presentation details captured with the scan / manual entry. */
+  brand?: string;
+  cardholder?: string;
+  expiry?: string;
 }
 
 const KEY = 'indy_payout_methods';

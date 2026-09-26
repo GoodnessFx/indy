@@ -57,6 +57,8 @@ const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS chat_messages (id TEXT PRIMARY KEY, data JSONB NOT NULL);
 CREATE TABLE IF NOT EXISTS chat_users (email TEXT PRIMARY KEY, data JSONB NOT NULL);
 CREATE TABLE IF NOT EXISTS chat_logins (id TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS user_records (email TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, data JSONB NOT NULL);
 `;
 
 let dbReady = false;
@@ -124,6 +126,73 @@ async function markSeenDb(account) {
   }
 }
 
+// --- Admin-managed per-user records (profile, KYC, payout cards, balance) ---
+// One JSON blob per account so an admin edit from anywhere reaches the client
+// on any device. Audit entries are append-only and never rewritten.
+
+const EMPTY_RECORD = {
+  profile: {},
+  kyc: "",
+  payout: [],
+  balanceAdjustments: [],
+  deleted: false,
+  deletedAt: "",
+};
+
+async function readRecord(email) {
+  const rows = await dbAll("user_records");
+  if (rows) {
+    // dbAll returns the unwrapped JSONB payloads, not { data } wrappers.
+    const found = rows.find(
+      (r) => r && String(r.email).toLowerCase() === String(email).toLowerCase()
+    );
+    return { ...EMPTY_RECORD, ...(found || {}), email };
+  }
+  const store = readStore();
+  const found = (store.records || []).find(
+    (r) => String(r.email).toLowerCase() === String(email).toLowerCase()
+  );
+  return { ...EMPTY_RECORD, ...(found || {}), email };
+}
+
+async function saveRecord(email, record) {
+  const payload = { ...record, email, updatedAt: new Date().toISOString() };
+  const ok = await dbUpsert("user_records", "email", email, payload);
+  if (ok) return payload;
+  const store = readStore();
+  store.records = store.records || [];
+  const idx = store.records.findIndex(
+    (r) => String(r.email).toLowerCase() === String(email).toLowerCase()
+  );
+  if (idx >= 0) store.records[idx] = payload;
+  else store.records.push(payload);
+  writeStore(store);
+  return payload;
+}
+
+async function readAudit() {
+  const rows = await dbAll("audit_log");
+  if (rows) return rows.sort((a, b) => (a.at < b.at ? 1 : -1));
+  return (readStore().audit || []).sort((a, b) => (a.at < b.at ? 1 : -1));
+}
+
+async function appendAudit(entry) {
+  const full = {
+    id: `al-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    at: new Date().toISOString(),
+    admin: String(entry.admin || "admin"),
+    action: String(entry.action || "update"),
+    target: String(entry.target || ""),
+    detail: entry.detail || {},
+  };
+  const ok = await dbUpsert("audit_log", "id", full.id, full);
+  if (ok) return full;
+  const store = readStore();
+  store.audit = [full, ...(store.audit || [])].slice(0, 500);
+  writeStore(store);
+  return full;
+}
+
 async function readUsers() {
   const users = await dbAll("chat_users");
   const logins = await dbAll("chat_logins");
@@ -186,15 +255,18 @@ const CANDIDATES = [
 ].filter((p, i, arr) => Number.isFinite(p) && p > 0 && p < 65536 && arr.indexOf(p) === i);
 
 function readStore() {
-  const empty = { chat: [], users: [], logins: [] };
+  const empty = { chat: [], users: [], logins: [], records: [], audit: [] };
   try {
     const raw = fs.readFileSync(storePath, "utf8");
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return empty;
+    const arr = (v) => (Array.isArray(v) ? v : []);
     return {
-      chat: Array.isArray(parsed.chat) ? parsed.chat : [],
-      users: Array.isArray(parsed.users) ? parsed.users : [],
-      logins: Array.isArray(parsed.logins) ? parsed.logins : [],
+      chat: arr(parsed.chat),
+      users: arr(parsed.users),
+      logins: arr(parsed.logins),
+      records: arr(parsed.records),
+      audit: arr(parsed.audit),
     };
   } catch {
     return empty;
@@ -344,6 +416,41 @@ const server = http.createServer(async (req, res) => {
     const chat = await readChat();
     const rows = chat.filter((m) => m.account === account).sort((a, b) => (a.at < b.at ? -1 : 1));
     return sendJson(res, 200, rows);
+  }
+
+  if (pathname === "/api/users/record" && req.method === "GET") {
+    const email = url.searchParams.get("email") || "";
+    if (!email) return sendJson(res, 400, { error: "email required" });
+    return sendJson(res, 200, await readRecord(email));
+  }
+
+  // Admin edits a client's record (profile, KYC, payout cards, balance notes).
+  // Broadcast so the client's open session refreshes with no reload.
+  if (pathname === "/api/users/record" && req.method === "POST") {
+    const body = await readBody(req);
+    const email = String(body.email || "");
+    if (!email) return sendJson(res, 400, { error: "email required" });
+    const current = await readRecord(email);
+    const patch = body.patch && typeof body.patch === "object" ? body.patch : {};
+    const next = { ...current, ...patch, email };
+    delete next.updatedAt;
+    const saved = await saveRecord(email, next);
+    if (body.audit && typeof body.audit === "object") {
+      await appendAudit({ ...body.audit, target: email });
+    }
+    broadcastChat({ type: "record", account: email });
+    return sendJson(res, 200, saved);
+  }
+
+  if (pathname === "/api/audit/all" && req.method === "GET") {
+    return sendJson(res, 200, await readAudit());
+  }
+
+  if (pathname === "/api/audit" && req.method === "POST") {
+    const body = await readBody(req);
+    const entry = await appendAudit(body);
+    broadcastChat({ type: "audit", account: String(body.target || "") });
+    return sendJson(res, 200, entry);
   }
 
   if (pathname === "/api/users/all" && req.method === "GET") {

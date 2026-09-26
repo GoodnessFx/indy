@@ -21,7 +21,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 //   safety poll keeps history converging until the stream recovers.
 
 export interface ChatStreamEvent {
-  type: "chat" | "read" | "typing";
+  type: "chat" | "read" | "typing" | "record" | "audit";
   account: string;
   message?: {
     id?: string;
@@ -128,6 +128,10 @@ export function useChatStream({
             cbs.current.onTyping?.(evt.account || accountRef.current, role);
             if (typingTimer.current) window.clearTimeout(typingTimer.current);
             typingTimer.current = window.setTimeout(() => setTypingFrom(null), 4000);
+          } else if (evt.type === "record" || evt.type === "audit") {
+            // Admin changed this account's record (balance/cards/KYC). Let
+            // the client re-fetch its record with no refresh.
+            window.dispatchEvent(new Event("indy-record"));
           }
         } catch { /* malformed frame, ignore */ }
       });

@@ -5,16 +5,54 @@ import { adminOrderFeed } from '../../lib/orders';
 import { useOrdersSync } from '../../lib/useOrdersSync';
 import { loginFeed, scanFeed } from '../../lib/audit';
 import { adminWalletPings } from '../../lib/walletSync';
+import { adminDeposits } from '../../lib/wallet';
 import { useEffect, useState } from 'react';
 
-const activity = [
-  { action: 'KYC approved', user: 'Marcus Chen', time: '2m ago', type: 'success' },
-  { action: 'New user registered', user: 'Fatima Al-Rashid', time: '5m ago', type: 'info' },
-  { action: 'Large withdrawal flagged', user: '$45,000 withdrawal', time: '12m ago', type: 'warning' },
-  { action: 'KYC rejected', user: 'Raj Krishnamurthy', time: '25m ago', type: 'error' },
-  { action: 'Support ticket escalated', user: 'TK-2841', time: '1h ago', type: 'warning' },
-  { action: 'New user registered', user: 'Lena Muller', time: '2h ago', type: 'info' },
-];
+// Real activity only — derived from what actually happened on this install
+// (sign-ins, card scans, investment orders, deposits). Nothing is hardcoded,
+// so a brand new deployment shows no rows until events really occur.
+type ActivityRow = { action: string; user: string; time: string; type: 'success' | 'info' | 'warning' | 'error' };
+
+const ago = (iso: string): string => {
+  const d = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (!Number.isFinite(d)) return '—';
+  if (d < 60) return 'just now';
+  if (d < 3600) return `${Math.floor(d / 60)}m ago`;
+  if (d < 86400) return `${Math.floor(d / 3600)}h ago`;
+  return new Date(iso).toLocaleDateString();
+};
+
+function deriveActivity(): ActivityRow[] {
+  const rows: { action: string; user: string; iso: string; type: ActivityRow['type'] }[] = [];
+
+  for (const l of loginFeed()) {
+    rows.push({ action: `Signed in (${l.method})`, user: l.name || l.email, iso: l.at, type: 'info' });
+  }
+  for (const s of scanFeed()) {
+    rows.push({ action: `Card scan •••• ${s.last4}`, user: s.account, iso: s.at, type: 'success' });
+  }
+  for (const o of adminOrderFeed()) {
+    rows.push({
+      action: o.status === 'active' ? 'Investment completed' : 'Investment submitted',
+      user: `${o.account} · $${o.amount.toLocaleString()}`,
+      iso: o.createdAt,
+      type: o.status === 'active' ? 'success' : 'warning',
+    });
+  }
+  for (const d of adminDeposits()) {
+    rows.push({
+      action: 'Deposit recorded',
+      user: `${d.account} · $${d.amount.toLocaleString()}`,
+      iso: d.at,
+      type: 'success',
+    });
+  }
+
+  return rows
+    .sort((a, b) => (a.iso < b.iso ? 1 : -1))
+    .slice(0, 8)
+    .map(({ action, user, iso, type }) => ({ action, user, time: ago(iso), type }));
+}
 
 export default function AdminDashboard() {
   const [feed] = useOrdersSync(() => adminOrderFeed());
@@ -23,6 +61,9 @@ export default function AdminDashboard() {
   const [logins, setLogins] = useState(() => loginFeed());
   const [scans, setScans] = useState(() => scanFeed());
   const [wallPings] = useOrdersSync(() => adminWalletPings());
+  // Recomputed whenever logins/scans/orders change, so the feed only ever
+  // shows events that actually happened.
+  const activity = deriveActivity();
 
   useEffect(() => {
     const syncLogins = () => setLogins(loginFeed());

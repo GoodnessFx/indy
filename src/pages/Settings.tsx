@@ -2,6 +2,7 @@
 import { User, Shield, Settings as SettingsIcon, CreditCard, BadgeCheck, AlertTriangle, Upload, Check, Eye, EyeOff, Globe, QrCode, ScanLine, FileDown, Gift, Copy } from 'lucide-react';
 import { languages } from '../data/mock';
 import ScanCardModal from '../components/ScanCardModal';
+import CardVisual from '../components/CardVisual';
 import { getPayoutMethods, removePayoutMethod, type PayoutMethod } from '../lib/payoutMethods';
 import { getReferralCode } from '../lib/watchlist';
 import { myOrders } from '../lib/orders';
@@ -325,6 +326,27 @@ export default function Settings() {
             {tab === 'payments' && (
               <div>
                 <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Payment Methods</h2>
+                {/* Tap the card face to reveal details; tap again to blur them out.
+                    Only last 4 is shown — no full card number exists to reveal. */}
+                {(() => {
+                  const c = methods.find(m => m.type === 'card');
+                  if (!c) return null;
+                  return (
+                    <div className="mb-6">
+                      <CardVisual
+                        compact
+                        card={{
+                          brand: c.brand || c.label || 'Card',
+                          cardholder: c.cardholder || 'CARDHOLDER',
+                          expiry: c.expiry || '',
+                          last4: c.last4,
+                          currency: c.currency,
+                          label: c.label,
+                        }}
+                      />
+                    </div>
+                  );
+                })()}
                 <div className="space-y-3 mb-6">
                   {methods.map(acc => (
                     <div key={acc.id} className="flex items-center justify-between p-4 rounded-xl border border-black/8 bg-black/3">
@@ -349,14 +371,28 @@ export default function Settings() {
                     </div>
                   ))}
                 </div>
+                {/* Prominent scan entry point — deliberately impossible to miss. */}
                 <button
                   onClick={() => setScanOpen(true)}
-                  className="flex items-center gap-2 border border-dashed border-black/15 rounded-xl px-5 py-3 text-sm text-black/40 hover:text-black/70 hover:border-black/30 transition-colors"
+                  className="group w-full flex items-center justify-between gap-4 rounded-2xl border-2 border-dashed border-[#2F6BFF]/50 bg-[#2F6BFF]/5 hover:bg-[#2F6BFF]/10 hover:border-[#2F6BFF] px-6 py-5 transition-all shadow-sm hover:shadow-md"
                 >
-                  <ScanLine size={15} /> Scan or add a card
+                  <span className="flex items-center gap-4 text-left">
+                    <span className="w-12 h-12 rounded-xl bg-[#2F6BFF] flex items-center justify-center shadow-lg shadow-[#2F6BFF]/30">
+                      <ScanLine size={20} className="text-white" />
+                    </span>
+                    <span>
+                      <span className="block text-sm font-600 text-[#2F6BFF]">Scan a card</span>
+                      <span className="block text-xs text-[#2F6BFF]/70 mt-0.5">
+                        Hold the card up to your camera — or type the last four by hand
+                      </span>
+                    </span>
+                  </span>
+                  <span className="text-xs font-mono text-[#2F6BFF]/70 group-hover:translate-x-1 transition-transform">
+                    START →
+                  </span>
                 </button>
                 <p className="text-xs text-black/30 mt-3 leading-relaxed">
-                  Cards added here are available to select when you withdraw, so you do not need to rescan each time.
+                  Cards added here are available to select when you withdraw, so you do not need to rescan each time. Only the last four digits are kept — no full card number is ever stored.
                 </p>
 
                 {/* Statements and referrals live next to money movement */}

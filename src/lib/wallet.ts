@@ -6,6 +6,7 @@
 
 import { getStoredGoogleUser } from "./googleAuth";
 import { myOrders } from "./orders";
+import { localUserRecord } from "./userRecords";
 
 export interface Deposit {
   id: string;
@@ -78,12 +79,16 @@ export function recordDeposit(input: {
 
 /**
  * Available balance in USD: everything deposited minus everything already
- * committed to paid investments. Funding first, then spending.
+ * committed to paid investments, plus/minus any admin-recorded balance
+ * adjustment. Each adjustment requires a reason and is written to the audit
+ * trail — there is no silent edit of a money field.
  */
 export function accountBalance(): number {
   const funded = myDeposits().reduce((sum, d) => sum + d.amount, 0);
   const spent = myOrders()
     .filter(o => o.status === "active")
     .reduce((sum, o) => sum + o.amount, 0);
-  return Math.max(0, Math.round((funded - spent) * 100) / 100);
+  const adjustments = (localUserRecord(account()).balanceAdjustments ?? [])
+    .reduce((sum, a) => sum + a.amount, 0);
+  return Math.max(0, Math.round((funded - spent + adjustments) * 100) / 100);
 }

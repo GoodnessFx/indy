@@ -4,6 +4,7 @@ import { Search, RefreshCw, Users as UsersIcon } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { adminUsers } from '../../data/mock';
 import { fetchSharedUsers } from '../../lib/notes';
+import { deletedEmails } from '../../lib/userRecords';
 
 const kycFilters = ['All', 'verified', 'pending', 'rejected', 'unverified'];
 
@@ -40,7 +41,8 @@ export default function AdminUsers() {
 
   const sharedEmails = new Set(shared.map(s => s.email.toLowerCase()));
   void sharedEmails;
-  const filtered = adminUsers.filter(u => {
+  const hidden = new Set(deletedEmails().map(e => e.toLowerCase()));
+  const filtered = adminUsers.filter(u => !hidden.has(u.email.toLowerCase())).filter(u => {
     const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchKyc = kycFilter === 'All' || u.kyc === kycFilter;
     return matchSearch && matchKyc;
@@ -77,6 +79,7 @@ export default function AdminUsers() {
           ) : (
             <div className="divide-y divide-black/5">
               {shared
+                .filter(s => !hidden.has(s.email.toLowerCase()))
                 .filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase()))
                 .map(s => (
                 <div key={s.email}>
@@ -91,6 +94,10 @@ export default function AdminUsers() {
                   </button>
                   {expanded === s.email && (
                     <div className="px-5 pb-4">
+                      <Link to={`/admin/users/${encodeURIComponent(s.email)}`}
+                        className="mb-3 inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#2F6BFF]/15 text-[11px] text-[#2F6BFF] font-mono hover:bg-[#2F6BFF]/25 transition-colors">
+                        Manage this account
+                      </Link>
                       <div className="rounded-lg bg-black/2 border border-black/5 overflow-hidden">
                         {s.logins.map((l, i) => (
                           <div key={`${l.at}-${i}`} className="flex items-center gap-3 px-4 py-2 border-b border-black/5 last:border-0">

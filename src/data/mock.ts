@@ -31,6 +31,7 @@ export const mockNFTs = [
   { id: 'nft-4', name: 'Girl with a Pearl Earring', collection: 'Dutch Golden Age', price: 0.45, currency: 'ETH', usd: 1575, change: 5.6, image: 'art-mono', verified: false, rarity: 'Common', traits: [{ trait: 'Period', value: '1665' }, { trait: 'Edition', value: '1 of 200' }] },
   { id: 'nft-5', name: 'The Great Wave off Kanagawa', collection: 'Ukiyo-e', price: 2.1, currency: 'ETH', usd: 7350, change: -1.8, image: 'art-forest', verified: true, rarity: 'Uncommon', traits: [{ trait: 'Artist', value: 'Hokusai' }, { trait: 'Medium', value: 'Woodblock print' }] },
   { id: 'nft-6', name: 'Starry Night Study', collection: 'Post Impressionism', price: 6.7, currency: 'ETH', usd: 23450, change: 18.3, image: 'art-cosmos', verified: true, rarity: 'Epic', traits: [{ trait: 'Artist', value: 'Vincent van Gogh' }, { trait: 'Finish', value: 'Textured' }] },
+  { id: 'nft-150', name: 'Untitled Original No. 7', collection: 'Indy Digital Originals', price: 150, currency: 'USD', usd: 150, change: 0, image: 'horse', verified: true, rarity: 'Rare', views: 214, owner: 'Indy Studio', traits: [{ trait: 'Type', value: '1/1 digital original' }, { trait: 'Medium', value: 'Digital painting' }, { trait: 'Edition', value: '1 of 1' }] },
 ];
 
 export const mockStocks = [
