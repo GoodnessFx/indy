@@ -1,10 +1,9 @@
 ﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, RefreshCw, Users as UsersIcon, WifiOff } from 'lucide-react';
+import { Search, RefreshCw, Users as UsersIcon } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { adminUsers } from '../../data/mock';
 import { fetchSharedUsers } from '../../lib/notes';
-import { isSharedDbConfigured } from '../../lib/chatStream';
 
 const kycFilters = ['All', 'verified', 'pending', 'rejected', 'unverified'];
 
@@ -22,8 +21,12 @@ export default function AdminUsers() {
   const [kycFilter, setKycFilter] = useState('All');
   const [shared, setShared] = useState<SharedUser[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState('');
 
-  const load = async () => setShared(await fetchSharedUsers());
+  const load = async () => {
+    setShared(await fetchSharedUsers());
+    setLastSync(new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+  };
   useEffect(() => {
     void load();
     const onLogin = () => void load();
@@ -61,9 +64,9 @@ export default function AdminUsers() {
               <UsersIcon size={14} /> Signed-up users
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2F6BFF]/10 text-[#2F6BFF] font-mono">{shared.length}</span>
             </h2>
-            {!isSharedDbConfigured() && (
-              <span className="text-[10px] text-[#F59E0B] font-mono flex items-center gap-1">
-                <WifiOff size={11} /> local only — set Supabase keys to see every device
+            {lastSync && (
+              <span className="text-[10px] text-black/30 font-mono">
+                live · updated {lastSync}
               </span>
             )}
           </div>

@@ -1,6 +1,50 @@
-# IndySolutions — Deploy notes (Render + Supabase + Google Sign-In)
+# IndySolutions — Deploy notes (Render + optional Supabase + Google Sign-In)
 
-## 0. Why the last Render deploy failed
+## 0. How this app is deployed now (ShieldSafeBank pattern)
+
+ONE Render **Web Service** runs everything:
+
+| Field | Value |
+| --- | --- |
+| Build Command | `npm install && npm run build` (or `pnpm install --frozen-lockfile && pnpm run build`) |
+| Start Command | `npm start` → `node server.js` |
+| Health Check Path | `/api/health` |
+
+`server.js` serves the built frontend from `./dist` **and** the chat/users API on
+the same origin, so `/api/*` always exists — no separate API service and no CORS:
+
+- `GET  /api/chat/all` — every message
+- `GET  /api/chat/thread?account=EMAIL` — one thread
+- `GET  /api/chat/stream?account=EMAIL` — **SSE realtime push** (empty account = admin, receives all)
+- `GET  /api/chat/presence` — `{ adminsOnline }`
+- `POST /api/chat/send` — `{ account, name, sender, body }`
+- `POST /api/chat/seen?account=EMAIL` — clears the admin unread badge
+- `POST /api/chat/login` — login notification
+- `POST /api/chat/typing` — typing indicator
+- `GET  /api/users/all` — every signup with **full login history**
+- `POST /api/users/login` — `{ email, name, method }`
+
+### Chat storage — no SQL Editor steps
+
+Same as ShieldSafeBank: set `DATABASE_URL` and the tables are created
+**automatically on boot** (`CREATE TABLE IF NOT EXISTS`). There is nothing to run
+by hand, no schema file to paste, no Supabase dashboard step.
+
+| `DATABASE_URL` | Storage | Survives redeploys? |
+| --- | --- | --- |
+| set (Supabase Postgres URI) | Postgres (`chat_messages`, `chat_users`, `chat_logins`) | ✅ yes |
+| unset (local dev) | `server/data/store.json` | ❌ no (fine on localhost) |
+
+On Render: your service → **Environment** → add `DATABASE_URL` =
+`postgresql://...` from Supabase → **Connect** (Session pooler). Read in code as
+`process.env.DATABASE_URL` — never hardcoded, never in git, never a `VITE_*` var.
+
+> Without `DATABASE_URL` on Render (ephemeral filesystem) chat would reset on
+> every restart/deploy. That is the only reason to set it.
+
+---
+
+## 1. Why an earlier deploy failed
 
 The build succeeded, then Render ran `yarn start` and got:
 
@@ -72,15 +116,15 @@ Notes:
 
 ## 2b. Database (`DATABASE_URL`) — backend only
 
-This repo is currently a **frontend-only SPA** (React + Vite). There is **no application
-backend** in this codebase that reads `process.env.DATABASE_URL`, so there is nowhere
-today that a database connection string is consumed at runtime.
+Read this ONLY if you want chat + login history to survive redeploys.
 
-If / when a backend service is added (API, cron, or a DB job runner), wire it like this:
+`server.js` reads `process.env.DATABASE_URL` and **creates its own tables on
+boot**. Nothing to run in the Supabase SQL Editor — unlike `schema.sql`
+(which is for the wider product tables and *does* need the migration runner).
 
 | Key | Value | Required |
 | --- | --- | --- |
-| `DATABASE_URL` | your `postgresql://...` Supabase connection string (pooler) | only for a backend |
+| `DATABASE_URL` | your `postgresql://...` Supabase connection string (pooler) | optional — chat works without it on localhost |
 
 Rules:
 - Set it as an environment variable on the **backend** service only. Never put it in a
@@ -89,10 +133,9 @@ Rules:
   commit it. It is a server-side secret.
 - It is already gitignored via `.env` and should never appear in `.env.example`.
 
-### Run the schema migration
+### Optional: the wider product schema
 `supabase/schema.sql` creates the `users`, `portfolios`, and `transactions` tables (plus
-others). Run it against your database with the included idempotent runner (reads
-`DATABASE_URL`, safe to re-run):
+others). That one is separate from chat and needs the runner (or paste it into SQL Editor):
 
 ```bash
 npm i --no-save pg                     # install the Postgres client ad hoc

@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { API_BASE } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
-// Shared realtime chat transport.
+// Shared realtime chat transport — ShieldSafeBank-style.
+//
 // Transport order:
-//   1. Supabase Realtime (works on static hosts like indysolutions.org —
-//      the shared DB both sides read/write; no /api needed).
-//   2. SSE /api/chat/stream (when server.js is the backend, e.g. local dev).
+//   1. SSE /api/chat/stream (same-origin server.js — works on EVERY deploy,
+//      every device, no extra setup, no SQL Editor).
+//   2. Supabase Realtime when VITE_SUPABASE_URL/KEY are ALSO set (extra path
+//      for static-only hosts).
 // Both fan out instantly with no polling interval and no refresh.
-// Reconnect: Supabase channel auto-reconnects; SSE retries via `retry: 3000`
-// plus manual backoff, visibilitychange, and online handlers.
 //
 // Usage:
 //   const { connected, typingFrom } = useChatStream({ account, onMessage, onRead });
@@ -65,10 +66,11 @@ export function useChatStream({
 
   useEffect(() => {
     if (!enabled) return;
-    // Prefer Supabase Realtime when the shared DB is configured — it works
-    // on static hosts where /api/chat doesn't exist.
+    // SSE first: same-origin server.js works on EVERY deploy, no extra setup.
+    // Supabase Realtime attaches as well when configured (static-only hosts).
+    let channel: { unsubscribe: () => void } | null = null;
     if (isSupabaseConfigured && supabase) {
-      const channel = supabase
+      const ch = supabase
         .channel(`support-chat-${account || "admin"}`)
         .on(
           "postgres_changes",
@@ -81,30 +83,17 @@ export function useChatStream({
             cbs.current.onMessage?.(rowAccount || account);
           }
         )
-        .on(
-          "postgres_changes",
-          { event: "UPDATE", schema: "public", table: "support_messages" },
-          (payload) => {
-            const row = (payload.new ?? {}) as { account?: string };
-            const rowAccount = String(row.account ?? "");
-            if (account && rowAccount && rowAccount !== account) return;
-            cbs.current.onRead?.(rowAccount || account);
-          }
-        )
         .subscribe((status) => {
-          setConnected(status === "SUBSCRIBED");
-          if (status === "SUBSCRIBED") cbs.current.onReconnect?.();
+          if (status === "SUBSCRIBED") {
+            setConnected(true);
+            cbs.current.onReconnect?.();
+          }
         });
-      const onVisible = () => {
-        if (document.visibilityState === "visible") cbs.current.onReconnect?.();
-      };
-      document.addEventListener("visibilitychange", onVisible);
-      return () => {
-        document.removeEventListener("visibilitychange", onVisible);
-        void supabase!.removeChannel(channel);
-      };
+      channel = { unsubscribe: () => void supabase!.removeChannel(ch) };
     }
-    if (typeof EventSource === "undefined") return;
+    if (typeof EventSource === "undefined") {
+      return () => channel?.unsubscribe();
+    }
     let source: EventSource | null = null;
     let closed = false;
 
@@ -114,7 +103,7 @@ export function useChatStream({
         source?.close();
       } catch { /* ignore */ }
       const url =
-        `/api/chat/stream?account=${encodeURIComponent(accountRef.current)}&t=${Date.now()}`;
+        `${API_BASE}/chat/stream?account=${encodeURIComponent(accountRef.current)}&t=${Date.now()}`;
       try {
         source = new EventSource(url);
       } catch {
@@ -173,6 +162,7 @@ export function useChatStream({
     window.addEventListener("online", connect);
     return () => {
       closed = true;
+      channel?.unsubscribe();
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", connect);
       if (retryTimer.current) window.clearTimeout(retryTimer.current);
@@ -190,16 +180,14 @@ export function useChatStream({
 /** Tell the other side "I'm typing" (fire-and-forget, throttled by caller). */
 export function sendTyping(account: string, role: "client" | "agent"): void {
   if (!account) return;
-  // On static hosts there is no /api/chat/typing — Supabase Realtime already
-  // pushes the message itself instantly, so the typing ping is best-effort.
-  void fetch("/api/chat/typing", {
+  void fetch(`${API_BASE}/chat/typing`, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ account, role }),
   }).catch(() => { /* stream will still deliver messages */ });
 }
 
-/** True when the shared Supabase DB is configured (chat actually syncs). */
+/** True when the shared Supabase DB is configured (extra realtime path). */
 export function isSharedDbConfigured(): boolean {
   return isSupabaseConfigured;
 }

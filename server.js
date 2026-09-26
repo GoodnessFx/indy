@@ -1,28 +1,173 @@
-// Indy API + static frontend in one process, dependency free.
+// Indy API + static frontend in one process, dependency free (except `pg`
+// for the optional Postgres store — same pattern as ShieldSafeBank).
 //
-// Serves the built Vite app from ./dist and exposes the tiny JSON endpoints
-// the frontend uses for shared chat:
+// Serves the built Vite app from ./dist and exposes the JSON endpoints
+// the frontend uses for shared chat + users:
 //
+//   GET  /api/health                         -> { ok, service, uptime }
 //   GET  /api/chat/all                       -> every message, oldest first
 //   GET  /api/chat/thread?account=EMAIL      -> one account's thread
+//   GET  /api/chat/stream?account=EMAIL      -> SSE realtime stream (empty = admin)
+//   GET  /api/chat/presence                  -> { adminsOnline }
 //   POST /api/chat/send                      -> { account, name?, sender, body }
 //   POST /api/chat/seen?account=EMAIL        -> clear the admin badge
+//   POST /api/chat/login                     -> { account, name }
+//   POST /api/chat/typing                    -> { account, role }
+//   GET  /api/users/all                       -> every signup + login history
+//   POST /api/users/login                    -> { email, name, method }
 //
-// Messages live in server/data/store.json:
-//   { "chat": [ { id, account, name, sender, body, at, seen } ] }
+// Storage (same as ShieldSafeBank, zero SQL-Editor steps):
+//   1. Postgres via process.env.DATABASE_URL when set — tables are created
+//      automatically on boot (CREATE TABLE IF NOT EXISTS). Survives restarts
+//      and redeploys. Never hardcoded, never in git, never in VITE_*.
+//   2. server/data/store.json fallback when DATABASE_URL is unset (local dev).
 //
-// Works on Render, on localhost, on any Node install. No database, no tables,
-// no SDK.
+// Works on Render, on localhost, on any Node install.
 
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+
+const require = createRequire(import.meta.url);
+let pg = null;
+try {
+  pg = require("pg");
+} catch {
+  pg = null; // local dev without `pg` installed — file store only
+}
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const distDir = path.join(here, "dist");
 const dataDir = path.join(here, "server", "data");
 const storePath = path.join(dataDir, "store.json");
+
+// --- Shared Postgres store (auto-migrates, no SQL Editor needed) ---
+const DATABASE_URL = process.env.DATABASE_URL || "";
+const pool = DATABASE_URL && pg
+  ? new pg.Pool({
+      connectionString: DATABASE_URL,
+      ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL) ? false : { rejectUnauthorized: false },
+      max: 5,
+    })
+  : null;
+
+const SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS chat_messages (id TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS chat_users (email TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS chat_logins (id TEXT PRIMARY KEY, data JSONB NOT NULL);
+`;
+
+let dbReady = false;
+
+async function initDb() {
+  if (!pool) return;
+  try {
+    await pool.query(SCHEMA_SQL);
+    dbReady = true;
+    console.log("Chat store: Postgres (shared across devices/deploys)");
+  } catch (err) {
+    console.warn("Postgres unavailable, falling back to file store:", err?.message || err);
+  }
+}
+
+async function dbAll(table) {
+  if (!pool || !dbReady) return null;
+  try {
+    const r = await pool.query(`SELECT data FROM ${table}`);
+    return r.rows.map((row) => row.data);
+  } catch {
+    return null;
+  }
+}
+
+async function dbUpsert(table, keyCol, key, value) {
+  if (!pool || !dbReady) return false;
+  try {
+    await pool.query(
+      `INSERT INTO ${table} (${keyCol}, data) VALUES ($1, $2)
+       ON CONFLICT (${keyCol}) DO UPDATE SET data = EXCLUDED.data`,
+      [key, JSON.stringify(value)]
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readChat() {
+  const rows = await dbAll("chat_messages");
+  if (rows) return rows;
+  return readStore().chat;
+}
+
+async function saveMessage(message) {
+  const ok = await dbUpsert("chat_messages", "id", message.id, message);
+  if (ok) return;
+  const store = readStore();
+  if (!store.chat.some((m) => m.id === message.id)) store.chat.push(message);
+  writeStore(store);
+}
+
+async function markSeenDb(account) {
+  if (!pool || !dbReady) return false;
+  try {
+    await pool.query(
+      `UPDATE chat_messages SET data = jsonb_set(data, '{seen}', 'true')
+       WHERE data->>'account' = $1 AND data->>'sender' = 'client'`,
+      [account]
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readUsers() {
+  const users = await dbAll("chat_users");
+  const logins = await dbAll("chat_logins");
+  if (users && logins) return { users, logins };
+  const store = readStore();
+  return { users: store.users || [], logins: store.logins || [] };
+}
+
+async function saveUserLogin(email, name, method) {
+  const entry = {
+    id: `lg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    email, name, method, at: new Date().toISOString(),
+  };
+  if (pool && dbReady) {
+    try {
+      const r = await pool.query(`SELECT data FROM chat_users WHERE email = $1`, [email]);
+      const prev = r.rows[0]?.data || { email, name, createdAt: entry.at, loginCount: 0 };
+      const next = {
+        email, name: name || prev.name || email,
+        createdAt: prev.createdAt || entry.at,
+        lastLoginAt: entry.at,
+        loginCount: (prev.loginCount || 0) + 1,
+      };
+      await dbUpsert("chat_users", "email", email, next);
+      await dbUpsert("chat_logins", "id", entry.id, entry);
+      return entry;
+    } catch { /* fall through to file */ }
+  }
+  const store = readStore();
+  store.users = store.users || [];
+  store.logins = store.logins || [];
+  const prev = store.users.find((u) => u.email === email);
+  if (prev) {
+    prev.name = name || prev.name;
+    prev.lastLoginAt = entry.at;
+    prev.loginCount = (prev.loginCount || 0) + 1;
+  } else {
+    store.users.push({ email, name, createdAt: entry.at, lastLoginAt: entry.at, loginCount: 1 });
+  }
+  store.logins.unshift(entry);
+  store.logins = store.logins.slice(0, 1000);
+  writeStore(store);
+  return entry;
+}
 
 // Port discovery. Managed platforms inject PORT (Render, Railway, Koyeb),
 // some inject APP_PORT or SERVER_PORT, and some just probe a fixed port and
@@ -41,15 +186,18 @@ const CANDIDATES = [
 ].filter((p, i, arr) => Number.isFinite(p) && p > 0 && p < 65536 && arr.indexOf(p) === i);
 
 function readStore() {
+  const empty = { chat: [], users: [], logins: [] };
   try {
     const raw = fs.readFileSync(storePath, "utf8");
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.chat)) {
-      return { chat: [] };
-    }
-    return parsed;
+    if (!parsed || typeof parsed !== "object") return empty;
+    return {
+      chat: Array.isArray(parsed.chat) ? parsed.chat : [],
+      users: Array.isArray(parsed.users) ? parsed.users : [],
+      logins: Array.isArray(parsed.logins) ? parsed.logins : [],
+    };
   } catch {
-    return { chat: [] };
+    return empty;
   }
 }
 
@@ -186,16 +334,50 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === "/api/chat/all" && req.method === "GET") {
-    const store = readStore();
-    const rows = store.chat.slice().sort((a, b) => (a.at < b.at ? -1 : 1)).slice(-500);
+    const chat = await readChat();
+    const rows = chat.slice().sort((a, b) => (a.at < b.at ? -1 : 1)).slice(-500);
     return sendJson(res, 200, rows);
   }
 
   if (pathname === "/api/chat/thread" && req.method === "GET") {
     const account = url.searchParams.get("account") || "";
-    const store = readStore();
-    const rows = store.chat.filter((m) => m.account === account).sort((a, b) => (a.at < b.at ? -1 : 1));
+    const chat = await readChat();
+    const rows = chat.filter((m) => m.account === account).sort((a, b) => (a.at < b.at ? -1 : 1));
     return sendJson(res, 200, rows);
+  }
+
+  if (pathname === "/api/users/all" && req.method === "GET") {
+    const { users, logins } = await readUsers();
+    const byEmail = new Map();
+    for (const u of users) byEmail.set(String(u.email).toLowerCase(), { ...u, logins: [] });
+    for (const l of logins) {
+      const key = String(l.email || l.account || "").toLowerCase();
+      if (!key) continue;
+      if (!byEmail.has(key)) {
+        byEmail.set(key, {
+          email: l.email || l.account, name: l.name || l.email || l.account,
+          createdAt: l.at, lastLoginAt: l.at, loginCount: 0, logins: [],
+        });
+      }
+      byEmail.get(key).logins.push({ account: l.email || l.account, name: l.name, method: l.method, at: l.at });
+    }
+    const out = [...byEmail.values()].map((u) => ({
+      email: u.email, name: u.name, createdAt: u.createdAt,
+      lastLoginAt: u.lastLoginAt, loginCount: u.loginCount ?? u.logins.length,
+      logins: u.logins.sort((a, b) => (a.at < b.at ? 1 : -1)),
+    })).sort((a, b) => (String(a.lastLoginAt) < String(b.lastLoginAt) ? 1 : -1));
+    return sendJson(res, 200, out);
+  }
+
+  if (pathname === "/api/users/login" && req.method === "POST") {
+    const body = await readBody(req);
+    const email = String(body.email || body.account || "");
+    const name = String(body.name || email);
+    const method = String(body.method || "email");
+    if (!email) return sendJson(res, 400, { error: "email required" });
+    const entry = await saveUserLogin(email, name, method);
+    broadcastChat({ type: "login", account: email, entry });
+    return sendJson(res, 200, { ok: true });
   }
 
   if (pathname === "/api/chat/send" && req.method === "POST") {
@@ -204,7 +386,6 @@ const server = http.createServer(async (req, res) => {
     const text = String(body.body || "").slice(0, 2000).trim();
     const sender = body.sender === "agent" ? "agent" : "client";
     if (!account || !text) return sendJson(res, 400, { error: "account and body are required" });
-    const store = readStore();
     const message = {
       id: String(body.id || `m-${Date.now().toString(36)}`),
       account,
@@ -214,8 +395,7 @@ const server = http.createServer(async (req, res) => {
       at: String(body.at || new Date().toISOString()),
       seen: sender === "agent",
     };
-    if (!store.chat.some((m) => m.id === message.id)) store.chat.push(message);
-    writeStore(store);
+    await saveMessage(message);
     broadcastChat({ type: "chat", account, message });
     return sendJson(res, 200, message);
   }
@@ -236,9 +416,9 @@ const server = http.createServer(async (req, res) => {
     const account = String(body.account || "");
     const name = String(body.name || account);
     if (!account) return sendJson(res, 400, { error: "account required" });
-    const store = readStore();
+    const chat = await readChat();
     // Only push a login notification once per session (avoid spam)
-    const recentLogin = store.chat.find(
+    const recentLogin = chat.find(
       m => m.account === account && m.sender === "system" &&
         Date.now() - new Date(m.at).getTime() < 60 * 60 * 1000
     );
@@ -252,8 +432,7 @@ const server = http.createServer(async (req, res) => {
         at: new Date().toISOString(),
         seen: false,
       };
-      store.chat.push(note);
-      writeStore(store);
+      await saveMessage(note);
       broadcastChat({ type: "chat", account, message: note });
     }
     return sendJson(res, 200, { ok: true });
@@ -261,6 +440,11 @@ const server = http.createServer(async (req, res) => {
 
   if (pathname === "/api/chat/seen" && req.method === "POST") {
     const account = url.searchParams.get("account") || "";
+    const marked = await markSeenDb(account);
+    if (marked) {
+      broadcastChat({ type: "read", account });
+      return sendJson(res, 200, { ok: true });
+    }
     const store = readStore();
     let changed = false;
     for (const m of store.chat) {
@@ -325,4 +509,5 @@ function next() {
 }
 
 console.log(`Port candidates: ${CANDIDATES.join(", ")}`);
+void initDb();
 next();

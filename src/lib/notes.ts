@@ -1,16 +1,18 @@
-// Shared chat + user/login store backed by Supabase when configured,
-// falling back to /api/chat (server.js) and then localStorage.
+// Shared chat + user/login store. ShieldSafeBank-style: ONE backend
+// (server.js serves frontend + /api in one process, Postgres via DATABASE_URL
+// when set, file fallback locally) — no SQL Editor steps, no second service.
 //
-// WHY: indysolutions.org serves a STATIC frontend — /api/chat/* and the SSE
-// stream don't exist there (502), so client and admin each wrote to their own
-// browser only and never saw each other. Supabase is the shared database both
-// sides read/write; Supabase Realtime pushes new rows instantly (SSE kept as
-// the transport when server.js is the backend).
+// Transport order per call:
+//   1. Same-origin /api (server.js) — works on every deploy, every device.
+//   2. Supabase shared DB when VITE_SUPABASE_URL/KEY are ALSO set (extra
+//      realtime path on static-only hosts).
+//   3. localStorage mirror (offline only).
 //
-// Setup: run supabase/chat.sql + supabase/app.sql once in SQL Editor, then set
-// VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY on the host and locally.
+// Realtime: Supabase Realtime when configured, else SSE /api/chat/stream.
+// See src/lib/chatStream.ts.
 
 import { getStoredGoogleUser } from "./googleAuth";
+import { API_BASE } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 export interface ChatMessage {
@@ -64,10 +66,11 @@ export function currentAccount(): { account: string; name: string } {
   return { account, name };
 }
 
-// --- JSON API helpers (server.js /api/chat) ---
+// --- JSON API helpers (same-origin server.js /api) ---
 
 async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
-  const res = await fetch(path, {
+  const url = path.startsWith("/api/") ? `${API_BASE}${path.slice(4)}` : path;
+  const res = await fetch(url, {
     ...init,
     headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
   });
@@ -171,18 +174,12 @@ async function pullThread(account: string): Promise<ChatMessage[]> {
 }
 
 /**
- * Fetch all conversations. Source order: Supabase shared DB -> /api/chat ->
- * local mirror. Used by the admin inbox for true cross-device visibility.
+ * Fetch all conversations. Source order: /api (ONE backend, every device) ->
+ * Supabase shared DB (if ALSO configured) -> local mirror. Used by the admin
+ * inbox for true cross-device visibility.
  */
 export async function fetchAllFromServer(): Promise<{ account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[]> {
-  // 1. Shared Supabase DB (works on static hosts, every device + country).
-  const shared = await dbAll();
-  if (shared.length) {
-    for (const g of groupByAccount(shared)) mergeServer(g.account, g.messages);
-    return groupByAccount(shared);
-  }
-
-  // 2. server.js API (local dev / single Node host).
+  // 1. Same-origin API — the shared store on every deploy.
   try {
     const rows = (await apiRequest(`/api/chat/all?t=${Date.now()}`)) as unknown;
     if (Array.isArray(rows)) {
@@ -191,7 +188,15 @@ export async function fetchAllFromServer(): Promise<{ account: string; name: str
       for (const g of grouped) mergeServer(g.account, g.messages);
       if (grouped.length) return grouped;
     }
-  } catch { /* API absent on static hosts — fall through */ }
+  } catch { /* API unreachable — try shared DB, then local */ }
+
+  // 2. Shared Supabase DB (extra path for static-only hosts).
+  const shared = await dbAll();
+  if (shared.length) {
+    for (const g of groupByAccount(shared)) mergeServer(g.account, g.messages);
+    return groupByAccount(shared);
+  }
+
   // 3. Local mirror (offline only).
   return conversations();
 }
@@ -225,7 +230,11 @@ async function pushServer(payload: {
   body: string;
   at?: string;
 }): Promise<boolean> {
-  // Shared DB first so every device sees it even on static hosts.
+  // Same-origin API first — the ONE shared store, no extra setup.
+  try {
+    await apiRequest("/api/chat/send", { method: "POST", body: JSON.stringify(payload) });
+    return true;
+  } catch { /* fall through to shared DB */ }
   if (dbEnabled()) {
     const ok = await dbInsert({
       id: String(payload.id ?? `m-${Date.now().toString(36)}`),
@@ -238,12 +247,7 @@ async function pushServer(payload: {
     });
     if (ok) return true;
   }
-  try {
-    await apiRequest("/api/chat/send", { method: "POST", body: JSON.stringify(payload) });
-    return true;
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 export function threadFor(account: string): ChatMessage[] {
@@ -352,21 +356,21 @@ function mergeServer(account: string, messages: ChatMessage[]): boolean {
 
 /**
  * Pull one thread from the shared store, merge locally, and return it.
- * Source order: Supabase -> /api/chat -> local. Authoritative read path
+ * Source order: /api -> Supabase -> local. Authoritative read path
  * for the client widget.
  */
 export async function refreshThread(account: string): Promise<ChatMessage[]> {
+  const server = await pullThread(account);
+  if (server.length) {
+    for (const m of server) mergeServer(account, [m]);
+    return server.sort((a, b) => (a.at < b.at ? -1 : 1));
+  }
   const shared = await dbThread(account);
   if (shared.length) {
     for (const m of shared) mergeServer(account, [m]);
     return shared.sort((a, b) => (a.at < b.at ? -1 : 1));
   }
-  const server = await pullThread(account);
-  if (server.length) {
-    for (const m of server) mergeServer(account, [m]);
-  }
-  // Return the freshest data: prefer server rows if we got any, else local
-  return server.length ? server.sort((a, b) => (a.at < b.at ? -1 : 1)) : threadFor(account);
+  return threadFor(account);
 }
 
 /**
@@ -401,13 +405,14 @@ export async function refreshChat(): Promise<void> {
 }
 
 export async function markThreadSeenRemote(account: string): Promise<void> {
-  if (await dbMarkSeen(account)) return;
   try {
     await apiRequest(`/api/chat/seen?account=${encodeURIComponent(account)}`, { method: "POST" });
-  } catch { /* API optional */ }
+    return;
+  } catch { /* fall through to shared DB */ }
+  await dbMarkSeen(account);
 }
 
-// --- Shared signup + login history (Supabase, falls back to localStorage) ---
+// --- Shared signup + login history: /api first (ONE backend), Supabase extra ---
 
 const LOGIN_LOCAL_KEY = "indy_login_history";
 
@@ -421,7 +426,7 @@ function readLoginLocal(): LoginEvent[] {
   }
 }
 
-/** Record a signup + every successful login to the shared DB (and local mirror). */
+/** Record a signup + every successful login: /api first, mirror locally. */
 export async function recordSharedLogin(account: string, name: string, method: string): Promise<void> {
   const entry: LoginEvent = { account, name, method, at: new Date().toISOString() };
   try {
@@ -429,6 +434,13 @@ export async function recordSharedLogin(account: string, name: string, method: s
     localStorage.setItem(LOGIN_LOCAL_KEY, JSON.stringify(next));
   } catch { /* ignore */ }
   window.dispatchEvent(new Event("indy-logins"));
+  try {
+    await apiRequest("/api/users/login", {
+      method: "POST",
+      body: JSON.stringify({ email: account, name, method }),
+    });
+    return;
+  } catch { /* fall through to shared DB */ }
   if (!dbEnabled()) return;
   try {
     await supabase!.from("indy_users").upsert(
@@ -447,6 +459,13 @@ export async function recordSharedLogin(account: string, name: string, method: s
 
 /** Every known user + full login history, for the admin Users view. */
 export async function fetchSharedUsers(): Promise<{ email: string; name: string; createdAt: string; lastLoginAt: string; loginCount: number; logins: LoginEvent[] }[]> {
+  // 1. Same-origin API — the shared store on every deploy.
+  try {
+    const rows = (await apiRequest(`/api/users/all?t=${Date.now()}`)) as unknown;
+    if (Array.isArray(rows) && rows.length) {
+      return rows as { email: string; name: string; createdAt: string; lastLoginAt: string; loginCount: number; logins: LoginEvent[] }[];
+    }
+  } catch { /* fall through */ }
   if (dbEnabled()) {
     try {
       const [{ data: users }, { data: events }] = await Promise.all([
@@ -489,9 +508,9 @@ export function loginHistoryLocal(): LoginEvent[] {
   return readLoginLocal();
 }
 
-/** True when messages reach a shared store (Supabase DB or /api), i.e. across devices. */
+/** True when messages reach a shared store — the same-origin API. */
 export function isSharedChat(): boolean {
-  return dbEnabled();
+  return true; // same-origin /api is always the shared store on every deploy
 }
 
 // ============================================================================
