@@ -4,6 +4,7 @@ import { TrendingUp, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 import Logo from '../components/Logo';
 import { getActiveProfile, onAuthChange, rememberProfile, startGoogleSignIn } from '../lib/googleAuth';
 import { recordLogin } from '../lib/audit';
+import { recordSharedLogin } from '../lib/notes';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -38,6 +39,7 @@ export default function Login() {
       // null means the browser is being redirected to Google (Supabase flow).
       if (profile) {
         recordLogin('google', profile.email, profile.name);
+        void recordSharedLogin(profile.email, profile.name, 'google');
         navigate('/dashboard');
       }
     } catch (e) {
@@ -58,6 +60,7 @@ export default function Login() {
     const derived = email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, ch => ch.toUpperCase());
     rememberProfile({ sub: `local-${Date.now()}`, email, name: derived || 'Investor' });
     recordLogin('email', email, derived || 'Investor');
+    void recordSharedLogin(email, derived || 'Investor', 'email');
     window.dispatchEvent(new Event('indy-auth'));
     navigate('/dashboard');
   };

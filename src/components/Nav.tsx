@@ -5,6 +5,7 @@ import { languages } from '../data/mock';
 import Logo from './Logo';
 import ConnectWallet from './ConnectWallet';
 import { useAuth } from '../lib/useAuth';
+import { signOutEverywhere } from '../lib/supabase';
 import { myOrders } from '../lib/orders';
 import { getTriggers } from '../lib/watchlist';
 import { userNotes, broadcasts, markUserNotesRead, markBroadcastsRead } from '../lib/notes';
@@ -228,7 +229,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
                       </Link>
                       <div className="border-t border-black/8 mt-1">
                         <button
-                          onClick={() => navigate('/login')}
+                          onClick={() => void signOutEverywhere(navigate)}
                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-[#EF4444] hover:bg-black/5 transition-colors"
                         >
                           <LogOut size={14} /> Sign out
@@ -282,7 +283,7 @@ export default function Nav({ isAuthenticated = false }: NavProps) {
               {isAuthenticated ? (
                 <>
                   <Link to="/settings" className={`btn-ghost px-4 py-3 rounded-xl text-sm text-center`}>Settings</Link>
-                  <button onClick={() => navigate('/login')} className="text-sm text-[#EF4444] py-3">Sign out</button>
+                  <button onClick={() => void signOutEverywhere(navigate)} className="text-sm text-[#EF4444] py-3">Sign out</button>
                 </>
               ) : (
                 <>

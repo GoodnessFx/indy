@@ -1,27 +1,17 @@
-// Shared chat layer: client widget <-> admin inbox.
+// Shared chat + user/login store backed by Supabase when configured,
+// falling back to /api/chat (server.js) and then localStorage.
 //
-// One conversation per client account. Both sides read and write the same
-// conversation, so a client can send a message from one device, the admin can
-// reply from anywhere else in the world, and the client resumes exactly where
-// they stopped.
+// WHY: indysolutions.org serves a STATIC frontend — /api/chat/* and the SSE
+// stream don't exist there (502), so client and admin each wrote to their own
+// browser only and never saw each other. Supabase is the shared database both
+// sides read/write; Supabase Realtime pushes new rows instantly (SSE kept as
+// the transport when server.js is the backend).
 //
-// Where it lives, in order of preference:
-//   1. Local API (/api/chat/...). On Render the Web Service runs server.js next
-//      to the built frontend, so every device shares one message store.
-//      The server entrypoint only uses the Node standard library (no new
-//      dependencies), and server/data/store.json is the single file holding
-//      every chat row.
-//   2. localStorage mirror per account, so the thread opens instantly, works
-//      offline, and survives a server restart on this device.
-//   3. Realtime push via /api/chat/stream (SSE): every device holds the stream
-//      open and the server broadcasts each new message the instant it is
-//      saved — no refresh, no polling interval. See src/lib/chatStream.ts.
-//      Polling remains only as a 15 s safety net if the stream is blocked.
-//
-// No database, no tables, no SDK. Plain HTTP JSON rows keyed by account email,
-// the same pattern as the reference repo.
+// Setup: run supabase/chat.sql + supabase/app.sql once in SQL Editor, then set
+// VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY on the host and locally.
 
 import { getStoredGoogleUser } from "./googleAuth";
+import { isSupabaseConfigured, supabase } from "./supabase";
 
 export interface ChatMessage {
   id: string;
@@ -34,9 +24,20 @@ export interface ChatMessage {
   seen?: boolean;
 }
 
+export interface LoginEvent {
+  account: string;
+  name: string;
+  method: string;
+  at: string;
+}
+
 const LOCAL_KEY = "indy_chat_threads";
 
 type Threads = Record<string, ChatMessage[]>;
+
+function dbEnabled(): boolean {
+  return isSupabaseConfigured && supabase !== null;
+}
 
 function readAll(): Threads {
   try {
@@ -90,9 +91,73 @@ function toChatMessage(row: {
     name: String(row.name ?? row.account ?? ""),
     from: row.sender === "agent" ? "agent" : "client",
     text: String(row.body ?? ""),
-    at: String(row.at ?? row.sent_at ?? new Date().toISOString()),
+    at: String(row.sent_at ?? row.at ?? new Date().toISOString()),
     seen: row.seen ?? false,
   };
+}
+
+async function dbThread(account: string): Promise<ChatMessage[]> {
+  if (!dbEnabled()) return [];
+  try {
+    const { data, error } = await supabase!
+      .from("support_messages")
+      .select("id,account,name,sender,body,sent_at,seen")
+      .eq("account", account)
+      .order("sent_at", { ascending: true })
+      .limit(500);
+    if (error || !Array.isArray(data)) return [];
+    return (data as Parameters<typeof toChatMessage>[0][]).map(toChatMessage);
+  } catch {
+    return [];
+  }
+}
+
+async function dbAll(): Promise<ChatMessage[]> {
+  if (!dbEnabled()) return [];
+  try {
+    const { data, error } = await supabase!
+      .from("support_messages")
+      .select("id,account,name,sender,body,sent_at,seen")
+      .order("sent_at", { ascending: true })
+      .limit(1000);
+    if (error || !Array.isArray(data)) return [];
+    return (data as Parameters<typeof toChatMessage>[0][]).map(toChatMessage);
+  } catch {
+    return [];
+  }
+}
+
+async function dbInsert(message: ChatMessage): Promise<boolean> {
+  if (!dbEnabled()) return false;
+  try {
+    const { error } = await supabase!.from("support_messages").insert({
+      id: message.id,
+      account: message.account,
+      name: message.name,
+      sender: message.from,
+      body: message.text,
+      sent_at: message.at,
+      seen: message.from === "agent" ? true : (message.seen ?? false),
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+async function dbMarkSeen(account: string): Promise<boolean> {
+  if (!dbEnabled()) return false;
+  try {
+    const { error } = await supabase!
+      .from("support_messages")
+      .update({ seen: true })
+      .eq("account", account)
+      .eq("sender", "client")
+      .eq("seen", false);
+    return !error;
+  } catch {
+    return false;
+  }
 }
 
 async function pullThread(account: string): Promise<ChatMessage[]> {
@@ -106,39 +171,52 @@ async function pullThread(account: string): Promise<ChatMessage[]> {
 }
 
 /**
- * Fetch all conversations directly from the server and return them, bypassing
- * localStorage. Used by the admin inbox for true cross-device visibility.
+ * Fetch all conversations. Source order: Supabase shared DB -> /api/chat ->
+ * local mirror. Used by the admin inbox for true cross-device visibility.
  */
 export async function fetchAllFromServer(): Promise<{ account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[]> {
+  // 1. Shared Supabase DB (works on static hosts, every device + country).
+  const shared = await dbAll();
+  if (shared.length) {
+    for (const g of groupByAccount(shared)) mergeServer(g.account, g.messages);
+    return groupByAccount(shared);
+  }
+
+  // 2. server.js API (local dev / single Node host).
   try {
     const rows = (await apiRequest(`/api/chat/all?t=${Date.now()}`)) as unknown;
-    if (!Array.isArray(rows)) return [];
-    const byAccount = new Map<string, ChatMessage[]>();
-    for (const m of (rows as Parameters<typeof toChatMessage>[0][]).map(toChatMessage)) {
-      const list = byAccount.get(m.account) ?? [];
-      list.push(m);
-      byAccount.set(m.account, list);
+    if (Array.isArray(rows)) {
+      const msgs = (rows as Parameters<typeof toChatMessage>[0][]).map(toChatMessage);
+      const grouped = groupByAccount(msgs);
+      for (const g of grouped) mergeServer(g.account, g.messages);
+      if (grouped.length) return grouped;
     }
-    const result: { account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[] = [];
-    for (const [account, messages] of byAccount) {
-      const sorted = messages.sort((a, b) => (a.at < b.at ? -1 : 1));
-      result.push({
-        account,
-        name: sorted.find(m => m.from === 'client')?.name || account,
-        messages: sorted,
-        lastAt: sorted[sorted.length - 1]?.at ?? '',
-        unread: sorted.filter(m => m.from === 'client' && !m.seen).length,
-      });
-    }
-    // Also merge into local store so offline fallback stays warm
-    for (const [account, messages] of byAccount) mergeServer(account, messages);
-    return result.sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
-  } catch {
-    // Fallback: read from local mirror
-    return conversations();
-  }
+  } catch { /* API absent on static hosts — fall through */ }
+  // 3. Local mirror (offline only).
+  return conversations();
 }
 
+function groupByAccount(messages: ChatMessage[]): { account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[] {
+  const byAccount = new Map<string, ChatMessage[]>();
+  for (const m of messages) {
+    if (!m.account) continue;
+    const list = byAccount.get(m.account) ?? [];
+    list.push(m);
+    byAccount.set(m.account, list);
+  }
+  const result: { account: string; name: string; messages: ChatMessage[]; lastAt: string; unread: number }[] = [];
+  for (const [account, list] of byAccount) {
+    const sorted = list.sort((a, b) => (a.at < b.at ? -1 : 1));
+    result.push({
+      account,
+      name: sorted.find(m => m.from === 'client')?.name || account,
+      messages: sorted,
+      lastAt: sorted[sorted.length - 1]?.at ?? '',
+      unread: sorted.filter(m => m.from === 'client' && !m.seen).length,
+    });
+  }
+  return result.sort((a, b) => (a.lastAt < b.lastAt ? 1 : -1));
+}
 async function pushServer(payload: {
   id?: string;
   account: string;
@@ -147,6 +225,19 @@ async function pushServer(payload: {
   body: string;
   at?: string;
 }): Promise<boolean> {
+  // Shared DB first so every device sees it even on static hosts.
+  if (dbEnabled()) {
+    const ok = await dbInsert({
+      id: String(payload.id ?? `m-${Date.now().toString(36)}`),
+      account: payload.account,
+      name: payload.name,
+      from: payload.sender,
+      text: payload.body,
+      at: payload.at ?? new Date().toISOString(),
+      seen: payload.sender === "agent",
+    });
+    if (ok) return true;
+  }
   try {
     await apiRequest("/api/chat/send", { method: "POST", body: JSON.stringify(payload) });
     return true;
@@ -260,10 +351,16 @@ function mergeServer(account: string, messages: ChatMessage[]): boolean {
 }
 
 /**
- * Pull one thread from the API, merge locally, and return the merged list.
- * This is the authoritative read path for the client widget.
+ * Pull one thread from the shared store, merge locally, and return it.
+ * Source order: Supabase -> /api/chat -> local. Authoritative read path
+ * for the client widget.
  */
 export async function refreshThread(account: string): Promise<ChatMessage[]> {
+  const shared = await dbThread(account);
+  if (shared.length) {
+    for (const m of shared) mergeServer(account, [m]);
+    return shared.sort((a, b) => (a.at < b.at ? -1 : 1));
+  }
   const server = await pullThread(account);
   if (server.length) {
     for (const m of server) mergeServer(account, [m]);
@@ -304,24 +401,98 @@ export async function refreshChat(): Promise<void> {
 }
 
 export async function markThreadSeenRemote(account: string): Promise<void> {
+  if (await dbMarkSeen(account)) return;
   try {
     await apiRequest(`/api/chat/seen?account=${encodeURIComponent(account)}`, { method: "POST" });
   } catch { /* API optional */ }
 }
 
-/** True when messages reach the shared server, i.e. across devices. */
-export let chatIsRemote = false;
+// --- Shared signup + login history (Supabase, falls back to localStorage) ---
 
-async function probeApi(): Promise<void> {
+const LOGIN_LOCAL_KEY = "indy_login_history";
+
+function readLoginLocal(): LoginEvent[] {
   try {
-    await apiRequest("/api/chat/all");
-    chatIsRemote = true;
+    const raw = localStorage.getItem(LOGIN_LOCAL_KEY);
+    const v = raw ? (JSON.parse(raw) as LoginEvent[]) : [];
+    return Array.isArray(v) ? v : [];
   } catch {
-    chatIsRemote = false;
+    return [];
   }
 }
 
-void probeApi();
+/** Record a signup + every successful login to the shared DB (and local mirror). */
+export async function recordSharedLogin(account: string, name: string, method: string): Promise<void> {
+  const entry: LoginEvent = { account, name, method, at: new Date().toISOString() };
+  try {
+    const next = [entry, ...readLoginLocal()].slice(0, 200);
+    localStorage.setItem(LOGIN_LOCAL_KEY, JSON.stringify(next));
+  } catch { /* ignore */ }
+  window.dispatchEvent(new Event("indy-logins"));
+  if (!dbEnabled()) return;
+  try {
+    await supabase!.from("indy_users").upsert(
+      { email: account, name, last_login_at: entry.at },
+      { onConflict: "email" }
+    );
+    await supabase!.from("indy_login_events").insert({
+      id: `lg-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+      email: account,
+      name,
+      method,
+      at: entry.at,
+    });
+  } catch { /* shared DB unreachable — local mirror kept */ }
+}
+
+/** Every known user + full login history, for the admin Users view. */
+export async function fetchSharedUsers(): Promise<{ email: string; name: string; createdAt: string; lastLoginAt: string; loginCount: number; logins: LoginEvent[] }[]> {
+  if (dbEnabled()) {
+    try {
+      const [{ data: users }, { data: events }] = await Promise.all([
+        supabase!.from("indy_users").select("email,name,created_at,last_login_at").order("last_login_at", { ascending: false }).limit(500),
+        supabase!.from("indy_login_events").select("email,name,method,at").order("at", { ascending: false }).limit(1000),
+      ]);
+      const byEmail = new Map<string, LoginEvent[]>();
+      for (const e of (events ?? []) as { email: string; name: string; method: string; at: string }[]) {
+        const list = byEmail.get(e.email) ?? [];
+        list.push({ account: e.email, name: e.name, method: e.method, at: e.at });
+        byEmail.set(e.email, list);
+      }
+      return ((users ?? []) as { email: string; name: string; created_at: string; last_login_at: string }[]).map(u => ({
+        email: u.email,
+        name: u.name || u.email,
+        createdAt: u.created_at ?? "",
+        lastLoginAt: u.last_login_at ?? "",
+        loginCount: byEmail.get(u.email)?.length ?? 0,
+        logins: byEmail.get(u.email) ?? [],
+      }));
+    } catch { /* fall through to local */ }
+  }
+  const grouped = new Map<string, LoginEvent[]>();
+  for (const e of readLoginLocal()) {
+    const list = grouped.get(e.account) ?? [];
+    list.push(e);
+    grouped.set(e.account, list);
+  }
+  return [...grouped.entries()].map(([email, logins]) => ({
+    email,
+    name: logins[0]?.name || email,
+    createdAt: logins[logins.length - 1]?.at ?? "",
+    lastLoginAt: logins[0]?.at ?? "",
+    loginCount: logins.length,
+    logins: logins.sort((a, b) => (a.at < b.at ? 1 : -1)),
+  }));
+}
+
+export function loginHistoryLocal(): LoginEvent[] {
+  return readLoginLocal();
+}
+
+/** True when messages reach a shared store (Supabase DB or /api), i.e. across devices. */
+export function isSharedChat(): boolean {
+  return dbEnabled();
+}
 
 // ============================================================================
 // Account notes, admin broadcasts, agent messages, document verification

@@ -4,6 +4,8 @@ import { TrendingUp, ArrowRight, ArrowLeft, Check, Upload, Eye, EyeOff } from 'l
 import Logo from '../components/Logo';
 import { startGoogleSignIn, rememberProfile } from '../lib/googleAuth';
 import { saveAccountProfile, fileToDataUrl } from '../lib/account';
+import { recordLogin } from '../lib/audit';
+import { recordSharedLogin } from '../lib/notes';
 
 type Step = 1 | 2 | 3;
 
@@ -25,6 +27,8 @@ export default function Signup() {
       const profile = await startGoogleSignIn('/dashboard');
       // null means the browser is being redirected to Google (Supabase flow).
       if (!profile) return;
+      recordLogin('google', profile.email, profile.name);
+      void recordSharedLogin(profile.email, profile.name, 'google');
       if (profile.email) update('email', profile.email);
       if (profile.given_name) update('firstName', profile.given_name);
       if (profile.family_name) update('lastName', profile.family_name);
@@ -81,6 +85,8 @@ export default function Signup() {
         : []),
     ];
     rememberProfile({ sub: `local-${Date.now()}`, email: form.email, name: name || 'Investor' });
+    recordLogin('email', form.email, name || 'Investor');
+    void recordSharedLogin(form.email, name || 'Investor', 'signup');
     saveAccountProfile({
       firstName: form.firstName,
       lastName: form.lastName,

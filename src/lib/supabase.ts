@@ -80,10 +80,27 @@ export function onSupabaseAuthChange(cb: (profile: GoogleProfile | null) => void
   return () => data.subscription.unsubscribe();
 }
 
+// Central sign-out: clears every session/token store (Supabase + local
+// profile keys + per-account caches are keyed off the profile, so removing
+// the profile signs out everywhere), notifies the UI, and lands on the
+// public home page. History is replaced so "back" can't reopen protected
+// pages after sign out.
+export async function signOutEverywhere(navigate?: (path: string, opts?: { replace?: boolean }) => void): Promise<void> {
+  try {
+    await supabase?.auth.signOut();
+  } catch { /* already signed out */ }
+  try {
+    localStorage.removeItem("indy_google_user");
+    localStorage.removeItem("indy_auth_provider");
+    localStorage.removeItem("indy_user_email");
+    localStorage.removeItem("indy_user_name");
+    sessionStorage.clear();
+  } catch { /* storage unavailable */ }
+  window.dispatchEvent(new Event("indy-auth"));
+  if (navigate) navigate("/", { replace: true });
+  else window.location.replace("/");
+}
+
 export async function signOut(): Promise<void> {
-  await supabase?.auth.signOut();
-  localStorage.removeItem("indy_google_user");
-  localStorage.removeItem("indy_auth_provider");
-  localStorage.removeItem("indy_user_email");
-  localStorage.removeItem("indy_user_name");
+  return signOutEverywhere();
 }

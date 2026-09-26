@@ -1,4 +1,4 @@
-﻿import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+﻿import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import Nav from './components/Nav';
 import Footer from './components/Footer';
 import SupportWidget from './components/SupportWidget';
@@ -38,11 +38,23 @@ import AdminKYC from './pages/admin/AdminKYC';
 import AdminNotifications from './pages/admin/AdminNotifications';
 import AdminSupport from './pages/admin/AdminSupport';
 import AdminAudit from './pages/admin/AdminAudit';
+import { useAuth } from './lib/useAuth';
+
+// Signed-out visitors can browse everything freely; protected pages bounce
+// to /login (which itself bounces back to /dashboard when already signed
+// in). After sign-out the session is fully cleared and history is replaced,
+// so "back" can't reopen protected pages.
 
 const NO_NAV_ROUTES = ['/login', '/signup', '/admin', '/admin/dashboard', '/admin/users', '/admin/kyc', '/admin/support', '/admin/audit', '/session-expired', '/maintenance', '/error'];
 const AUTH_ROUTES = ['/dashboard', '/deposit', '/withdraw', '/transactions', '/settings'];
 const NO_FOOTER_ROUTES = ['/login', '/signup', '/dashboard', '/deposit', '/withdraw', '/admin'];
 const NO_SUPPORT_ROUTES = ['/login', '/signup', '/admin', '/session-expired', '/maintenance', '/error'];
+
+function RequireAuth({ children }: { children: React.ReactElement }) {
+  const { signedIn } = useAuth();
+  if (!signedIn) return <Navigate to="/login" replace />;
+  return children;
+}
 
 function AppShell() {
   const { pathname } = useLocation();
@@ -76,11 +88,11 @@ function AppShell() {
         <Route path="/contact" element={<Contact />} />
 
         {/* Authenticated */}
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/deposit" element={<Deposit />} />
-        <Route path="/withdraw" element={<Withdraw />} />
-        <Route path="/transactions" element={<TransactionHistory />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/dashboard" element={<RequireAuth><Dashboard /></RequireAuth>} />
+        <Route path="/deposit" element={<RequireAuth><Deposit /></RequireAuth>} />
+        <Route path="/withdraw" element={<RequireAuth><Withdraw /></RequireAuth>} />
+        <Route path="/transactions" element={<RequireAuth><TransactionHistory /></RequireAuth>} />
+        <Route path="/settings" element={<RequireAuth><Settings /></RequireAuth>} />
 
         {/* Utility */}
         <Route path="/session-expired" element={<SessionExpired />} />

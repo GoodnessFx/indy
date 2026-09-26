@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Users, MessageSquare, ShieldCheck, FileText, LogOut, TrendingUp, BellRing, PanelLeftClose, PanelLeftOpen, Menu, X } from 'lucide-react';
 import { totalUnreadForAdmin, conversations } from '../../lib/notes';
+import { signOutEverywhere } from '../../lib/supabase';
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -87,7 +88,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
 
         <div className="p-3 border-t border-black/5">
-          <button onClick={() => navigate('/admin')} title="Sign out"
+          <button onClick={() => void signOutEverywhere(navigate)} title="Sign out"
             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-mono text-black/30 hover:text-[#EF4444] hover:bg-[#EF4444]/5 transition-colors w-full ${rail ? 'lg:justify-center lg:px-0' : ''}`}>
             <LogOut size={13} />
             {!rail && 'Sign out'}

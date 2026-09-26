@@ -1,15 +1,42 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Search, RefreshCw, Users as UsersIcon, WifiOff } from 'lucide-react';
 import AdminLayout from './AdminLayout';
 import { adminUsers } from '../../data/mock';
+import { fetchSharedUsers } from '../../lib/notes';
+import { isSharedDbConfigured } from '../../lib/chatStream';
 
 const kycFilters = ['All', 'verified', 'pending', 'rejected', 'unverified'];
+
+interface SharedUser {
+  email: string;
+  name: string;
+  createdAt: string;
+  lastLoginAt: string;
+  loginCount: number;
+  logins: { account: string; name: string; method: string; at: string }[];
+}
 
 export default function AdminUsers() {
   const [search, setSearch] = useState('');
   const [kycFilter, setKycFilter] = useState('All');
+  const [shared, setShared] = useState<SharedUser[]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
+  const load = async () => setShared(await fetchSharedUsers());
+  useEffect(() => {
+    void load();
+    const onLogin = () => void load();
+    window.addEventListener('indy-logins', onLogin);
+    window.addEventListener('storage', onLogin);
+    return () => {
+      window.removeEventListener('indy-logins', onLogin);
+      window.removeEventListener('storage', onLogin);
+    };
+  }, []);
+
+  const sharedEmails = new Set(shared.map(s => s.email.toLowerCase()));
+  void sharedEmails;
   const filtered = adminUsers.filter(u => {
     const matchSearch = !search || u.name.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase());
     const matchKyc = kycFilter === 'All' || u.kyc === kycFilter;
@@ -19,7 +46,65 @@ export default function AdminUsers() {
   return (
     <AdminLayout>
       <div className="max-w-5xl">
-        <h1 className="font-mono font-700 text-xl text-[#0A0B0D] mb-6">Users</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="font-mono font-700 text-xl text-[#0A0B0D]">Users</h1>
+          <button onClick={() => void load()}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-black/8 text-[11px] text-black/40 hover:text-black/70 transition-colors font-mono">
+            <RefreshCw size={11} /> Refresh
+          </button>
+        </div>
+
+        {/* Real signups + full login history (shared DB when configured). */}
+        <div className="bg-white border border-black/5 rounded-xl overflow-hidden mb-8">
+          <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+            <h2 className="font-mono text-sm text-black/70 flex items-center gap-2">
+              <UsersIcon size={14} /> Signed-up users
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#2F6BFF]/10 text-[#2F6BFF] font-mono">{shared.length}</span>
+            </h2>
+            {!isSharedDbConfigured() && (
+              <span className="text-[10px] text-[#F59E0B] font-mono flex items-center gap-1">
+                <WifiOff size={11} /> local only — set Supabase keys to see every device
+              </span>
+            )}
+          </div>
+          {shared.length === 0 ? (
+            <p className="px-5 py-8 text-xs text-black/30 text-center font-mono">
+              No sign-ups recorded yet. Every signup and login on any device appears here with its full timestamped history.
+            </p>
+          ) : (
+            <div className="divide-y divide-black/5">
+              {shared
+                .filter(s => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.email.toLowerCase().includes(search.toLowerCase()))
+                .map(s => (
+                <div key={s.email}>
+                  <button onClick={() => setExpanded(e => (e === s.email ? null : s.email))}
+                    className="w-full grid grid-cols-[2fr_2fr_1fr_1fr] px-5 py-3 hover:bg-black/2 transition-colors items-center text-left">
+                    <span className="font-mono text-xs text-black/80 truncate">{s.name}</span>
+                    <span className="font-mono text-xs text-black/40 truncate">{s.email}</span>
+                    <span className="font-mono text-xs text-black/60">{s.loginCount} login{s.loginCount === 1 ? '' : 's'}</span>
+                    <span className="font-mono text-xs text-black/30">
+                      {s.lastLoginAt ? new Date(s.lastLoginAt).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                    </span>
+                  </button>
+                  {expanded === s.email && (
+                    <div className="px-5 pb-4">
+                      <div className="rounded-lg bg-black/2 border border-black/5 overflow-hidden">
+                        {s.logins.map((l, i) => (
+                          <div key={`${l.at}-${i}`} className="flex items-center gap-3 px-4 py-2 border-b border-black/5 last:border-0">
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/5 text-black/50 font-mono">{l.method}</span>
+                            <span className="font-mono text-[11px] text-black/60">{new Date(l.at).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <h2 className="font-mono text-sm text-black/50 mb-3">Demo directory</h2>
 
         <div className="flex items-center gap-3 mb-5 flex-col sm:flex-row">
           <div className="flex items-center gap-2 bg-black/3 border border-black/5 rounded-lg px-3 py-2 flex-1">

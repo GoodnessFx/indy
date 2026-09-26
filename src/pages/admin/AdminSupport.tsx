@@ -11,7 +11,8 @@ import {
   type ChatMessage,
 } from '../../lib/notes';
 
-import { useChatStream, sendTyping } from '../../lib/chatStream';
+import { useChatStream, sendTyping, isSharedDbConfigured } from '../../lib/chatStream';
+import { isSharedChat } from '../../lib/notes';
 
 // Support inbox with true cross-device realtime. The SSE stream pushes every
 // client message instantly (any device / country); a slow 15 s safety poll
@@ -26,7 +27,7 @@ export default function AdminSupport() {
   const [reply, setReply] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
   const [list, setList] = useState<Convo[]>(() => conversations());
-  const [isRemote, setIsRemote] = useState(false);
+  const [isRemote, setIsRemote] = useState(() => isSharedDbConfigured() || isSharedChat());
   const [, setTick] = useState(0);
   const [newAlert, setNewAlert] = useState<string | null>(null);
   const prevCountRef = useRef<Record<string, number>>({});
@@ -138,9 +139,9 @@ export default function AdminSupport() {
           <div>
             <h1 className="font-mono font-700 text-xl text-[#0A0B0D]">Support Inbox</h1>
             <p className="text-xs text-black/30 font-mono mt-1 flex items-center gap-1.5">
-              {isRemote
-                ? <><Wifi size={11} className={connected ? "text-[#22C55E]" : "text-[#F59E0B]"} /> {connected ? "Live realtime — reachable from any device, any country" : "Reconnecting live stream…"}</>
-                : <><WifiOff size={11} className="text-[#EF4444]" /> Local mode — messages only visible on this browser</>}
+              {isSharedDbConfigured()
+                ? <><Wifi size={11} className={connected ? "text-[#22C55E]" : "text-[#F59E0B]"} /> {connected ? "Live realtime (shared DB) — any device, any country" : "Connecting live stream…"}</>
+                : <><WifiOff size={11} className="text-[#EF4444]" /> Shared DB not configured — set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY so devices sync</>}
             </p>
           </div>
           <div className="flex items-center gap-3">

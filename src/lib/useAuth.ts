@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getStoredGoogleUser, onAuthChange, type GoogleProfile } from "./googleAuth";
-import { notifyLogin, currentAccount } from "./notes";
+import { notifyLogin, currentAccount, recordSharedLogin } from "./notes";
 
 // Shared auth state for UI gating (wallet connect, support chat).
 //
@@ -28,6 +28,7 @@ export function useAuth(): AuthState {
     if (!prevSignedIn.current && next.signedIn) {
       const { account, name } = currentAccount();
       void notifyLogin(account, name);
+      void recordSharedLogin(account, name, localStorage.getItem("indy_auth_provider") ?? "email");
     }
     prevSignedIn.current = next.signedIn;
     setState(next);

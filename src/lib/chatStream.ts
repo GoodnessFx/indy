@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import { isSupabaseConfigured, supabase } from "./supabase";
 
-// Shared realtime chat transport — Server-Sent Events with auto-reconnect.
-// Mirrors the ShieldSafeBank reference: one EventSource per open view, server
-// fans out every new message instantly, no polling interval, no refresh.
+// Shared realtime chat transport.
+// Transport order:
+//   1. Supabase Realtime (works on static hosts like indysolutions.org —
+//      the shared DB both sides read/write; no /api needed).
+//   2. SSE /api/chat/stream (when server.js is the backend, e.g. local dev).
+// Both fan out instantly with no polling interval and no refresh.
+// Reconnect: Supabase channel auto-reconnects; SSE retries via `retry: 3000`
+// plus manual backoff, visibilitychange, and online handlers.
 //
 // Usage:
 //   const { connected, typingFrom } = useChatStream({ account, onMessage, onRead });
@@ -58,7 +64,47 @@ export function useChatStream({
   const typingTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!enabled || typeof EventSource === "undefined") return;
+    if (!enabled) return;
+    // Prefer Supabase Realtime when the shared DB is configured — it works
+    // on static hosts where /api/chat doesn't exist.
+    if (isSupabaseConfigured && supabase) {
+      const channel = supabase
+        .channel(`support-chat-${account || "admin"}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "support_messages" },
+          (payload) => {
+            const row = (payload.new ?? {}) as { account?: string };
+            const rowAccount = String(row.account ?? "");
+            if (account && rowAccount && rowAccount !== account) return;
+            setConnected(true);
+            cbs.current.onMessage?.(rowAccount || account);
+          }
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "support_messages" },
+          (payload) => {
+            const row = (payload.new ?? {}) as { account?: string };
+            const rowAccount = String(row.account ?? "");
+            if (account && rowAccount && rowAccount !== account) return;
+            cbs.current.onRead?.(rowAccount || account);
+          }
+        )
+        .subscribe((status) => {
+          setConnected(status === "SUBSCRIBED");
+          if (status === "SUBSCRIBED") cbs.current.onReconnect?.();
+        });
+      const onVisible = () => {
+        if (document.visibilityState === "visible") cbs.current.onReconnect?.();
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      return () => {
+        document.removeEventListener("visibilitychange", onVisible);
+        void supabase!.removeChannel(channel);
+      };
+    }
+    if (typeof EventSource === "undefined") return;
     let source: EventSource | null = null;
     let closed = false;
 
@@ -144,9 +190,16 @@ export function useChatStream({
 /** Tell the other side "I'm typing" (fire-and-forget, throttled by caller). */
 export function sendTyping(account: string, role: "client" | "agent"): void {
   if (!account) return;
+  // On static hosts there is no /api/chat/typing — Supabase Realtime already
+  // pushes the message itself instantly, so the typing ping is best-effort.
   void fetch("/api/chat/typing", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ account, role }),
   }).catch(() => { /* stream will still deliver messages */ });
+}
+
+/** True when the shared Supabase DB is configured (chat actually syncs). */
+export function isSharedDbConfigured(): boolean {
+  return isSupabaseConfigured;
 }
