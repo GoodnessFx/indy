@@ -13,6 +13,10 @@
 //      every chat row.
 //   2. localStorage mirror per account, so the thread opens instantly, works
 //      offline, and survives a server restart on this device.
+//   3. Realtime push via /api/chat/stream (SSE): every device holds the stream
+//      open and the server broadcasts each new message the instant it is
+//      saved — no refresh, no polling interval. See src/lib/chatStream.ts.
+//      Polling remains only as a 15 s safety net if the stream is blocked.
 //
 // No database, no tables, no SDK. Plain HTTP JSON rows keyed by account email,
 // the same pattern as the reference repo.

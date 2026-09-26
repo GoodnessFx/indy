@@ -11,8 +11,11 @@ import {
   type ChatMessage,
 } from '../../lib/notes';
 
-// Support inbox with real cross-device sync. Every poll hits the server API
-// directly so messages from clients on any device / country appear immediately.
+import { useChatStream, sendTyping } from '../../lib/chatStream';
+
+// Support inbox with true cross-device realtime. The SSE stream pushes every
+// client message instantly (any device / country); a slow 15 s safety poll
+// only covers the case where the stream is blocked.
 
 const EMOJIS = ['👍', '🙏', '😊', '🎉', '✅', '👋', '💰', '📈', '🔒', '⚡', '🤝', '🔥'];
 
@@ -28,10 +31,10 @@ export default function AdminSupport() {
   const [newAlert, setNewAlert] = useState<string | null>(null);
   const prevCountRef = useRef<Record<string, number>>({});
 
-  // Poll the server directly — works from any device, any country.
+  // Realtime sync: SSE pushes instantly; doSync re-pulls full history.
   const doSync = async () => {
     const fresh = await fetchAllFromServer();
-    setIsRemote(true);
+    if (fresh.length > 0) setIsRemote(true);
 
     // Detect newly arrived client messages and notify the admin
     for (const convo of fresh) {
@@ -40,16 +43,47 @@ export default function AdminSupport() {
       if (clientMsgs > prev && prev !== 0) {
         setNewAlert(`New message from ${convo.name || convo.account}`);
         setTimeout(() => setNewAlert(null), 5000);
+        try {
+          const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          osc.frequency.value = 880;
+          osc.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+          void ctx.close?.();
+        } catch { /* audio unavailable */ }
       }
       prevCountRef.current[convo.account] = clientMsgs;
+    }
+    // Initial load seeds the counters without alerting.
+    if (Object.keys(prevCountRef.current).length === 0) {
+      for (const convo of fresh) {
+        prevCountRef.current[convo.account] = convo.messages.filter(m => m.from === 'client').length;
+      }
     }
 
     setList(fresh);
   };
 
+  const { connected } = useChatStream({
+    onMessage: () => void doSync(),
+    onRead: () => void doSync(),
+    onTyping: () => void doSync(),
+    onReconnect: () => void doSync(),
+  });
+
+  // Seed the "previous count" baseline without alerting on first load.
   useEffect(() => {
-    void doSync();
-    const timer = window.setInterval(doSync, 3000); // poll every 3 s
+    void (async () => {
+      const fresh = await fetchAllFromServer();
+      for (const convo of fresh) {
+        prevCountRef.current[convo.account] = convo.messages.filter(m => m.from === 'client').length;
+      }
+      setList(fresh);
+      setIsRemote(true);
+    })();
+    // Slow safety poll only — the stream delivers instantly.
+    const timer = window.setInterval(doSync, 15000); // safety net every 15 s
     const local = () => setList(conversations());
     window.addEventListener('indy-chat', local);
     window.addEventListener('storage', local);
@@ -84,6 +118,11 @@ export default function AdminSupport() {
     void doSync();
   };
 
+  const onReplyType = (v: string) => {
+    setReply(v);
+    sendTyping(activeAccount ?? "", "agent");
+  };
+
   return (
     <AdminLayout>
       <div className="max-w-5xl mx-auto w-full">
@@ -100,7 +139,7 @@ export default function AdminSupport() {
             <h1 className="font-mono font-700 text-xl text-[#0A0B0D]">Support Inbox</h1>
             <p className="text-xs text-black/30 font-mono mt-1 flex items-center gap-1.5">
               {isRemote
-                ? <><Wifi size={11} className="text-[#22C55E]" /> Live server sync — reachable from any device, any country</>
+                ? <><Wifi size={11} className={connected ? "text-[#22C55E]" : "text-[#F59E0B]"} /> {connected ? "Live realtime — reachable from any device, any country" : "Reconnecting live stream…"}</>
                 : <><WifiOff size={11} className="text-[#EF4444]" /> Local mode — messages only visible on this browser</>}
             </p>
           </div>
@@ -206,7 +245,7 @@ export default function AdminSupport() {
                 <div className="flex items-center gap-2">
                   <input
                     value={reply}
-                    onChange={e => setReply(e.target.value)}
+                    onChange={e => onReplyType(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && send()}
                     placeholder={`Reply to ${activeName || activeAccount}...`}
                     className="flex-1 min-w-0 bg-black/3 border border-black/8 rounded-lg px-4 py-2.5 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF]/40"

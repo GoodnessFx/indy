@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CheckCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MessageCircle, X, Send, Search, ChevronDown, Paperclip, Clock, CheckCircle, AlertCircle, Plus, Smile } from 'lucide-react';
 import { useAuth } from '../lib/useAuth';
 import { createTicket, myTickets } from '../lib/audit';
 import { currentAccount, sendClient, threadFor, refreshThread } from '../lib/notes';
-import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { useChatStream, sendTyping } from '../lib/chatStream';
 import { useOrdersSync } from '../lib/useOrdersSync';
 
 type Tab = 'chat' | 'tickets' | 'help';
@@ -64,46 +64,78 @@ export default function SupportWidget() {
     return () => window.removeEventListener('indy-open-support', openMe);
   }, []);
 
-  // The conversation is stored, so it survives sign out, refresh, and new
-  // sessions: the client always continues from where they left off. Remote
-  // messages are pulled in every 8 seconds when Supabase is configured, which
-  // is how an admin on another device reaches this thread.
-  const [thread, setThread] = useState(() => {
-  const account = currentAccount().account;
-  if (isSupabaseConfigured && supabase) {
-    return threadFor(account);
-  }
-  try {
-    return JSON.parse(localStorage.getItem(`support_thread_${account}`) || '[]');
-  } catch {
-    return [];
-  }
-});
+  // The conversation persists server-side, so it survives sign out, refresh,
+  // and new sessions: the client always continues where they left off.
+  // Delivery is realtime via SSE (useChatStream) — an admin on another device
+  // reaches this thread instantly, with a slow safety poll as fallback only.
+  const [thread, setThread] = useState(() => threadFor(currentAccount().account));
   const [acks, setAcks] = useState<{ id: string; from: 'support'; text: string; time: string }[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [agentTyping, setAgentTyping] = useState(false);
+  const typingThrottle = useRef(0);
+
+  const pull = async () => {
+    const fresh = await refreshThread(currentAccount().account);
+    if (fresh.length) {
+      setThread([...fresh]);
+      // Remove any pending IDs that now appear in the fresh thread (i.e., delivered)
+      setPendingIds(prev => prev.filter(id => !fresh.some(m => m.id === id)));
+    } else {
+      setThread(threadFor(currentAccount().account));
+    }
+  };
+
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  const { connected } = useChatStream({
+    account: currentAccount().account,
+    onMessage: () => {
+      void pull();
+      // Badge + sound until the widget is opened and seen.
+      if (!openRef.current) {
+        setUnread(u => u + 1);
+        try {
+          const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+          const osc = ctx.createOscillator();
+          osc.frequency.value = 880;
+          osc.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+          void ctx.close?.();
+        } catch { /* audio unavailable */ }
+      }
+    },
+    onRead: () => void pull(),
+    onTyping: (_account, role) => {
+      if (role === "agent") {
+        setAgentTyping(true);
+        window.setTimeout(() => setAgentTyping(false), 4000);
+      }
+    },
+    onReconnect: () => void pull(),
+  });
+
+  useEffect(() => {
+    if (open) setUnread(0);
+  }, [open]);
 
   useEffect(() => {
     const syncLocal = () => setThread(threadFor(currentAccount().account));
-    const pull = async () => {
-      const fresh = await refreshThread(currentAccount().account);
-      if (fresh.length) {
-        setThread([...fresh]);
-        // Remove any pending IDs that now appear in the fresh thread (i.e., delivered)
-        setPendingIds(prev => prev.filter(id => !fresh.some(m => m.id === id)));
-      } else {
-        syncLocal();
-      }
-    };
+    void pull();
+    // Safety net only: the SSE stream delivers instantly; poll every 15 s so
+    // history still converges if the stream is ever blocked.
+    const t = window.setInterval(pull, 15000);
     window.addEventListener('indy-chat', syncLocal);
     window.addEventListener('storage', syncLocal);
     window.addEventListener('indy-auth', syncLocal);
-    void pull();
-    const t = window.setInterval(pull, 3000);
     return () => {
       window.removeEventListener('indy-chat', syncLocal);
       window.removeEventListener('storage', syncLocal);
       window.removeEventListener('indy-auth', syncLocal);
       window.clearInterval(t);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const messages: { id: string; from: string; text: string; time: string }[] = [
@@ -228,6 +260,11 @@ export default function SupportWidget() {
         aria-label="Open support"
       >
         {open || showingGate ? <X size={20} /> : <MessageCircle size={20} />}
+        {!open && unread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-[#EF4444] text-white text-[10px] font-bold flex items-center justify-center animate-bounce">
+            {unread > 9 ? "9+" : unread}
+          </span>
+        )}
       </button>
 
       {/* Sign-in gate, shown before the chat opens (also a mobile sheet) */}
@@ -280,9 +317,9 @@ export default function SupportWidget() {
               <div>
                 <p className="font-display font-600 text-sm text-[#0A0B0D]">Indy Digital Marketing Solutions Support</p>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#22C55E] dot-pulse" />
+                  <span className={`w-1.5 h-1.5 rounded-full ${connected ? "bg-[#22C55E] dot-pulse" : "bg-[#F59E0B]"}`} />
                   <span className="text-[10px] text-black/40">
-                    {firstName ? `Signed in as ${firstName}` : 'Online, Avg. reply 3 min'}
+                    {agentTyping ? "Agent is typing…" : firstName ? `Signed in as ${firstName}` : 'Online, Avg. reply 3 min'}
                   </span>
                 </div>
               </div>
@@ -327,6 +364,13 @@ export default function SupportWidget() {
                     </div>
                   </div>
                 ))}
+                {agentTyping && (
+                  <div className="flex justify-start">
+                    <div className="bg-black/8 rounded-2xl rounded-bl-md px-3 py-2 text-xs text-black/50 animate-pulse">
+                      Agent is typing…
+                    </div>
+                  </div>
+                )}
                 {humanRequested && (
                   <div className="text-center">
                     <div className="inline-flex items-center gap-2 text-xs text-black/40 bg-black/5 px-3 py-1.5 rounded-full">
@@ -368,7 +412,14 @@ export default function SupportWidget() {
                 <div className="flex items-center gap-2 bg-black/5 rounded-xl px-3 py-2">
                   <input
                     value={input}
-                    onChange={e => setInput(e.target.value)}
+                    onChange={e => {
+                      setInput(e.target.value);
+                      const now = Date.now();
+                      if (now - typingThrottle.current > 5000) {
+                        typingThrottle.current = now;
+                        sendTyping(currentAccount().account, "client");
+                      }
+                    }}
                     onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
                     placeholder="Type a message..."
                     className="flex-1 bg-transparent text-sm text-[#0A0B0D] placeholder-black/25 outline-none min-w-0"

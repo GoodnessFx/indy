@@ -68,6 +68,57 @@ function sendJson(res, status, value) {
   res.end(body);
 }
 
+// --- Realtime chat transport (Server-Sent Events, zero dependencies) ---
+// Mirrors the ShieldSafeBank reference: every chat mutation fans out to all
+// attached SSE subscribers instantly, so admin + client on any device/country
+// see new messages with no polling and no refresh. EventSource auto-reconnects
+// (retry: 3000) after network switches, sleeping tabs, or dropped connections.
+const chatSubscribers = new Set();
+let chatEventId = 0;
+
+function broadcastChat(payload) {
+  chatEventId += 1;
+  const body = JSON.stringify({ ...payload, eventId: chatEventId });
+  const frame = `id: ${chatEventId}\nevent: chat\ndata: ${body}\n\n`;
+  for (const sub of chatSubscribers) {
+    // Client streams only receive their own account's events; admin gets all.
+    if (sub.account && payload.account && sub.account !== payload.account) continue;
+    try {
+      sub.res.write(frame);
+    } catch {
+      chatSubscribers.delete(sub);
+    }
+  }
+}
+
+function openChatStream(req, res, account) {
+  res.writeHead(200, {
+    "content-type": "text/event-stream",
+    "cache-control": "no-cache, no-transform",
+    connection: "keep-alive",
+    "x-accel-buffering": "no",
+    "access-control-allow-origin": "*",
+  });
+  res.write("retry: 3000\n\n");
+  const sub = { res, account: String(account || ""), at: Date.now() };
+  chatSubscribers.add(sub);
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(": ping\n\n");
+    } catch { /* cleaned up on close */ }
+  }, 25000);
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    chatSubscribers.delete(sub);
+  });
+}
+
+function adminPresenceCount() {
+  let n = 0;
+  for (const sub of chatSubscribers) if (!sub.account) n += 1;
+  return n;
+}
+
 function readBody(req) {
   return new Promise((resolve) => {
     let raw = "";
@@ -165,7 +216,19 @@ const server = http.createServer(async (req, res) => {
     };
     if (!store.chat.some((m) => m.id === message.id)) store.chat.push(message);
     writeStore(store);
+    broadcastChat({ type: "chat", account, message });
     return sendJson(res, 200, message);
+  }
+
+  // Realtime stream: client holds ?account=EMAIL open; admin holds it open
+  // with no account and receives every thread. Same pattern as ShieldSafeBank.
+  if (pathname === "/api/chat/stream" && req.method === "GET") {
+    const account = url.searchParams.get("account") || "";
+    return openChatStream(req, res, account);
+  }
+
+  if (pathname === "/api/chat/presence" && req.method === "GET") {
+    return sendJson(res, 200, { adminsOnline: adminPresenceCount() });
   }
 
   if (pathname === "/api/chat/login" && req.method === "POST") {
@@ -191,6 +254,7 @@ const server = http.createServer(async (req, res) => {
       };
       store.chat.push(note);
       writeStore(store);
+      broadcastChat({ type: "chat", account, message: note });
     }
     return sendJson(res, 200, { ok: true });
   }
@@ -205,7 +269,18 @@ const server = http.createServer(async (req, res) => {
         changed = true;
       }
     }
-    if (changed) writeStore(store);
+    if (changed) {
+      writeStore(store);
+      broadcastChat({ type: "read", account });
+    }
+    return sendJson(res, 200, { ok: true });
+  }
+
+  if (pathname === "/api/chat/typing" && req.method === "POST") {
+    const body = await readBody(req);
+    const account = String(body.account || url.searchParams.get("account") || "");
+    const role = body.role === "agent" ? "agent" : "client";
+    if (account) broadcastChat({ type: "typing", account, role });
     return sendJson(res, 200, { ok: true });
   }
 
