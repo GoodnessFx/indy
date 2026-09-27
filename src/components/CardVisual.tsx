@@ -19,6 +19,8 @@ export interface CardFace {
   last4: string;
   currency?: string;
   label?: string;
+  /** Captures of the card that was scanned, front first. */
+  images?: string[];
 }
 
 function brandColor(brand: string): { from: string; to: string } {
@@ -128,8 +130,30 @@ export default function CardVisual({ card, compact = false }: { card: CardFace; 
 
       <p className="relative mt-4 flex items-center gap-1.5 text-[10px] text-white/60">
         <Landmark size={10} />
-        Last 4 digits only — no full card number is stored anywhere
+        {card.last4
+          ? 'Last 4 digits only — no full card number is stored anywhere'
+          : 'Number not read yet — the photo of the card is on file for our team'}
       </p>
+
+      {card.images && card.images.length > 0 && (
+        <div className="relative mt-3 flex items-center gap-2">
+          <div className="flex gap-1.5">
+            {card.images.slice(0, 2).map((src, i) => (
+              <a
+                key={i}
+                href={src}
+                target="_blank"
+                rel="noreferrer"
+                className="block h-10 w-16 overflow-hidden rounded-md ring-1 ring-white/25 hover:ring-white/60 transition-shadow"
+                aria-label={i === 0 ? 'View the front of the scanned card' : 'View the back of the scanned card'}
+              >
+                <img src={src} alt={i === 0 ? 'Card front' : 'Card back'} className="h-full w-full object-cover" loading="lazy" />
+              </a>
+            ))}
+          </div>
+          <span className="text-[9px] uppercase tracking-widest text-white/55">Card photos on file</span>
+        </div>
+      )}
     </div>
   );
 }

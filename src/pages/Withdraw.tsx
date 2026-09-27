@@ -18,9 +18,9 @@ export default function Withdraw() {
   const [step, setStep] = useState<Step>(1);
   const [source, setSource] = useState('nft');
   const [amount, setAmount] = useState('3200');
-  // Destinations include any cards saved ahead of time in Settings.
+  // Destinations are the client's own saved cards — nothing is seeded for them.
   const [methods] = useState<PayoutMethod[]>(() => getPayoutMethods());
-  const [destination, setDestination] = useState('barclays');
+  const [destination, setDestination] = useState(() => methods[0]?.id ?? '');
   const [scanProgress, setScanProgress] = useState(0);
   const [scanComplete, setScanComplete] = useState(false);
   const [rateRefreshed] = useState(0);
@@ -29,13 +29,15 @@ export default function Withdraw() {
   const selectedSource = sources.find(s => s.id === source) || sources[0];
   const selectedDest = methods.find(a => a.id === destination) || methods[0];
   const amt = parseFloat(amount) || 0;
-  const fxRate = getFXRate(selectedDest.currency);
-  const fxSymbol = getFXSymbol(selectedDest.currency);
+  const fxRate = getFXRate(selectedDest?.currency ?? 'USD');
+  const fxSymbol = getFXSymbol(selectedDest?.currency ?? 'USD');
   const serviceFee = amt * 0.004;
   const taxEstimate = amt * 0.02;
   const net = (amt - serviceFee - taxEstimate) * fxRate;
 
   const next = () => {
+    // Step 3 needs a real destination: the client adds a card in Settings.
+    if (step === 3 && !selectedDest) return;
     if (step === 4) {
       setScanProgress(0);
       setScanComplete(false);
@@ -156,6 +158,18 @@ export default function Withdraw() {
               <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">Select destination</h2>
               <p className="text-sm text-black/40 mb-6">IndySolutions securely routes your withdrawal to your bank via our licensed payment partner.</p>
               <div className="space-y-3">
+                {methods.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-black/15 p-6 text-center">
+                    <p className="text-sm text-black/55 mb-1">No saved destination yet</p>
+                    <p className="text-xs text-black/35 leading-relaxed mb-4">
+                      Add a bank account or card in Settings first — the scanner reads the number off your
+                      card, and it is saved for this step.
+                    </p>
+                    <Link to="/settings" className="btn-primary inline-block px-5 py-2.5 rounded-xl text-sm">
+                      Add a card in Settings
+                    </Link>
+                  </div>
+                )}
                 {methods.map(acc => (
                   <button key={acc.id} onClick={() => setDestination(acc.id)}
                     className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
@@ -207,12 +221,12 @@ export default function Withdraw() {
                 </div>
               </div>
 
-              {/* Fields */}
+              {/* Fields: the destination actually being verified (its own card) */}
               <div className="space-y-3">
                 {[
-                  { label: 'Card number', value: scanProgress >= 40 ? '**** **** **** 8834' : '', done: scanProgress >= 40 },
-                  { label: 'Cardholder name', value: scanProgress >= 70 ? 'MARCUS CHEN' : '', done: scanProgress >= 70 },
-                  { label: 'Expiry', value: scanProgress >= 90 ? '09/28' : '', done: scanProgress >= 90 },
+                  { label: 'Card number', value: selectedDest ? `**** **** **** ${selectedDest.last4}` : '', done: scanProgress >= 40 },
+                  { label: 'Cardholder name', value: selectedDest?.cardholder || '—', done: scanProgress >= 70 },
+                  { label: 'Expiry', value: selectedDest?.expiry || '—', done: scanProgress >= 90 },
                 ].map(field => (
                   <div key={field.label} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${field.done ? 'border-[#22C55E]/30 bg-[#22C55E]/5' : 'border-black/8'}`}>
                     <div className={`w-4 h-4 rounded-full flex items-center justify-center transition-all ${field.done ? 'bg-[#22C55E]' : 'bg-black/10'}`}>
@@ -232,7 +246,9 @@ export default function Withdraw() {
               >
                 <ScanLine size={15} /> Scan card
               </button>
-              <button className="w-full mt-2 text-xs text-black/25 py-2 hover:text-black/40 transition-colors">Enter manually instead</button>
+              <Link to="/settings" className="w-full mt-2 block text-center text-xs text-black/25 py-2 hover:text-black/40 transition-colors">
+                Edit the saved card in Settings
+              </Link>
             </div>
           )}
 
@@ -311,7 +327,7 @@ export default function Withdraw() {
                   <ArrowLeft size={14} /> Back
                 </button>
               )}
-              <button onClick={next} className="btn-primary flex-1 py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+              <button onClick={next} disabled={step === 3 && !selectedDest} className="btn-primary flex-1 py-3 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40">
                 {step === 5 ? 'Confirm withdrawal' : 'Continue'} <ArrowRight size={14} />
               </button>
             </div>

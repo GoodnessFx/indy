@@ -366,6 +366,8 @@ export default function AdminUserDetail() {
                         last4: c.last4,
                         currency: c.currency,
                         label: c.label,
+                        images: c.images ?? [],
+
                       }} compact />
                       <button onClick={() => void removeCard(c.id)}
                         className="flex items-center gap-1.5 text-[11px] text-[#EF4444]/70 hover:text-[#EF4444] font-mono transition-colors">

@@ -3,7 +3,7 @@ import { MessageSquare, Clock, BellRing, CreditCard, LogIn, Wallet } from 'lucid
 import { adminUsers } from '../../data/mock';
 import { adminOrderFeed } from '../../lib/orders';
 import { useOrdersSync } from '../../lib/useOrdersSync';
-import { loginFeed, scanFeed } from '../../lib/audit';
+import { loginFeed, scanFeed, fetchScans, type ScanEvent } from '../../lib/audit';
 import { adminWalletPings } from '../../lib/walletSync';
 import { adminDeposits } from '../../lib/wallet';
 import { useEffect, useState } from 'react';
@@ -22,14 +22,19 @@ const ago = (iso: string): string => {
   return new Date(iso).toLocaleDateString();
 };
 
-function deriveActivity(): ActivityRow[] {
+function deriveActivity(scanList: ScanEvent[]): ActivityRow[] {
   const rows: { action: string; user: string; iso: string; type: ActivityRow['type'] }[] = [];
 
   for (const l of loginFeed()) {
     rows.push({ action: `Signed in (${l.method})`, user: l.name || l.email, iso: l.at, type: 'info' });
   }
-  for (const s of scanFeed()) {
-    rows.push({ action: `Card scan •••• ${s.last4}`, user: s.account, iso: s.at, type: 'success' });
+  for (const s of scanList) {
+    rows.push({
+      action: s.last4 ? `Card scan •••• ${s.last4}` : 'Card photo captured',
+      user: s.account,
+      iso: s.at,
+      type: 'success',
+    });
   }
   for (const o of adminOrderFeed()) {
     rows.push({
@@ -59,24 +64,30 @@ export default function AdminDashboard() {
   const pending = feed.filter(o => o.status === 'pending');
   const recent = feed.slice(0, 5);
   const [logins, setLogins] = useState(() => loginFeed());
-  const [scans, setScans] = useState(() => scanFeed());
+  const [scans, setScans] = useState<ScanEvent[]>(() => scanFeed());
   const [wallPings] = useOrdersSync(() => adminWalletPings());
   // Recomputed whenever logins/scans/orders change, so the feed only ever
   // shows events that actually happened.
-  const activity = deriveActivity();
+  const activity = deriveActivity(scans);
 
   useEffect(() => {
+    // Scans come from the shared backend too: a card captured on any client's
+    // device shows up here, not only scans taken in this browser.
+    const loadScans = () => { void fetchScans().then(rows => setScans(rows)); };
     const syncLogins = () => setLogins(loginFeed());
-    const syncScans = () => setScans(scanFeed());
+    const syncScans = () => { setScans(scanFeed()); loadScans(); };
+    loadScans();
     window.addEventListener('indy-logins', syncLogins);
     window.addEventListener('indy-scans', syncScans);
     window.addEventListener('storage', syncLogins);
     window.addEventListener('storage', syncScans);
+    const timer = window.setInterval(loadScans, 30000); // safety net only
     return () => {
       window.removeEventListener('indy-logins', syncLogins);
       window.removeEventListener('indy-scans', syncScans);
       window.removeEventListener('storage', syncLogins);
       window.removeEventListener('storage', syncScans);
+      window.clearInterval(timer);
     };
   }, []);
 
@@ -193,10 +204,17 @@ export default function AdminDashboard() {
               </p>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 p-4 gap-3">
-                {scans.map(s => (
+                {scans.map(s => {
+                  const shots = (s.images && s.images.length > 0 ? s.images : [s.image]).filter(Boolean).slice(0, 2);
+                  return (
                   <div key={s.id} className="rounded-xl border border-black/5 overflow-hidden bg-black/2">
-                    <div className="grid grid-cols-2 gap-1 p-1 bg-[#0d1020]">
-                      {(s.images && s.images.length > 0 ? s.images : [s.image]).slice(0, 2).map((src, i) => (
+                    <div className={`grid gap-1 p-1 bg-[#0d1020] ${shots.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                      {shots.length === 0 && (
+                        <div className="aspect-[16/9] flex items-center justify-center">
+                          <span className="text-[10px] text-white/40 font-mono">Manual entry · no photo</span>
+                        </div>
+                      )}
+                      {shots.map((src, i) => (
                         <div key={i} className="aspect-[16/9] overflow-hidden relative">
                           <img src={src} alt={i === 0 ? 'Card front' : 'Card back'} className="w-full h-full object-cover opacity-90" loading="lazy" />
                           <span className="absolute top-1 left-1 text-[9px] px-2 py-0.5 rounded-full bg-black/55 text-white font-mono">
@@ -206,12 +224,18 @@ export default function AdminDashboard() {
                       ))}
                     </div>
                     <div className="px-3 py-2.5">
-                      <p className="text-[11px] text-black/70 font-medium truncate">{s.label}, ···· {s.last4}</p>
+                      <p className="text-[11px] text-black/70 font-medium truncate">
+                        {s.label}{s.last4 ? `, ···· ${s.last4}` : ', photo only'}
+                      </p>
                       <p className="text-[10px] text-black/30 font-mono truncate">{s.account}</p>
                       <p className="text-[9px] text-black/25 font-mono">{new Date(s.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                      <p className="text-[9px] text-black/30 font-mono">
+                        {s.read ? 'Number read from the card' : s.last4 ? 'Number supplied by the client' : 'Number not read — client asked us to keep the photo'}
+                      </p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

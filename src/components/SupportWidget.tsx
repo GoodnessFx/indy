@@ -7,6 +7,8 @@ import { createTicket, myTickets } from '../lib/audit';
 import { currentAccount, sendClient, threadFor, refreshThread } from '../lib/notes';
 import { useChatStream, sendTyping } from '../lib/chatStream';
 import { useOrdersSync } from '../lib/useOrdersSync';
+import AttachmentView from './AttachmentView';
+import { uploadFiles, type Attachment } from '../lib/uploads';
 
 type Tab = 'chat' | 'tickets' | 'help';
 
@@ -21,6 +23,12 @@ export default function SupportWidget() {
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
   // Track IDs of client messages that are awaiting server acknowledgment
   const [pendingIds, setPendingIds] = useState<string[]>([]);
+  // Files waiting to go, plus anything the upload reported back.
+  const [queued, setQueued] = useState<File[]>([]);
+  const [uploading, setUploading] = useState('');
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [humanRequested, setHumanRequested] = useState(false);
   const [showingGate, setShowingGate] = useState(false);
   const { signedIn, profile } = useAuth();
@@ -138,7 +146,7 @@ export default function SupportWidget() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const messages: { id: string; from: string; text: string; time: string }[] = [
+  const messages: { id: string; from: string; text: string; time: string; attachment?: Attachment }[] = [
     ...(thread.length === 0
       ? [{
           id: 'welcome',
@@ -152,6 +160,7 @@ export default function SupportWidget() {
       from: m.from === 'client' ? 'user' : 'support',
       text: m.text,
       time: new Date(m.at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+      attachment: m.attachment,
     })),
     ...acks,
   ];
@@ -200,20 +209,56 @@ export default function SupportWidget() {
     ),
   })).filter(topic => topic.questions.length > 0);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  /**
+   * Send a message with any files the client attached. Files go up first (with
+   * retries), so the message always carries a working link when the server is
+   * reachable and an inline copy when it is not.
+   */
+  const sendMessage = async (text: string, files: File[] = []) => {
+    if (!text.trim() && files.length === 0) return;
     if (!signedIn) {
       setShowingGate(true);
       setOpen(false);
       return;
     }
-    // sendClient returns the created ChatMessage with an ID
-    const msg = sendClient(text.trim());
-    // Track this ID as pending until we receive it back from the server
-    setPendingIds(prev => [...prev, msg.id]);
+    setAttachError(null);
+
+    const trimmed = text.trim();
+    if (files.length === 0) {
+      // Plain text: send straight away, exactly as before.
+      const msg = sendClient(trimmed);
+      setPendingIds(prev => [...prev, msg.id]);
+      setInput('');
+      setEmojiOpen(false);
+      followUp(trimmed);
+      return;
+    }
+
+    setUploading(`Preparing ${files.length} file${files.length > 1 ? 's' : ''}`);
+    const { attachments, errors } = await uploadFiles(files, {
+      account: currentAccount().account,
+      onProgress: setUploading,
+    });
+    setUploading('');
+    if (errors.length > 0) setAttachError(errors.join(' '));
+    if (attachments.length === 0) return;
+
+    // One message per file, so nothing is dropped and each file keeps its name.
+    let first = true;
+    for (const attachment of attachments) {
+      const body = first && attachment.kind !== 'image' ? trimmed : '';
+      const msg = sendClient(body, attachment);
+      setPendingIds(prev => [...prev, msg.id]);
+      first = false;
+    }
     setInput('');
     setEmojiOpen(false);
+    void pull();
+    if (trimmed) followUp(trimmed);
+  };
 
+  /** The courtesy auto-replies, unchanged, used after a message lands. */
+  const followUp = (text: string) => {
     if (text === 'Talk to an agent') {
       setHumanRequested(true);
       window.setTimeout(() => {
@@ -240,6 +285,33 @@ export default function SupportWidget() {
     if (status === 'Resolved') return <CheckCircle size={13} className="text-[#22C55E]" />;
     if (status === 'Waiting on you') return <AlertCircle size={13} className="text-[#F59E0B]" />;
     return <Clock size={13} className="text-[#2F6BFF]" />;
+  };
+
+  /** Queue files from the picker, from paste, or from a drop on the composer. */
+  const addFiles = (incoming: FileList | File[] | null) => {
+    if (!incoming) return;
+    const list = Array.from(incoming);
+    if (list.length === 0) return;
+    if (!signedIn) {
+      setShowingGate(true);
+      setOpen(false);
+      return;
+    }
+    setAttachError(null);
+    setQueued(prev => [...prev, ...list]);
+  };
+
+  const dropQueued = (index: number) => setQueued(files => files.filter((_, i) => i !== index));
+
+  /** Send the typed text together with every queued file. */
+  const sendQueued = () => {
+    const files = queued;
+    if (files.length === 0) {
+      void sendMessage(input);
+      return;
+    }
+    setQueued([]);
+    void sendMessage(input, files);
   };
 
   const ticketChipClass = (status: string) => {
@@ -354,12 +426,19 @@ export default function SupportWidget() {
                     <div className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
                       msg.from === 'user' ? 'bg-[#2F6BFF] text-white rounded-br-md' : 'bg-black/8 text-black/85 rounded-bl-md'
                     }`}>
-                      <p className="flex items-center">
-                        {msg.text}
-                        {msg.from === 'user' && !pendingIds.includes(msg.id) && (
-                          <CheckCheck size={12} className="ml-1 text-white/70" />
-                        )}
-                      </p>
+                      {msg.attachment && (
+                        <div className={msg.text ? 'mb-1.5' : ''}>
+                          <AttachmentView attachment={msg.attachment} />
+                        </div>
+                      )}
+                      {(msg.text || !msg.attachment) && (
+                        <p className="flex items-center break-words">
+                          {msg.text}
+                          {msg.from === 'user' && !pendingIds.includes(msg.id) && (
+                            <CheckCheck size={12} className="ml-1 text-white/70 shrink-0" />
+                          )}
+                        </p>
+                      )}
                       <p className={`text-[10px] mt-1 ${msg.from === 'user' ? 'text-black/60' : 'text-black/30'}`}>{msg.time}</p>
                     </div>
                   </div>
@@ -394,7 +473,49 @@ export default function SupportWidget() {
                   </div>
                 )}
               </div>
-              <div className="p-3 border-t border-black/8">
+              <div
+                className="p-3 border-t border-black/8"
+                onDragOver={e => { e.preventDefault(); if (!dragging) setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={e => {
+                  e.preventDefault();
+                  setDragging(false);
+                  addFiles(e.dataTransfer?.files ?? null);
+                }}
+              >
+                {/* Files the client picked, waiting to be sent */}
+                {queued.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {queued.map((file, index) => (
+                      <span key={`${file.name}-${index}`} className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-black/3 pl-2.5 pr-1.5 py-1.5 text-[11px] text-black/60 max-w-full">
+                        <Paperclip size={11} className="shrink-0 text-[#2F6BFF]" />
+                        <span className="truncate max-w-[140px]">{file.name}</span>
+                        <button onClick={() => dropQueued(index)} className="text-black/30 hover:text-black/70" aria-label={`Remove ${file.name}`}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {uploading && (
+                  <p className="mb-2 text-[11px] text-[#2F6BFF] flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#2F6BFF] animate-pulse" />
+                    {uploading}
+                  </p>
+                )}
+                {attachError && (
+                  <p className="mb-2 text-[11px] text-[#D97706] leading-relaxed">{attachError}</p>
+                )}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  onChange={e => {
+                    addFiles(e.target.files);
+                    e.target.value = '';
+                  }}
+                />
                 {emojiOpen && (
                   <div className="mb-2 grid grid-cols-6 gap-1 rounded-xl border border-black/8 bg-white p-2 shadow-lg">
                     {EMOJIS.map(e => (
@@ -409,7 +530,7 @@ export default function SupportWidget() {
                     ))}
                   </div>
                 )}
-                <div className="flex items-center gap-2 bg-black/5 rounded-xl px-3 py-2">
+                <div className={`flex items-center gap-2 rounded-xl px-3 py-2 transition-colors ${dragging ? 'bg-[#2F6BFF]/10 ring-1 ring-[#2F6BFF]/40' : 'bg-black/5'}`}>
                   <input
                     value={input}
                     onChange={e => {
@@ -420,8 +541,15 @@ export default function SupportWidget() {
                         sendTyping(currentAccount().account, "client");
                       }
                     }}
-                    onKeyDown={e => e.key === 'Enter' && sendMessage(input)}
-                    placeholder="Type a message..."
+                    onKeyDown={e => e.key === 'Enter' && sendQueued()}
+                    onPaste={e => {
+                      const files = Array.from(e.clipboardData?.files ?? []);
+                      if (files.length > 0) {
+                        e.preventDefault();
+                        addFiles(files);
+                      }
+                    }}
+                    placeholder={queued.length > 0 ? 'Add a message, then send' : 'Type a message...'}
                     className="flex-1 bg-transparent text-sm text-[#0A0B0D] placeholder-black/25 outline-none min-w-0"
                   />
                   <button
@@ -431,11 +559,25 @@ export default function SupportWidget() {
                   >
                     <Smile size={15} />
                   </button>
-                  <button className="text-black/30 hover:text-black/60 transition-colors" aria-label="Attach a file"><Paperclip size={14} /></button>
-                  <button onClick={() => sendMessage(input)} className="w-7 h-7 bg-[#2F6BFF] rounded-lg flex items-center justify-center hover:bg-[#4F82FF] transition-colors shrink-0">
+                  <button
+                    onClick={() => fileRef.current?.click()}
+                    className={`transition-colors ${queued.length > 0 ? 'text-[#2F6BFF]' : 'text-black/30 hover:text-black/60'}`}
+                    aria-label="Attach a file"
+                  >
+                    <Paperclip size={14} />
+                  </button>
+                  <button
+                    onClick={sendQueued}
+                    disabled={Boolean(uploading) || (!input.trim() && queued.length === 0)}
+                    className="w-7 h-7 bg-[#2F6BFF] rounded-lg flex items-center justify-center hover:bg-[#4F82FF] transition-colors shrink-0 disabled:opacity-40"
+                    aria-label="Send"
+                  >
                     <Send size={12} className="text-[#0A0B0D]" />
                   </button>
                 </div>
+                <p className="mt-1.5 text-[10px] text-black/25 leading-relaxed">
+                  Pictures, videos and documents: drag them in, paste, or tap the paperclip.
+                </p>
               </div>
             </div>
           )}

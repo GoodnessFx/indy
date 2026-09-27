@@ -326,6 +326,16 @@ export default function Settings() {
             {tab === 'payments' && (
               <div>
                 <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-6">Payment Methods</h2>
+                {/* Fresh state: nothing is seeded. The client adds their own cards. */}
+                {methods.length === 0 && (
+                  <div className="mb-6 rounded-xl border border-dashed border-black/15 bg-black/2 p-6 text-center">
+                    <p className="text-sm font-500 text-[#0A0B0D] mb-1">No accounts saved yet</p>
+                    <p className="text-xs text-black/40 leading-relaxed">
+                      Scan your first card below — or type its last four digits — and it shows up here and on
+                      the withdraw step whenever you need it.
+                    </p>
+                  </div>
+                )}
                 {/* Tap the card face to reveal details; tap again to blur them out.
                     Only last 4 is shown — no full card number exists to reveal. */}
                 {(() => {
@@ -342,6 +352,7 @@ export default function Settings() {
                           last4: c.last4,
                           currency: c.currency,
                           label: c.label,
+                          images: c.images ?? [],
                         }}
                       />
                     </div>

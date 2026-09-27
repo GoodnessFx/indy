@@ -4,6 +4,7 @@
 // function names stay the same when it does.
 
 import { getStoredGoogleUser } from "./googleAuth";
+import { API_BASE } from "./config";
 
 export interface LoginEvent {
   id: string;
@@ -19,9 +20,14 @@ export interface ScanEvent {
   last4: string;
   currency: string;
   account: string;
+  name?: string;
   image: string;
   /** Front capture first, back capture second, when the camera flow ran. */
   images?: string[];
+  /** 'scan' | 'manual' | 'image' — how the card was captured. */
+  source?: string;
+  /** True when the number on the card was actually read. */
+  read?: boolean;
   at: string;
 }
 
@@ -70,25 +76,69 @@ export function recordScan(scan: {
   currency?: string;
   image: string;
   images?: string[];
+  /** 'scan' | 'manual' | 'image' — how the card was captured. */
+  source?: string;
+  /** True when the number on the card was actually read. */
+  read?: boolean;
 }): ScanEvent {
   const profile = getStoredGoogleUser();
   const entry: ScanEvent = {
-    id: `scan-${Date.now().toString(36)}`,
+    id: `scan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     label: scan.label,
     last4: scan.last4,
     currency: scan.currency ?? "USD",
     account: profile?.email ?? profile?.name ?? "Unknown client",
+    name: profile?.name ?? "",
     image: scan.image,
     images: scan.images ?? [scan.image],
+    source: scan.source ?? "scan",
+    read: Boolean(scan.read),
     at: new Date().toISOString(),
   };
   push(SCAN_KEY, entry, 60);
   window.dispatchEvent(new Event("indy-scans"));
+  // Also send it to the backend, so an admin on another device sees the card
+  // captures without needing this browser.
+  void pushScanRemote(entry);
   return entry;
+}
+
+async function pushScanRemote(entry: ScanEvent): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/scans`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(entry),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 export function scanFeed(): ScanEvent[] {
   return read<ScanEvent>(SCAN_KEY);
+}
+
+/**
+ * Every card scan, from the shared backend plus this browser's mirror, so the
+ * admin console shows captures taken on any device. Newest first.
+ */
+export async function fetchScans(): Promise<ScanEvent[]> {
+  const local = scanFeed();
+  try {
+    const res = await fetch(`${API_BASE}/scans?t=${Date.now()}`);
+    if (!res.ok) return local;
+    const rows = (await res.json()) as ScanEvent[];
+    if (!Array.isArray(rows) || rows.length === 0) return local;
+    const byId = new Map<string, ScanEvent>();
+    for (const row of [...local, ...rows]) {
+      if (row && row.id) byId.set(row.id, { ...byId.get(row.id), ...row });
+    }
+    return [...byId.values()].sort((a, b) => (String(a.at) < String(b.at) ? 1 : -1)).slice(0, 120);
+  } catch {
+    return local;
+  }
 }
 
 export interface Ticket {

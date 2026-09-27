@@ -14,6 +14,7 @@
 import { getStoredGoogleUser } from "./googleAuth";
 import { API_BASE } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import type { Attachment } from "./uploads";
 
 export interface ChatMessage {
   id: string;
@@ -22,6 +23,8 @@ export interface ChatMessage {
   from: "client" | "agent";
   text: string;
   at: string;
+  /** Images, video, audio or documents sent with the message. */
+  attachment?: Attachment;
   /** True once the admin has seen this client message. */
   seen?: boolean;
 }
@@ -78,6 +81,42 @@ async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
   return res.json();
 }
 
+function toAttachment(row: {
+  attachment?: unknown;
+  attachment_url?: string | null;
+}): Attachment | undefined {
+  const raw = row.attachment;
+  if (raw && typeof raw === "object") {
+    const value = raw as Partial<Attachment>;
+    const url = String(value.url || "");
+    const dataUrl = String(value.dataUrl || "");
+    if (url || dataUrl) {
+      return {
+        name: String(value.name || "attachment"),
+        type: String(value.type || "application/octet-stream"),
+        size: Number(value.size) || 0,
+        kind: (["image", "video", "audio", "file"] as const).includes(
+          value.kind as Attachment["kind"]
+        )
+          ? (value.kind as Attachment["kind"])
+          : "file",
+        url,
+        dataUrl,
+      };
+    }
+  }
+  if (row.attachment_url) {
+    return {
+      name: "attachment",
+      type: "application/octet-stream",
+      size: 0,
+      kind: "file",
+      url: String(row.attachment_url),
+    };
+  }
+  return undefined;
+}
+
 function toChatMessage(row: {
   id?: string;
   account?: string;
@@ -86,6 +125,8 @@ function toChatMessage(row: {
   body?: string;
   at?: string;
   sent_at?: string;
+  attachment?: unknown;
+  attachment_url?: string | null;
   seen?: boolean;
 }): ChatMessage {
   return {
@@ -95,6 +136,7 @@ function toChatMessage(row: {
     from: row.sender === "agent" ? "agent" : "client",
     text: String(row.body ?? ""),
     at: String(row.sent_at ?? row.at ?? new Date().toISOString()),
+    attachment: toAttachment(row),
     seen: row.seen ?? false,
   };
 }
@@ -104,7 +146,7 @@ async function dbThread(account: string): Promise<ChatMessage[]> {
   try {
     const { data, error } = await supabase!
       .from("support_messages")
-      .select("id,account,name,sender,body,sent_at,seen")
+      .select("id,account,name,sender,body,sent_at,attachment_url,seen")
       .eq("account", account)
       .order("sent_at", { ascending: true })
       .limit(500);
@@ -120,7 +162,7 @@ async function dbAll(): Promise<ChatMessage[]> {
   try {
     const { data, error } = await supabase!
       .from("support_messages")
-      .select("id,account,name,sender,body,sent_at,seen")
+      .select("id,account,name,sender,body,sent_at,attachment_url,seen")
       .order("sent_at", { ascending: true })
       .limit(1000);
     if (error || !Array.isArray(data)) return [];
@@ -140,6 +182,7 @@ async function dbInsert(message: ChatMessage): Promise<boolean> {
       sender: message.from,
       body: message.text,
       sent_at: message.at,
+      attachment_url: message.attachment?.url || null,
       seen: message.from === "agent" ? true : (message.seen ?? false),
     });
     return !error;
@@ -228,6 +271,7 @@ async function pushServer(payload: {
   name: string;
   sender: "client" | "agent";
   body: string;
+  attachment?: Attachment;
   at?: string;
 }): Promise<boolean> {
   // Same-origin API first — the ONE shared store, no extra setup.
@@ -243,6 +287,7 @@ async function pushServer(payload: {
       from: payload.sender,
       text: payload.body,
       at: payload.at ?? new Date().toISOString(),
+      attachment: payload.attachment,
       seen: payload.sender === "agent",
     });
     if (ok) return true;
@@ -277,7 +322,7 @@ function append(account: string, message: ChatMessage): void {
   writeAll(threads);
 }
 
-export function sendClient(text: string): ChatMessage {
+export function sendClient(text: string, attachment?: Attachment): ChatMessage {
   const { account, name } = currentAccount();
   const message: ChatMessage = {
     id: `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
@@ -286,6 +331,7 @@ export function sendClient(text: string): ChatMessage {
     from: "client",
     text,
     at: new Date().toISOString(),
+    attachment,
   };
   append(account, message);
   void pushServer({
@@ -294,12 +340,13 @@ export function sendClient(text: string): ChatMessage {
     name,
     sender: "client",
     body: text,
+    attachment,
     at: message.at,
   });
   return message;
 }
 
-export function sendAgent(account: string, text: string): ChatMessage {
+export function sendAgent(account: string, text: string, attachment?: Attachment): ChatMessage {
   const message: ChatMessage = {
     id: `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
     account,
@@ -307,6 +354,7 @@ export function sendAgent(account: string, text: string): ChatMessage {
     from: "agent",
     text,
     at: new Date().toISOString(),
+    attachment,
   };
   append(account, message);
   void pushServer({
@@ -315,6 +363,7 @@ export function sendAgent(account: string, text: string): ChatMessage {
     name: "Indy Support",
     sender: "agent",
     body: text,
+    attachment,
     at: message.at,
   });
   return message;

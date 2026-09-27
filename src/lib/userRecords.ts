@@ -4,8 +4,9 @@
 // behalf, so an edit made in one browser reaches that client on any device:
 //   profile              name / phone / country
 //   kyc                  verification state
-//   payout               saved cards: BRAND, LAST4, EXPIRY, CARDHOLDER NAME
-//                        ONLY — never a full card number (see CARD DATA RULE)
+//   payout               saved cards: BRAND, LAST4, EXPIRY, CARDHOLDER NAME,
+//                        the MASKED number and the card captures the client
+//                        scanned — never a full card number (CARD DATA RULE)
 //   balanceAdjustments   append-only manual adjustments, each with a reason
 //   deleted              hard-delete flag
 //
@@ -31,6 +32,12 @@ export interface PayoutCard {
   currency: string;
   isDefault: boolean;
   addedAt: string;
+  /** Masked number as read from the card, e.g. '**** **** **** 1234'. */
+  number?: string;
+  /** Captures of the card that was scanned (front first). */
+  images?: string[];
+  /** 'scan' | 'manual' | 'image' — how the card was captured. */
+  source?: string;
 }
 
 export interface BalanceAdjustment {

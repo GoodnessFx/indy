@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MessageSquare, Smile, RefreshCw, Wifi, WifiOff, Bell } from 'lucide-react';
+import { Send, MessageSquare, Smile, RefreshCw, Wifi, WifiOff, Bell, Paperclip, X, Upload } from 'lucide-react';
 import AdminLayout from './AdminLayout';
+import AttachmentView from '../../components/AttachmentView';
+import { uploadFiles } from '../../lib/uploads';
 import {
   conversations,
   markThreadSeen,
@@ -26,6 +28,11 @@ export default function AdminSupport() {
   const [selected, setSelected] = useState<string | null>(null);
   const [reply, setReply] = useState('');
   const [emojiOpen, setEmojiOpen] = useState(false);
+  // Files the admin is about to send to the client (images, video, documents).
+  const [queued, setQueued] = useState<File[]>([]);
+  const [uploading, setUploading] = useState('');
+  const [attachError, setAttachError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [list, setList] = useState<Convo[]>(() => conversations());
   const [isRemote, setIsRemote] = useState(() => isSharedChat());
   const [, setTick] = useState(0);
@@ -111,9 +118,35 @@ export default function AdminSupport() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeAccount, messages.length]);
 
-  const send = () => {
-    if (!reply.trim() || !activeAccount) return;
-    sendAgent(activeAccount, reply.trim());
+  const send = async () => {
+    if (!activeAccount) return;
+    const text = reply.trim();
+    const files = queued;
+    if (!text && files.length === 0) return;
+
+    if (files.length === 0) {
+      sendAgent(activeAccount, text);
+      setReply('');
+      setEmojiOpen(false);
+      void doSync();
+      return;
+    }
+
+    // Upload first (with retries), then send one message per file so nothing
+    // is dropped and each keeps its name. Text rides along on the first one.
+    setAttachError(null);
+    setUploading(`Preparing ${files.length} file${files.length > 1 ? 's' : ''}`);
+    const { attachments, errors } = await uploadFiles(files, { onProgress: setUploading });
+    setUploading('');
+    if (errors.length > 0) setAttachError(errors.join(' '));
+    if (attachments.length === 0) return;
+    setQueued([]);
+    let first = true;
+    for (const attachment of attachments) {
+      const body = first ? text : '';
+      sendAgent(activeAccount, body, attachment);
+      first = false;
+    }
     setReply('');
     setEmojiOpen(false);
     void doSync();
@@ -219,7 +252,12 @@ export default function AdminSupport() {
                         ? 'bg-[#2F6BFF]/15 text-[#1D3B8F] rounded-br-md'
                         : 'bg-black/5 text-black/80 rounded-bl-md'
                     }`}>
-                      <p>{msg.text}</p>
+                      {msg.attachment && (
+                        <div className={msg.text ? 'mb-1.5' : ''}>
+                          <AttachmentView attachment={msg.attachment} />
+                        </div>
+                      )}
+                      {msg.text && <p className="break-words">{msg.text}</p>}
                       <p className="text-[10px] mt-1 opacity-50">
                         {msg.from === 'agent' ? 'You' : msg.name}, {new Date(msg.at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
                       </p>
@@ -229,6 +267,44 @@ export default function AdminSupport() {
               </div>
 
               <div className="p-3 sm:p-4 border-t border-black/5 bg-white">
+                {/* Files waiting to be sent to this client */}
+                {queued.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    {queued.map((file, index) => (
+                      <span
+                        key={`${file.name}-${index}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-black/10 bg-black/3 pl-2.5 pr-1.5 py-1.5 text-[11px] text-black/60 max-w-full"
+                      >
+                        <Paperclip size={11} className="shrink-0 text-[#2F6BFF]" />
+                        <span className="truncate max-w-[160px]">{file.name}</span>
+                        <button
+                          onClick={() => setQueued(files => files.filter((_, i) => i !== index))}
+                          className="text-black/30 hover:text-black/70"
+                          aria-label={`Remove ${file.name}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {uploading && (
+                  <p className="mb-2 flex items-center gap-1.5 text-[11px] text-[#2F6BFF]">
+                    <Upload size={11} /> {uploading}
+                  </p>
+                )}
+                {attachError && <p className="mb-2 text-[11px] text-[#D97706]">{attachError}</p>}
+                <input
+                  ref={fileRef}
+                  type="file"
+                  multiple
+                  className="sr-only"
+                  onChange={e => {
+                    const list = Array.from(e.target.files ?? []);
+                    if (list.length) { setAttachError(null); setQueued(files => [...files, ...list]); }
+                    e.target.value = '';
+                  }}
+                />
                 {emojiOpen && (
                   <div className="mb-2 grid grid-cols-6 sm:grid-cols-8 gap-1 rounded-xl border border-black/8 bg-white p-2 shadow">
                     {EMOJIS.map(e => (
@@ -248,7 +324,7 @@ export default function AdminSupport() {
                     value={reply}
                     onChange={e => onReplyType(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && send()}
-                    placeholder={`Reply to ${activeName || activeAccount}...`}
+                    placeholder={queued.length > 0 ? 'Add a note, then send' : `Reply to ${activeName || activeAccount}...`}
                     className="flex-1 min-w-0 bg-black/3 border border-black/8 rounded-lg px-4 py-2.5 text-sm text-[#0A0B0D] outline-none focus:border-[#2F6BFF]/40"
                   />
                   <button
@@ -259,13 +335,24 @@ export default function AdminSupport() {
                     <Smile size={15} />
                   </button>
                   <button
-                    onClick={send}
-                    className="w-9 h-9 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors shrink-0"
+                    onClick={() => fileRef.current?.click()}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center border transition-colors ${queued.length > 0 ? 'border-[#2F6BFF]/40 text-[#2F6BFF]' : 'border-black/8 text-black/40 hover:text-black/70'}`}
+                    aria-label="Attach a file to send"
+                  >
+                    <Paperclip size={15} />
+                  </button>
+                  <button
+                    onClick={() => void send()}
+                    disabled={Boolean(uploading) || (!reply.trim() && queued.length === 0)}
+                    className="w-9 h-9 rounded-lg bg-[#2F6BFF] flex items-center justify-center hover:bg-[#4F82FF] transition-colors shrink-0 disabled:opacity-40"
                     aria-label="Send reply"
                   >
                     <Send size={14} className="text-white" />
                   </button>
                 </div>
+                <p className="mt-1.5 text-[10px] text-black/30 leading-relaxed">
+                  Send images, videos or documents to the client - or drag and drop them here.
+                </p>
               </div>
             </div>
           ) : (

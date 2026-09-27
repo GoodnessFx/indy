@@ -21,7 +21,7 @@ import { isSupabaseConfigured, supabase } from "./supabase";
 //   safety poll keeps history converging until the stream recovers.
 
 export interface ChatStreamEvent {
-  type: "chat" | "read" | "typing" | "record" | "audit" | "item";
+  type: "chat" | "read" | "typing" | "record" | "audit" | "item" | "scan";
   account: string;
   message?: {
     id?: string;
@@ -135,6 +135,9 @@ export function useChatStream({
           } else if (evt.type === "item") {
             // A listing was added/removed in the admin console.
             window.dispatchEvent(new Event("indy-items"));
+          } else if (evt.type === "scan") {
+            // A client scanned a card: the captures just landed server-side.
+            window.dispatchEvent(new Event("indy-scans"));
           }
         } catch { /* malformed frame, ignore */ }
       });

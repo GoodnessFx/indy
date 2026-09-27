@@ -23,6 +23,15 @@ the same origin, so `/api/*` always exists — no separate API service and no CO
 - `POST /api/chat/typing` — typing indicator
 - `GET  /api/users/all` — every signup with **full login history**
 - `POST /api/users/login` — `{ email, name, method }`
+- `POST /api/upload` — `{ name, type, dataUrl, account }` → `{ id, url }` (**chat attachments**: images, video, audio, documents — 25 MB max)
+- `GET  /api/file/<id>` — the stored attachment bytes (correct `content-type`, private cache)
+- `GET  /api/scans` — every card scan (front/back captures) for the admin console
+- `POST /api/scans` — record a card scan: `{ account, label, last4, images, source, read }`
+
+Chat messages may carry an `attachment` (`{ name, type, size, kind, url, dataUrl }`),
+so either side can send a picture, a video or a document: the file is uploaded first
+and the message references its URL; if the API is unreachable the small file is
+carried inline as a `dataUrl` so the message still lands.
 
 ### Chat storage — no SQL Editor steps
 

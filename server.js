@@ -15,6 +15,10 @@
 //   POST /api/chat/typing                    -> { account, role }
 //   GET  /api/users/all                       -> every signup + login history
 //   POST /api/users/login                    -> { email, name, method }
+//   POST /api/upload                         -> { name, type, dataUrl } -> { id, url }
+//   GET  /api/file/<id>                      -> the stored attachment bytes
+//   GET  /api/scans                          -> card scans (front/back captures)
+//   POST /api/scans                          -> record a card scan
 //
 // Storage (same as ShieldSafeBank, zero SQL-Editor steps):
 //   1. Postgres via process.env.DATABASE_URL when set — tables are created
@@ -60,6 +64,8 @@ CREATE TABLE IF NOT EXISTS chat_logins (id TEXT PRIMARY KEY, data JSONB NOT NULL
 CREATE TABLE IF NOT EXISTS user_records (email TEXT PRIMARY KEY, data JSONB NOT NULL);
 CREATE TABLE IF NOT EXISTS audit_log (id TEXT PRIMARY KEY, data JSONB NOT NULL);
 CREATE TABLE IF NOT EXISTS catalog_items (id TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS uploaded_files (id TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS card_scans (id TEXT PRIMARY KEY, data JSONB NOT NULL);
 `;
 
 let dbReady = false;
@@ -169,6 +175,102 @@ async function saveRecord(email, record) {
   else store.records.push(payload);
   writeStore(store);
   return payload;
+}
+
+// --- Uploaded files: chat attachments (images, video, documents) and the two
+// card captures taken by the scanner. Bytes live in Postgres (`uploaded_files`)
+// so an attachment survives a redeploy; on a local install with no
+// DATABASE_URL the bytes land in server/data/uploads and only the metadata is
+// kept in store.json, so both modes behave identically for the client.
+
+const uploadDir = path.join(dataDir, "uploads");
+const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+
+function safeName(value, fallback) {
+  const clean = String(value || "").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "_").slice(0, 160);
+  return clean || fallback;
+}
+
+function dataUrlToBuffer(dataUrl) {
+  const match = /^data:([^;,]*)(;base64)?,([\s\S]*)$/.exec(String(dataUrl || ""));
+  if (!match) return null;
+  const mime = match[1] || "application/octet-stream";
+  const payload = match[3] || "";
+  try {
+    const buf = match[2]
+      ? Buffer.from(payload, "base64")
+      : Buffer.from(decodeURIComponent(payload), "utf8");
+    return { mime, buf };
+  } catch {
+    return null;
+  }
+}
+
+async function saveUploadedFile(meta, buf) {
+  const row = {
+    id: meta.id,
+    name: safeName(meta.name, "attachment"),
+    type: meta.type || "application/octet-stream",
+    size: buf.length,
+    account: String(meta.account || ""),
+    at: meta.at || new Date().toISOString(),
+  };
+  if (pool && dbReady) {
+    try {
+      await pool.query(
+        `INSERT INTO uploaded_files (id, data) VALUES ($1, $2)
+         ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data`,
+        [row.id, JSON.stringify({ ...row, data: buf.toString("base64") })]
+      );
+      return row;
+    } catch { /* fall through to disk */ }
+  }
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const ext = (safeName(row.name, "file").match(/\.[a-z0-9]+$/i) || [""])[0].slice(0, 8);
+  const file = path.join(uploadDir, `${row.id.replace(/[^a-zA-Z0-9_-]/g, "")}${ext}`);
+  fs.writeFileSync(file, buf);
+  const store = readStore();
+  store.files = (store.files || []).filter((f) => f.id !== row.id);
+  store.files.unshift({ ...row, file });
+  writeStore(store);
+  return row;
+}
+
+async function readUploadedFile(id) {
+  if (pool && dbReady) {
+    try {
+      const { rows } = await pool.query("SELECT data FROM uploaded_files WHERE id = $1", [id]);
+      const row = rows[0] && rows[0].data;
+      if (row && row.data) {
+        const decoded = dataUrlToBuffer(`data:${row.type || "application/octet-stream"};base64,${row.data}`);
+        if (decoded) {
+          const { data, ...meta } = row;
+          void data;
+          return { meta, buf: decoded.buf };
+        }
+      }
+    } catch { /* fall through to disk */ }
+  }
+  const found = (readStore().files || []).find((f) => f.id === id);
+  if (!found || !found.file || !fs.existsSync(found.file)) return null;
+  return { meta: found, buf: fs.readFileSync(found.file) };
+}
+
+// --- Card scans: front + back capture per scan, shown in the admin console ---
+
+async function readScans() {
+  const rows = await dbAll("card_scans");
+  const all = (rows ?? readStore().scans ?? []).slice();
+  return all.sort((a, b) => (String(a.at) < String(b.at) ? 1 : -1)).slice(0, 200);
+}
+
+async function saveScan(scan) {
+  const ok = await dbUpsert("card_scans", "id", scan.id, scan);
+  if (ok) return scan;
+  const store = readStore();
+  store.scans = [scan, ...(store.scans || []).filter((s) => s.id !== scan.id)].slice(0, 200);
+  writeStore(store);
+  return scan;
 }
 
 async function readAudit() {
@@ -293,7 +395,7 @@ const CANDIDATES = [
 ].filter((p, i, arr) => Number.isFinite(p) && p > 0 && p < 65536 && arr.indexOf(p) === i);
 
 function readStore() {
-  const empty = { chat: [], users: [], logins: [], records: [], audit: [], items: [] };
+  const empty = { chat: [], users: [], logins: [], records: [], audit: [], items: [], files: [], scans: [] };
   try {
     const raw = fs.readFileSync(storePath, "utf8");
     const parsed = JSON.parse(raw);
@@ -306,6 +408,8 @@ function readStore() {
       records: arr(parsed.records),
       audit: arr(parsed.audit),
       items: arr(parsed.items),
+      files: arr(parsed.files),
+      scans: arr(parsed.scans),
     };
   } catch {
     return empty;
@@ -378,16 +482,41 @@ function adminPresenceCount() {
   return n;
 }
 
-function readBody(req) {
+function sanitiseAttachment(value) {
+  if (!value || typeof value !== "object") return undefined;
+  const url = String(value.url || "");
+  const dataUrl = String(value.dataUrl || "");
+  if (!url && !dataUrl) return undefined;
+  const kind = ["image", "video", "audio", "file"].includes(value.kind) ? value.kind : "file";
+  return {
+    name: safeName(value.name, "attachment"),
+    type: String(value.type || "application/octet-stream").slice(0, 120),
+    size: Number(value.size) || 0,
+    kind,
+    url,
+    dataUrl,
+  };
+}
+
+function readBody(req, maxBytes = 400_000) {
   return new Promise((resolve) => {
-    let raw = "";
+    const chunks = [];
+    let size = 0;
+    let overflowed = false;
     req.on("data", (chunk) => {
-      raw += chunk;
-      if (raw.length > 200_000) req.destroy();
+      size += chunk.length;
+      if (size > maxBytes) {
+        overflowed = true;
+        req.destroy();
+        resolve({});
+        return;
+      }
+      chunks.push(chunk);
     });
     req.on("end", () => {
+      if (overflowed) return;
       try {
-        resolve(JSON.parse(raw || "{}"));
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"));
       } catch {
         resolve({});
       }
@@ -560,18 +689,88 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { ok: true });
   }
 
+  // Attachments for the support chat (images, video, documents) in BOTH
+  // directions: the browser sends the file as a data URL, the bytes are stored
+  // server-side, and a same-origin URL comes back to put on the message.
+  if (pathname === "/api/upload" && req.method === "POST") {
+    const body = await readBody(req, MAX_UPLOAD_BYTES * 2);
+    const decoded = dataUrlToBuffer(body.dataUrl);
+    if (!decoded) return sendJson(res, 400, { error: "dataUrl required" });
+    if (decoded.buf.length > MAX_UPLOAD_BYTES) {
+      return sendJson(res, 413, { error: "file too large", maxBytes: MAX_UPLOAD_BYTES });
+    }
+    const id = String(body.id || `f-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`)
+      .replace(/[^a-zA-Z0-9_-]/g, "")
+      .slice(0, 80);
+    const meta = await saveUploadedFile(
+      { id, name: body.name, type: body.type || decoded.mime, account: body.account },
+      decoded.buf
+    );
+    return sendJson(res, 200, { ...meta, url: `/api/file/${id}` });
+  }
+
+  if (pathname.startsWith("/api/file/") && req.method === "GET") {
+    const id = decodeURIComponent(pathname.slice("/api/file/".length));
+    const found = await readUploadedFile(id);
+    if (!found) return sendJson(res, 404, { error: "not found" });
+    res.writeHead(200, {
+      "content-type": found.meta.type || "application/octet-stream",
+      "content-length": found.buf.length,
+      "cache-control": "private, max-age=31536000, immutable",
+      "content-disposition": `inline; filename="${safeName(found.meta.name, "file")}"`,
+      "access-control-allow-origin": "*",
+    });
+    return res.end(found.buf);
+  }
+
+  // Card scans: the front + back captures, readable by the admin console on any
+  // device (not just the browser that ran the scan).
+  if (pathname === "/api/scans" && req.method === "GET") {
+    return sendJson(res, 200, await readScans());
+  }
+
+  if (pathname === "/api/scans" && req.method === "POST") {
+    const body = await readBody(req, 4_000_000);
+    const account = String(body.account || "");
+    if (!account) return sendJson(res, 400, { error: "account required" });
+    const images = (Array.isArray(body.images) ? body.images : [])
+      .map((v) => String(v || ""))
+      .filter(Boolean)
+      .slice(0, 4);
+    const scan = {
+      id: String(body.id || `scan-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`),
+      label: String(body.label || "Scanned card"),
+      last4: String(body.last4 || "").slice(0, 4),
+      currency: String(body.currency || "USD"),
+      account,
+      name: String(body.name || account),
+      image: String(body.image || images[0] || ""),
+      images,
+      source: String(body.source || ""),
+      read: Boolean(body.read),
+      at: String(body.at || new Date().toISOString()),
+    };
+    await saveScan(scan);
+    broadcastChat({ type: "scan", account });
+    return sendJson(res, 200, scan);
+  }
+
   if (pathname === "/api/chat/send" && req.method === "POST") {
-    const body = await readBody(req);
+    const body = await readBody(req, 4_000_000);
     const account = String(body.account || "");
     const text = String(body.body || "").slice(0, 2000).trim();
+    const attachment = sanitiseAttachment(body.attachment);
     const sender = body.sender === "agent" ? "agent" : "client";
-    if (!account || !text) return sendJson(res, 400, { error: "account and body are required" });
+    if (!account || (!text && !attachment)) {
+      return sendJson(res, 400, { error: "account and body (or an attachment) are required" });
+    }
     const message = {
       id: String(body.id || `m-${Date.now().toString(36)}`),
       account,
       name: String(body.name || account),
       sender,
       body: text,
+      attachment,
       at: String(body.at || new Date().toISOString()),
       seen: sender === "agent",
     };
