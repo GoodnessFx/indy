@@ -10,6 +10,8 @@ import { myOrders, type InvestmentOrder } from '../lib/orders';
 import { useOrdersSync } from '../lib/useOrdersSync';
 import { useAuth } from '../lib/useAuth';
 import { accountBalance } from '../lib/wallet';
+import { currentAccount } from '../lib/notes';
+import { localUserRecord } from '../lib/userRecords';
 import { getConnectedWallet, getWalletSync, syncWallet, openSeaKeyConfigured, recordWalletSync } from '../lib/walletSync';
 import ConnectWallet from '../components/ConnectWallet';
 import WalletPanel from '../components/WalletPanel';
@@ -46,8 +48,11 @@ export default function Dashboard() {
 
   // New accounts start flat. Holdings only appear once a client places and
   // pays for an investment, so there is never preloaded demo balance shown to
-  // a real user.
-  const holdings = orderHoldings;
+  // a real user. Assets the admin marked as sold leave the portfolio entirely.
+  const soldNames = new Set(
+    (localUserRecord(currentAccount().account).soldEvents ?? []).map(s => s.assetName.toLowerCase())
+  );
+  const holdings = orderHoldings.filter(h => !soldNames.has(h.name.toLowerCase()));
 
   const filtered = segment === 'All' ? holdings : holdings.filter(h => {
     if (segment === 'NFTs') return h.type === 'NFT';

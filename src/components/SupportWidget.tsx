@@ -147,14 +147,6 @@ export default function SupportWidget() {
   }, []);
 
   const messages: { id: string; from: string; text: string; time: string; attachment?: Attachment }[] = [
-    ...(thread.length === 0
-      ? [{
-          id: 'welcome',
-          from: 'support',
-          text: firstName ? `Hi ${firstName}, how can we help you today?` : 'Hi, how can we help you today?',
-          time: '09:00',
-        }]
-      : []),
     ...thread.map(m => ({
       id: m.id,
       from: m.from === 'client' ? 'user' : 'support',
@@ -257,7 +249,8 @@ export default function SupportWidget() {
     if (trimmed) followUp(trimmed);
   };
 
-  /** The courtesy auto-replies, unchanged, used after a message lands. */
+  /** Routing a live "Talk to an agent" request — no canned courtesy replies,
+   *  so the chat stays conversational and only real agent messages appear. */
   const followUp = (text: string) => {
     if (text === 'Talk to an agent') {
       setHumanRequested(true);
@@ -269,16 +262,7 @@ export default function SupportWidget() {
           time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
         }]);
       }, 1000);
-      return;
     }
-    window.setTimeout(() => {
-      setAcks(prev => [...prev, {
-        id: `ack-${Date.now()}`,
-        from: 'support',
-        text: 'Thanks for your message. A support agent will respond shortly. In the meantime, check our Help Center for quick answers.',
-        time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-      }]);
-    }, 1200);
   };
 
   const ticketStatusIcon = (status: string) => {

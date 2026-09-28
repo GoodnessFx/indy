@@ -2,7 +2,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Save, AlertTriangle, Trash2, ShieldCheck, ShieldAlert,
-  CreditCard, Plus, X, RefreshCw, Check, Clock,
+  CreditCard, Plus, X, RefreshCw, Check, Clock, Tag, Package,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { adminUsers } from "../../data/mock";
@@ -59,6 +59,17 @@ export default function AdminUserDetail() {
   const [adjAmount, setAdjAmount] = useState("");
   const [adjReason, setAdjReason] = useState("");
   const [adjusting, setAdjusting] = useState(false);
+  // "set balance to $X" (absolute) state
+  const [setBalValue, setSetBalValue] = useState("");
+  const [setBalReason, setSetBalReason] = useState("");
+  const [settingBal, setSettingBal] = useState(false);
+  // mark-an-asset-as-sold state
+  const [soldName, setSoldName] = useState("");
+  const [soldAmount, setSoldAmount] = useState("");
+  const [soldReason, setSoldReason] = useState("");
+  const [showSoldForm, setShowSoldForm] = useState(false);
+  const [markingSold, setMarkingSold] = useState(false);
+  const [soldError, setSoldError] = useState("");
 
   // card form state
   const [showCardForm, setShowCardForm] = useState(false);
@@ -142,6 +153,72 @@ export default function AdminUserDetail() {
     setAdjusting(false);
     void refresh();
     flag("Adjustment applied and logged");
+  };
+
+  /** Set the client's account balance to an absolute dollar amount. Computes the
+   *  delta vs the currently-applied adjustments and records it (audit-logged). */
+  const setBalanceTo = async () => {
+    if (!rec || setBalValue === "" || !setBalReason.trim()) return;
+    const target = Number(setBalValue);
+    if (!Number.isFinite(target) || target < 0) return;
+    const current = (rec.balanceAdjustments ?? []).reduce((s, a) => s + a.amount, 0);
+    const delta = Math.round((target - current) * 100) / 100;
+    const entry = {
+      id: `adj-${Date.now().toString(36)}`,
+      amount: delta,
+      reason: setBalReason.trim(),
+      at: new Date().toISOString(),
+      admin: "admin",
+    };
+    const next: UserRecord = {
+      ...rec,
+      balanceAdjustments: [entry, ...(rec.balanceAdjustments ?? [])],
+    };
+    setRec(next);
+    await saveUserRecord(next, {
+      action: "Set balance",
+      detail: { target, delta, reason: entry.reason },
+    });
+    setSetBalValue("");
+    setSetBalReason("");
+    setSettingBal(false);
+    void refresh();
+    flag("Balance set and logged");
+  };
+
+  /** Mark an asset (e.g. an NFT) as sold for this client. Stored in the record
+   *  so it shows as a "sell" in their transaction history and leaves their
+   *  portfolio; always audit-logged with the reason. */
+  const markSold = async () => {
+    if (!rec || !soldName.trim()) { setSoldError("Asset name is required."); return; }
+    const amount = Number(soldAmount);
+    if (soldAmount !== "" && !Number.isFinite(amount)) { setSoldError("Sale amount must be a number."); return; }
+    const event = {
+      id: `sold-${Date.now().toString(36)}`,
+      assetName: soldName.trim(),
+      amount: Number.isFinite(amount) ? Math.round(amount * 100) / 100 : 0,
+      currency: "USD",
+      reason: soldReason.trim() || "Admin marked asset as sold",
+      at: new Date().toISOString(),
+      admin: "admin",
+    };
+    const next: UserRecord = {
+      ...rec,
+      soldEvents: [event, ...(rec.soldEvents ?? [])],
+    };
+    setRec(next);
+    await saveUserRecord(next, {
+      action: "Mark asset sold",
+      detail: { assetName: event.assetName, amount: event.amount, reason: event.reason },
+    });
+    setSoldName("");
+    setSoldAmount("");
+    setSoldReason("");
+    setSoldError("");
+    setMarkingSold(false);
+    setShowSoldForm(false);
+    void refresh();
+    flag("Asset marked as sold");
   };
 
   const addCard = async () => {
@@ -267,19 +344,45 @@ export default function AdminUserDetail() {
 
               {/* balance */}
               <div className="bg-white border border-black/5 rounded-xl p-5">
-                <h3 className="font-mono text-xs text-black/50 uppercase tracking-wider mb-4">Balance adjustments</h3>
+                <h3 className="font-mono text-xs text-black/50 uppercase tracking-wider mb-4">Account balance</h3>
                 <p className="text-[11px] text-black/40 mb-3">
                   Applied total: <span className="font-mono text-[#0A0B0D]">
                     ${(rec.balanceAdjustments ?? []).reduce((s, a) => s + a.amount, 0).toFixed(2)}
                   </span>
                 </p>
-                {!adjusting ? (
-                  <button onClick={() => setAdjusting(true)}
-                    className="text-xs text-[#EF4444]/70 hover:text-[#EF4444] font-mono transition-colors">
-                    Adjust balance (requires reason)
+
+                {/* Set account balance to an absolute amount */}
+                {!settingBal ? (
+                  <button onClick={() => setSettingBal(true)}
+                    className="text-xs text-[#2F6BFF] hover:text-[#4F82FF] font-mono transition-colors">
+                    Set balance to a dollar amount
                   </button>
                 ) : (
                   <div className="space-y-2">
+                    <input type="number" min="0" value={setBalValue} onChange={e => setSetBalValue(e.target.value)}
+                      placeholder="Target balance, e.g. 150000"
+                      className="w-full bg-black/3 border border-black/8 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/40" />
+                    <textarea value={setBalReason} onChange={e => setSetBalReason(e.target.value)} rows={2}
+                      placeholder="Required: reason (written to the audit log)"
+                      className="w-full bg-black/3 border border-black/8 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/40 resize-none" />
+                    <div className="flex gap-2">
+                      <button onClick={() => void setBalanceTo()} disabled={setBalValue === "" || !setBalReason.trim()}
+                        className="px-3 py-1.5 rounded-lg bg-[#2F6BFF] text-white text-xs font-mono hover:bg-[#4F82FF] disabled:opacity-30 transition-colors">
+                        Set balance
+                      </button>
+                      <button onClick={() => setSettingBal(false)} className="text-xs text-black/30 hover:text-black/60">Cancel</button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Adjust by a delta */}
+                {!adjusting ? (
+                  <button onClick={() => setAdjusting(true)}
+                    className="mt-2 text-xs text-[#EF4444]/70 hover:text-[#EF4444] font-mono transition-colors">
+                    Adjust by an amount (requires reason)
+                  </button>
+                ) : (
+                  <div className="mt-2 space-y-2">
                     <input type="number" value={adjAmount} onChange={e => setAdjAmount(e.target.value)} placeholder="Amount (use negative to debit)"
                       className="w-full bg-black/3 border border-black/8 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/40" />
                     <textarea value={adjReason} onChange={e => setAdjReason(e.target.value)} rows={2}
@@ -307,6 +410,68 @@ export default function AdminUserDetail() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* sold assets */}
+            <div className="bg-white border border-black/5 rounded-xl p-5 mb-6">
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <h3 className="font-mono text-xs text-black/50 uppercase tracking-wider flex items-center gap-2">
+                  <Tag size={13} /> Sold assets
+                </h3>
+                <button onClick={() => setShowSoldForm(v => !v)}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#2F6BFF]/15 text-[11px] text-[#2F6BFF] font-mono hover:bg-[#2F6BFF]/25 transition-colors">
+                  {showSoldForm ? <X size={11} /> : <Plus size={11} />}
+                  {showSoldForm ? "Cancel" : "Mark asset as sold"}
+                </button>
+              </div>
+
+              {showSoldForm && (
+                <div className="mb-5 p-4 rounded-xl bg-black/2 border border-black/6">
+                  <p className="text-[10px] text-black/35 font-mono mb-3">
+                    Records a sale on this account — it shows as a "sell" in the client's
+                    transaction history and leaves their portfolio. Every sale is audit-logged.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <input value={soldName} onChange={e => setSoldName(e.target.value)}
+                      placeholder="Asset name, e.g. Bored Ape Yacht Club #7492"
+                      className="w-full bg-white border border-black/10 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/50" />
+                    <input type="number" min="0" value={soldAmount} onChange={e => setSoldAmount(e.target.value)}
+                      placeholder="Sale amount (USD), optional"
+                      className="w-full bg-white border border-black/10 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/50" />
+                    <textarea value={soldReason} onChange={e => setSoldReason(e.target.value)} rows={2}
+                      placeholder="Optional note (written to the audit log)"
+                      className="w-full sm:col-span-2 bg-white border border-black/10 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/50 resize-none" />
+                  </div>
+                  {soldError && <p className="text-[11px] text-[#EF4444] mt-2">{soldError}</p>}
+                  <button onClick={() => void markSold()} disabled={!soldName.trim() || markingSold}
+                    className="mt-3 px-4 py-2 rounded-lg bg-[#2F6BFF] text-white text-xs font-mono hover:bg-[#4F82FF] disabled:opacity-30 transition-colors">
+                    {markingSold ? "Saving…" : "Mark as sold"}
+                  </button>
+                </div>
+              )}
+
+              {(rec.soldEvents ?? []).length === 0 ? (
+                <p className="text-xs text-black/30 py-4">No assets marked as sold for this account yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {(rec.soldEvents ?? []).map(s => (
+                    <div key={s.id} className="flex items-start justify-between gap-3 rounded-lg bg-black/2 border border-black/5 px-4 py-3">
+                      <div>
+                        <p className="text-xs text-black/80 font-mono flex items-center gap-1.5">
+                          <Package size={12} className="text-[#22C55E]" /> {s.assetName}
+                        </p>
+                        <p className="text-[10px] text-black/35 font-mono mt-1">
+                          {s.reason} · {new Date(s.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-mono text-xs font-600 text-[#22C55E]">+${(s.amount || 0).toLocaleString()}</p>
+                        <p className="text-[10px] px-1.5 py-0.5 mt-1 w-fit rounded-full bg-[#22C55E]/10 text-[#22C55E] font-mono">sold</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* saved cards */}

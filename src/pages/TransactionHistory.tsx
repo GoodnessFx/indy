@@ -5,6 +5,8 @@ import { myOrders } from '../lib/orders';
 import { myDeposits } from '../lib/wallet';
 import { getWalletSync } from '../lib/walletSync';
 import { useOrdersSync } from '../lib/useOrdersSync';
+import { currentAccount } from '../lib/notes';
+import { localUserRecord } from '../lib/userRecords';
 
 // Every client starts with an empty history. Rows are built only from that
 // client's own deposits and submitted investments, so nothing demo or shared
@@ -70,6 +72,19 @@ export default function TransactionHistory() {
     rate: null as string | null,
   }));
 
+  const soldRows = (localUserRecord(currentAccount().account).soldEvents ?? []).map(s => ({
+    id: s.id,
+    type: 'sell',
+    description: `Sold ${s.assetName}`,
+    asset: s.currency || 'USD',
+    amount: s.amount || 0,
+    direction: 'in',
+    status: 'completed' as const,
+    date: s.at,
+    fee: 0,
+    rate: null as string | null,
+  }));
+
   const walletSync = getWalletSync();
 
   const walletRows = (walletSync?.activity ?? []).map(a => ({
@@ -85,7 +100,7 @@ export default function TransactionHistory() {
     rate: null as string | null,
   }));
 
-  const transactions = [...orderRows, ...depositRows, ...walletRows]
+  const transactions = [...orderRows, ...depositRows, ...soldRows, ...walletRows]
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const [selectedTx, setSelectedTx] = useState<typeof transactions[0] | null>(null);

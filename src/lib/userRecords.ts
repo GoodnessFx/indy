@@ -48,12 +48,25 @@ export interface BalanceAdjustment {
   admin: string;
 }
 
+/** An asset the admin marked as sold for a client (e.g. an NFT). Reflects as
+ *  a "sell" in the client's transaction history and leaves their portfolio. */
+export interface SoldEvent {
+  id: string;
+  assetName: string;
+  amount: number;
+  currency?: string;
+  reason?: string;
+  at: string;
+  admin: string;
+}
+
 export interface UserRecord {
   email: string;
   profile?: { name?: string; phone?: string; country?: string };
   kyc?: "unverified" | "pending" | "verified" | "rejected" | "";
   payout?: PayoutCard[];
   balanceAdjustments?: BalanceAdjustment[];
+  soldEvents?: SoldEvent[];
   deleted?: boolean;
   deletedAt?: string;
   updatedAt?: string;
@@ -73,7 +86,7 @@ const AUDIT_KEY = "indy_audit_log";
 const DELETED_KEY = "indy_deleted_users";
 
 function emptyRecord(email: string): UserRecord {
-  return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], deleted: false };
+  return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], soldEvents: [], deleted: false };
 }
 
 // --- local mirror (offline fallback + instant first paint) ---

@@ -142,6 +142,7 @@ const EMPTY_RECORD = {
   kyc: "",
   payout: [],
   balanceAdjustments: [],
+  soldEvents: [],
   deleted: false,
   deletedAt: "",
 };
