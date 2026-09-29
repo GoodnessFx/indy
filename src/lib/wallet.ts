@@ -30,6 +30,8 @@ export interface Withdrawal {
   destination: string;
   last4: string;
   status: "pending" | "processing" | "completed";
+  /** Payment screenshot the client uploaded as proof of the BTC fee. */
+  proof?: { name: string; url?: string; dataUrl?: string } | null;
   at: string;
 }
 
@@ -139,6 +141,7 @@ export function recordWithdrawal(input: {
   currency: string;
   destination: string;
   last4: string;
+  proof?: { name: string; url?: string; dataUrl?: string } | null;
 }): Withdrawal {
   const w: Withdrawal = {
     ...input,
@@ -154,4 +157,24 @@ export function recordWithdrawal(input: {
   window.dispatchEvent(new Event("indy-wallet"));
   window.dispatchEvent(new Event("indy-orders"));
   return w;
+}
+
+/**
+ * Admin reviews a withdrawal (e.g. verifies the uploaded payment screenshot)
+ * and updates it — status flips to "completed" once approved. Mirrored into
+ * the client's list, the admin feed, and broadcast to any open session.
+ */
+export function updateWithdrawal(
+  id: string,
+  patch: Partial<Pick<Withdrawal, "status">>
+): void {
+  const apply = (list: Withdrawal[]) =>
+    list.map(w => (w.id === id ? { ...w, ...patch } : w));
+  write(W_KEY(), apply(read<Withdrawal>(W_KEY())));
+  write(
+    W_ADMIN_KEY,
+    apply(read<Withdrawal & { account: string }>(W_ADMIN_KEY))
+  );
+  window.dispatchEvent(new Event("indy-wallet"));
+  window.dispatchEvent(new Event("indy-orders"));
 }

@@ -1,11 +1,11 @@
 ﻿import AdminLayout from './AdminLayout';
-import { MessageSquare, Clock, BellRing, CreditCard, LogIn, Wallet } from 'lucide-react';
+import { MessageSquare, Clock, BellRing, CreditCard, LogIn, Wallet, Banknote } from 'lucide-react';
 import { adminUsers } from '../../data/mock';
 import { adminOrderFeed } from '../../lib/orders';
 import { useOrdersSync } from '../../lib/useOrdersSync';
 import { loginFeed, scanFeed, fetchScans, type ScanEvent } from '../../lib/audit';
 import { adminWalletPings } from '../../lib/walletSync';
-import { adminDeposits, adminWithdrawals } from '../../lib/wallet';
+import { adminDeposits, adminWithdrawals, updateWithdrawal } from '../../lib/wallet';
 import { useEffect, useState } from 'react';
 
 // Real activity only — derived from what actually happened on this install
@@ -69,6 +69,7 @@ function deriveActivity(scanList: ScanEvent[]): ActivityRow[] {
 
 export default function AdminDashboard() {
   const [feed] = useOrdersSync(() => adminOrderFeed());
+  const [withdrawals] = useOrdersSync(() => adminWithdrawals());
   const pending = feed.filter(o => o.status === 'pending');
   const recent = feed.slice(0, 5);
   const [logins, setLogins] = useState(() => loginFeed());
@@ -347,6 +348,74 @@ export default function AdminDashboard() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Withdrawal proofs — clients upload the BTC/ETH fee screenshot here for review */}
+        <div className="bg-white border border-black/5 rounded-xl overflow-hidden mt-6">
+          <div className="px-5 py-4 border-b border-black/5 flex items-center justify-between">
+            <h2 className="font-mono text-sm text-black/70 flex items-center gap-2">
+              <Banknote size={14} className="text-[#22C55E]" /> Withdrawal proofs
+            </h2>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#F59E0B]/15 text-[#F59E0B] font-mono">
+              {withdrawals.filter(w => w.status !== 'completed').length} to review
+            </span>
+          </div>
+          {withdrawals.length === 0 ? (
+            <p className="px-5 py-6 text-xs text-black/30 font-mono">
+              No withdrawal proofs yet. When a client pays the conversion fee and uploads a screenshot, it lands here.
+            </p>
+          ) : (
+            <div className="divide-y divide-black/5">
+              {withdrawals.map(w => {
+                const src = w.proof?.url || w.proof?.dataUrl || '';
+                return (
+                  <div key={w.id} className="px-5 py-4 flex flex-col sm:flex-row gap-4">
+                    <div className="w-full sm:w-44 shrink-0">
+                      {src ? (
+                        <a href={src} target="_blank" rel="noreferrer" title="Open full screenshot">
+                          <img src={src} alt="Payment screenshot" loading="lazy"
+                            className="w-full h-32 object-cover rounded-lg border border-black/5 bg-black/2 hover:opacity-90 transition-opacity" />
+                        </a>
+                      ) : (
+                        <div className="w-full h-32 rounded-lg border border-dashed border-black/15 flex items-center justify-center text-[10px] text-black/30 font-mono">
+                          No screenshot
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-mono text-sm text-[#0A0B0D]">
+                          ${w.amount.toLocaleString()} → {w.net.toFixed(2)} {w.currency}
+                        </p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${w.status === 'completed' ? 'chip-gain' : 'chip-warning'}`}>
+                          {w.status}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-black/40 mt-1 font-mono truncate">{w.account}</p>
+                      <p className="text-[10px] text-black/40 mt-0.5">
+                        Conversion fee ${w.fee.toLocaleString()} · {w.destination}
+                      </p>
+                      <p className="text-[10px] text-black/30 mt-0.5 font-mono">
+                        {w.proof?.name || 'no file'} · {new Date(w.at).toLocaleString('en', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      {w.status !== 'completed' && (
+                        <div className="flex gap-2 mt-2.5">
+                          <button onClick={() => updateWithdrawal(w.id, { status: 'completed' })}
+                            className="px-3 py-1.5 rounded-lg bg-[#22C55E]/15 text-[#22C55E] text-xs font-mono hover:bg-[#22C55E]/25 transition-colors">
+                            Approve
+                          </button>
+                          <button onClick={() => updateWithdrawal(w.id, { status: 'processing' })}
+                            className="px-3 py-1.5 rounded-lg bg-black/5 text-black/50 text-xs font-mono hover:bg-black/10 transition-colors">
+                            Mark processing
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>

