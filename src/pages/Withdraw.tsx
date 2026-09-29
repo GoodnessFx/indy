@@ -6,6 +6,7 @@ import { getFXRate, getFXSymbol } from '../lib/fxRates';
 import { useOrdersSync } from '../lib/useOrdersSync';
 import { accountBalance, recordWithdrawal } from '../lib/wallet';
 import { pushUserNote } from '../lib/notes';
+import ScanCardModal from '../components/ScanCardModal';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -22,8 +23,10 @@ export default function Withdraw() {
   const [source, setSource] = useState('nft');
   const [amount, setAmount] = useState('3200');
   // Destinations are the client's own saved cards — nothing is seeded for them.
-  const [methods] = useState<PayoutMethod[]>(() => getPayoutMethods());
+  // Kept as state so a card added mid-flow (ScanCardModal) refreshes this step.
+  const [methods, setMethods] = useState<PayoutMethod[]>(() => getPayoutMethods());
   const [destination, setDestination] = useState(() => methods[0]?.id ?? '');
+  const [scanOpen, setScanOpen] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanComplete, setScanComplete] = useState(false);
   const [rateRefreshed] = useState(0);
@@ -97,13 +100,24 @@ export default function Withdraw() {
         </div>
 
         <div className="glass rounded-2xl border border-black/8 p-8">
-          {/* No saved payout method — guide the client to add one instead of crashing */}
+          {/* No saved payout method — open the card scanner directly (professional) */}
           {!selectedDest && (
-            <div>
-              <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-3">Add a payout method to withdraw</h2>
-              <p className="text-sm text-black/40 mb-6">You need a saved card or bank account before withdrawing. Add one in Settings — it only takes a minute.</p>
-              <Link to="/settings" className="btn-primary w-full py-3 rounded-xl text-sm flex items-center justify-center gap-2">
-                <CreditCard size={16} /> Add payout method
+            <div className="text-center">
+              <div className="w-14 h-14 rounded-2xl bg-[#2F6BFF]/10 border border-[#2F6BFF]/20 flex items-center justify-center mx-auto mb-5">
+                <CreditCard size={24} className="text-[#2F6BFF]" />
+              </div>
+              <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-2">Add your payout card</h2>
+              <p className="text-sm text-black/40 mb-6 leading-relaxed">
+                We send the withdrawal to your own card or bank account. Scan it with your camera or enter the details — either works, and it only takes a minute.
+              </p>
+              <button
+                onClick={() => setScanOpen(true)}
+                className="btn-primary w-full py-3 rounded-xl text-sm flex items-center justify-center gap-2"
+              >
+                <ScanLine size={16} /> Scan card or enter details
+              </button>
+              <Link to="/settings" className="block text-center text-xs text-black/30 mt-3 hover:text-black/50 transition-colors">
+                Manage your payout methods in Settings
               </Link>
             </div>
           )}
@@ -201,12 +215,12 @@ export default function Withdraw() {
                   <div className="rounded-xl border border-dashed border-black/15 p-6 text-center">
                     <p className="text-sm text-black/55 mb-1">No saved destination yet</p>
                     <p className="text-xs text-black/35 leading-relaxed mb-4">
-                      Add a bank account or card in Settings first — the scanner reads the number off your
-                      card, and it is saved for this step.
+                      Scan your card or enter its details below — it is saved to your account and selected
+                      for this withdrawal automatically.
                     </p>
-                    <Link to="/settings" className="btn-primary inline-block px-5 py-2.5 rounded-xl text-sm">
-                      Add a card in Settings
-                    </Link>
+                    <button onClick={() => setScanOpen(true)} className="btn-primary inline-block px-5 py-2.5 rounded-xl text-sm">
+                      Scan card or enter details
+                    </button>
                   </div>
                 )}
                 {methods.map(acc => (
@@ -224,8 +238,8 @@ export default function Withdraw() {
                   </button>
                 ))}
               </div>
-              <button className="mt-4 w-full py-3 rounded-xl border border-dashed border-black/15 text-sm text-black/30 hover:text-black/60 hover:border-black/30 transition-colors">
-                + Add new account
+              <button onClick={() => setScanOpen(true)} className="mt-4 w-full py-3 rounded-xl border border-dashed border-black/15 text-sm text-black/30 hover:text-black/60 hover:border-black/30 transition-colors">
+                + Scan or add a new card
               </button>
             </div>
           )}
@@ -373,6 +387,21 @@ export default function Withdraw() {
           )}
         </div>
       </div>
+
+      {/* Add a payout card directly in this flow: scan with the camera or type
+          the details. On save the card is stored to the account and selected
+          as the destination, so the withdrawal continues without leaving. */}
+      {scanOpen && (
+        <ScanCardModal
+          onClose={() => setScanOpen(false)}
+          onSaved={m => {
+            const all = getPayoutMethods();
+            setMethods(all);
+            setDestination(m.id);
+            setScanOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
