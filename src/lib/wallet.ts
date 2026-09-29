@@ -84,6 +84,13 @@ export function recordDeposit(input: {
  * trail — there is no silent edit of a money field.
  */
 export function accountBalance(): number {
+  const rec = localUserRecord(account());
+  // When the admin has set a total portfolio value, that funded amount is the
+  // client's balance — on a fresh account with no deposits this is exactly what
+  // the admin posted, so the client's available balance matches their portfolio.
+  if (typeof rec.portfolioValue === "number") {
+    return Math.max(0, Math.round(rec.portfolioValue * 100) / 100);
+  }
   const funded = myDeposits().reduce((sum, d) => sum + d.amount, 0);
   const spent = myOrders()
     .filter(o => o.status === "active")

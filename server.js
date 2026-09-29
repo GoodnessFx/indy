@@ -143,6 +143,7 @@ const EMPTY_RECORD = {
   payout: [],
   balanceAdjustments: [],
   soldEvents: [],
+  portfolioValue: null,
   deleted: false,
   deletedAt: "",
 };

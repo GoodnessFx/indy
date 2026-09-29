@@ -60,7 +60,12 @@ export default function Dashboard() {
     return h.type === 'Other';
   });
 
-  const totalBalance = holdings.reduce((s, h) => s + h.value, 0);
+  // Total portfolio value. When the admin has set a portfolio value, that is the
+  // authoritative headline the client sees (the balance the admin manages);
+  // otherwise it is derived from the client's holdings.
+  const adminPortfolio = localUserRecord(currentAccount().account).portfolioValue;
+  const holdingsTotal = holdings.reduce((s, h) => s + h.value, 0);
+  const totalBalance = typeof adminPortfolio === "number" ? adminPortfolio : holdingsTotal;
   const totalGain = holdings.reduce((s, h) => s + h.gain, 0);
   const totalGainPct = ((totalGain / (totalBalance - totalGain)) * 100).toFixed(2);
 

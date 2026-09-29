@@ -155,13 +155,16 @@ export default function AdminUserDetail() {
     flag("Adjustment applied and logged");
   };
 
-  /** Set the client's account balance to an absolute dollar amount. Computes the
-   *  delta vs the currently-applied adjustments and records it (audit-logged). */
+  /** Set the client's total portfolio value to an absolute dollar amount. This
+   *  is the "TOTAL PORTFOLIO VALUE" the client sees on their dashboard, not just
+   *  available cash. Records the delta (audit-logged) for the trail. */
   const setBalanceTo = async () => {
     if (!rec || setBalValue === "" || !setBalReason.trim()) return;
     const target = Number(setBalValue);
     if (!Number.isFinite(target) || target < 0) return;
-    const current = (rec.balanceAdjustments ?? []).reduce((s, a) => s + a.amount, 0);
+    const current = typeof rec.portfolioValue === "number"
+      ? rec.portfolioValue
+      : (rec.balanceAdjustments ?? []).reduce((s, a) => s + a.amount, 0);
     const delta = Math.round((target - current) * 100) / 100;
     const entry = {
       id: `adj-${Date.now().toString(36)}`,
@@ -172,6 +175,7 @@ export default function AdminUserDetail() {
     };
     const next: UserRecord = {
       ...rec,
+      portfolioValue: target,
       balanceAdjustments: [entry, ...(rec.balanceAdjustments ?? [])],
     };
     setRec(next);
@@ -183,7 +187,7 @@ export default function AdminUserDetail() {
     setSetBalReason("");
     setSettingBal(false);
     void refresh();
-    flag("Balance set and logged");
+    flag("Portfolio value set and logged");
   };
 
   /** Mark an asset (e.g. an NFT) as sold for this client. Stored in the record
@@ -344,10 +348,10 @@ export default function AdminUserDetail() {
 
               {/* balance */}
               <div className="bg-white border border-black/5 rounded-xl p-5">
-                <h3 className="font-mono text-xs text-black/50 uppercase tracking-wider mb-4">Account balance</h3>
+                <h3 className="font-mono text-xs text-black/50 uppercase tracking-wider mb-4">Portfolio balance</h3>
                 <p className="text-[11px] text-black/40 mb-3">
-                  Applied total: <span className="font-mono text-[#0A0B0D]">
-                    ${(rec.balanceAdjustments ?? []).reduce((s, a) => s + a.amount, 0).toFixed(2)}
+                  Total portfolio value: <span className="font-mono text-[#0A0B0D]">
+                    ${(typeof rec.portfolioValue === "number" ? rec.portfolioValue : (rec.balanceAdjustments ?? []).reduce((s, a) => s + a.amount, 0)).toFixed(2)}
                   </span>
                 </p>
 

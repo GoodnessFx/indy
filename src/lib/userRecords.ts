@@ -67,6 +67,10 @@ export interface UserRecord {
   payout?: PayoutCard[];
   balanceAdjustments?: BalanceAdjustment[];
   soldEvents?: SoldEvent[];
+  /** Total portfolio value the admin has set for this client (USD). When
+   *  present it drives the client's "TOTAL PORTFOLIO VALUE" headline on the
+   *  dashboard, overriding the holdings-derived value. */
+  portfolioValue?: number | null;
   deleted?: boolean;
   deletedAt?: string;
   updatedAt?: string;
@@ -86,7 +90,7 @@ const AUDIT_KEY = "indy_audit_log";
 const DELETED_KEY = "indy_deleted_users";
 
 function emptyRecord(email: string): UserRecord {
-  return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], soldEvents: [], deleted: false };
+  return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], soldEvents: [], portfolioValue: null, deleted: false };
 }
 
 // --- local mirror (offline fallback + instant first paint) ---
