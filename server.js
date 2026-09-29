@@ -794,27 +794,10 @@ const server = http.createServer(async (req, res) => {
   if (pathname === "/api/chat/login" && req.method === "POST") {
     const body = await readBody(req);
     const account = String(body.account || "");
-    const name = String(body.name || account);
     if (!account) return sendJson(res, 400, { error: "account required" });
-    const chat = await readChat();
-    // Only push a login notification once per session (avoid spam)
-    const recentLogin = chat.find(
-      m => m.account === account && m.sender === "system" &&
-        Date.now() - new Date(m.at).getTime() < 60 * 60 * 1000
-    );
-    if (!recentLogin) {
-      const note = {
-        id: `login-${Date.now().toString(36)}`,
-        account,
-        name,
-        sender: "system",
-        body: `🔔 ${name} just logged in`,
-        at: new Date().toISOString(),
-        seen: false,
-      };
-      await saveMessage(note);
-      broadcastChat({ type: "chat", account, message: note });
-    }
+    // No system/automated bubbles are inserted into the chat anymore. Only a
+    // client's real messages and the agent's replies appear, so the thread
+    // stays clean and professional instead of being padded with auto-replies.
     return sendJson(res, 200, { ok: true });
   }
 

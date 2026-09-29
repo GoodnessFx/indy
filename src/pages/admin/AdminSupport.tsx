@@ -107,7 +107,13 @@ export default function AdminSupport() {
   const activeName = list.find(c => c.account === activeAccount)?.name ?? activeAccount ?? '';
   // Prefer the freshest messages from the list (server-sourced), fall back to local mirror
   const activeConvo = list.find(c => c.account === activeAccount);
-  const messages: ChatMessage[] = activeConvo?.messages ?? (activeAccount ? threadFor(activeAccount) : []);
+  const rawMessages: ChatMessage[] = activeConvo?.messages ?? (activeAccount ? threadFor(activeAccount) : []);
+  // Dedupe by id so a message that exists in both the local mirror and the
+  // shared server (same logical id) never renders twice.
+  const messages: ChatMessage[] = rawMessages.reduce<ChatMessage[]>((acc, m) => {
+    if (!acc.some(x => x.id === m.id)) acc.push(m);
+    return acc;
+  }, []);
 
   useEffect(() => {
     if (activeAccount && messages.some(m => m.from === 'client' && !m.seen)) {

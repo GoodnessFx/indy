@@ -29,7 +29,6 @@ export default function SupportWidget() {
   const [attachError, setAttachError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [humanRequested, setHumanRequested] = useState(false);
   const [showingGate, setShowingGate] = useState(false);
   const { signedIn, profile } = useAuth();
   const firstName = (profile?.given_name || profile?.name || '').split(' ')[0];
@@ -77,7 +76,6 @@ export default function SupportWidget() {
   // Delivery is realtime via SSE (useChatStream) — an admin on another device
   // reaches this thread instantly, with a slow safety poll as fallback only.
   const [thread, setThread] = useState(() => threadFor(currentAccount().account));
-  const [acks, setAcks] = useState<{ id: string; from: 'support'; text: string; time: string }[]>([]);
   const [unread, setUnread] = useState(0);
   const [agentTyping, setAgentTyping] = useState(false);
   const typingThrottle = useRef(0);
@@ -146,16 +144,22 @@ export default function SupportWidget() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const messages: { id: string; from: string; text: string; time: string; attachment?: Attachment }[] = [
-    ...thread.map(m => ({
-      id: m.id,
-      from: m.from === 'client' ? 'user' : 'support',
-      text: m.text,
-      time: new Date(m.at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-      attachment: m.attachment,
-    })),
-    ...acks,
-  ];
+  const messages: { id: string; from: string; text: string; time: string; attachment?: Attachment }[] = (() => {
+    const seen = new Set<string>();
+    const out: { id: string; from: string; text: string; time: string; attachment?: Attachment }[] = [];
+    for (const m of thread) {
+      if (seen.has(m.id)) continue;
+      seen.add(m.id);
+      out.push({
+        id: m.id,
+        from: m.from === 'client' ? 'user' : 'support',
+        text: m.text,
+        time: new Date(m.at).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
+        attachment: m.attachment,
+      });
+    }
+    return out;
+  })();
 
   const [quickReplies] = useState([
     "Where's my withdrawal?",
@@ -222,7 +226,6 @@ export default function SupportWidget() {
       setPendingIds(prev => [...prev, msg.id]);
       setInput('');
       setEmojiOpen(false);
-      followUp(trimmed);
       return;
     }
 
@@ -246,23 +249,6 @@ export default function SupportWidget() {
     setInput('');
     setEmojiOpen(false);
     void pull();
-    if (trimmed) followUp(trimmed);
-  };
-
-  /** Routing a live "Talk to an agent" request — no canned courtesy replies,
-   *  so the chat stays conversational and only real agent messages appear. */
-  const followUp = (text: string) => {
-    if (text === 'Talk to an agent') {
-      setHumanRequested(true);
-      window.setTimeout(() => {
-        setAcks(prev => [...prev, {
-          id: `ack-${Date.now()}`,
-          from: 'support',
-          text: 'Connecting you to a human agent. Estimated wait time: 3 minutes.',
-          time: new Date().toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' }),
-        }]);
-      }, 1000);
-    }
   };
 
   const ticketStatusIcon = (status: string) => {
@@ -434,13 +420,7 @@ export default function SupportWidget() {
                     </div>
                   </div>
                 )}
-                {humanRequested && (
-                  <div className="text-center">
-                    <div className="inline-flex items-center gap-2 text-xs text-black/40 bg-black/5 px-3 py-1.5 rounded-full">
-                      <Clock size={11} /> Connecting to human agent...
-                    </div>
-                  </div>
-                )}
+                
 
                 {/* Quick replies, only before the client has spoken */}
                 {thread.length === 0 && (
