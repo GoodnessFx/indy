@@ -88,7 +88,7 @@ export default function TransactionHistory() {
   const withdrawalRows = myWithdrawals().map(w => ({
     id: w.id,
     type: 'withdrawal',
-    description: `Withdrawal to ${w.destination} ****${w.last4}`,
+    description: w.last4 ? `Withdrawal to ${w.destination} ****${w.last4}` : `Withdrawal \u2014 ${w.destination}`,
     asset: w.currency,
     amount: w.amount,
     direction: 'out',

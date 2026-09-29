@@ -55,7 +55,7 @@ function deriveActivity(scanList: ScanEvent[]): ActivityRow[] {
   for (const w of adminWithdrawals()) {
     rows.push({
       action: 'Withdrawal initiated',
-      user: `${w.account} · $${w.amount.toLocaleString()} → ${w.destination} ****${w.last4}`,
+      user: `${w.account} · $${w.amount.toLocaleString()} → ${w.destination}${w.last4 ? ` ****${w.last4}` : ''}`,
       iso: w.at,
       type: 'warning',
     });
