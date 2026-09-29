@@ -10,6 +10,26 @@
 //
 // Realtime: Supabase Realtime when configured, else SSE /api/chat/stream.
 // See src/lib/chatStream.ts.
+//
+// RECORD SYNC CROSSROADS
+// ----------------------
+// Per-user admin records (balance, KYC, payout cards, sold events) are keyed
+// by account email. SSE "record" events only reach the same browser tab's open
+// EventSource connection, which is why this file also maintains a cross-tab
+// RECORD_TICK marker and re-reads the touched record whenever:
+//   1. `storage` fires (another tab wrote localStorage; ticked even for the
+//      writing tab so every listening surface refreshes deterministically);
+//   2. an `indy-record` event fires (same-tab write or an incoming SSE record
+//      event re-broadcast locally);
+//   3. `visibilitychange` fires when the tab becomes visible again;
+//   4. a 60s poll runs (recovers tabs that missed every event while hidden).
+//
+// Practically: the Dashboard, Transaction History and wallet read the record
+// synchronously today, so refresh happens by re-dispatching "indy-record"
+// (plus "indy-orders" for derived balances) after the changed account's mirror
+// updates. Any surface that reads the record should call
+// `startRecordSync()` once; the refresh function then lives in
+// `src/lib/userRecords.ts` and stays device/backend-neutral.
 
 import { getStoredGoogleUser } from "./googleAuth";
 import { API_BASE } from "./config";

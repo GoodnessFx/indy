@@ -88,24 +88,79 @@ export interface AuditEntry {
 const RECORD_PREFIX = "indy_user_record_";
 const AUDIT_KEY = "indy_audit_log";
 const DELETED_KEY = "indy_deleted_users";
+/** Cross-tab tick so other tabs re-fetch the record that just changed. */
+const RECORD_SYNC_TICK_KEY = "indy_record_sync_tick";
 
 function emptyRecord(email: string): UserRecord {
   return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], soldEvents: [], portfolioValue: null, deleted: false };
+}
+
+function recordKey(email: string): string {
+  return `${RECORD_PREFIX}${String(email || "").toLowerCase()}`;
+}
+
+/** Bump the cross-tab sync marker for one account. */
+function tickRecordSync(email: string): void {
+  try {
+    localStorage.setItem(
+      RECORD_SYNC_TICK_KEY,
+      JSON.stringify({ email: String(email || "").toLowerCase(), at: Date.now() })
+    );
+  } catch { /* storage unavailable */ }
+}
+
+/** Read the cross-tab sync marker, if present and well-formed. */
+function readRecordSyncTick(): { email: string; at: number } | null {
+  try {
+    const raw = localStorage.getItem(RECORD_SYNC_TICK_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { email?: unknown; at?: unknown };
+    if (typeof parsed?.email !== "string" || !parsed.email) return null;
+    const at = typeof parsed.at === "number" ? parsed.at : 0;
+    return { email: parsed.email, at };
+  } catch {
+    return null;
+  }
 }
 
 // --- local mirror (offline fallback + instant first paint) ---
 
 function localRecord(email: string): UserRecord {
   try {
-    const raw = localStorage.getItem(RECORD_PREFIX + email.toLowerCase());
+    const raw = localStorage.getItem(recordKey(email));
     if (raw) return { ...emptyRecord(email), ...(JSON.parse(raw) as UserRecord) };
   } catch { /* ignore */ }
   return emptyRecord(email);
 }
 
+function snapshotOf(rec: UserRecord): string {
+  try {
+    return JSON.stringify({
+      portfolioValue: rec.portfolioValue ?? null,
+      profile: rec.profile ?? {},
+      kyc: rec.kyc ?? "",
+      payout: rec.payout ?? [],
+      adjustments: rec.balanceAdjustments ?? [],
+      sold: rec.soldEvents ?? [],
+      deleted: Boolean(rec.deleted),
+    });
+  } catch {
+    return "";
+  }
+}
+
 function writeLocal(rec: UserRecord): void {
   try {
-    localStorage.setItem(RECORD_PREFIX + rec.email.toLowerCase(), JSON.stringify(rec));
+    const key = recordKey(rec.email);
+    const next = JSON.stringify(rec);
+    const prev = localStorage.getItem(key);
+    // Avoid no-op writes (they can otherwise self-trigger storage loops as the
+    // mirror catches up) and tick after every real update so every listening
+    // surface re-reads this account deterministically.
+    if (prev !== next) {
+      localStorage.setItem(key, next);
+    }
+    tickRecordSync(rec.email);
   } catch { /* storage unavailable */ }
 }
 
@@ -141,14 +196,22 @@ async function api(path: string, init?: RequestInit): Promise<unknown> {
 
 /** Fetch one client's record. Server first, then local mirror. */
 export async function fetchUserRecord(email: string): Promise<UserRecord> {
+  const before = snapshotOf(localRecord(email));
+  const finish = (rec: UserRecord): UserRecord => {
+    if (snapshotOf(rec) !== before) {
+      writeLocal(rec);
+    }
+    tickRecordSync(email);
+    window.dispatchEvent(new Event("indy-record"));
+    return rec;
+  };
   try {
     const rows = (await api(
       `/api/users/record?email=${encodeURIComponent(email)}`
     )) as UserRecord;
     if (rows && typeof rows === "object" && "email" in rows) {
       const rec = { ...emptyRecord(email), ...(rows as UserRecord) };
-      writeLocal(rec);
-      return rec;
+      return finish(rec);
     }
   } catch { /* backend unreachable — fall through */ }
   if (dbReady()) {
@@ -160,12 +223,12 @@ export async function fetchUserRecord(email: string): Promise<UserRecord> {
         .maybeSingle();
       if (data?.data) {
         const rec = { ...emptyRecord(email), ...(data.data as UserRecord) };
-        writeLocal(rec);
-        return rec;
+        return finish(rec);
       }
     } catch { /* ignore */ }
   }
-  return localRecord(email);
+  const local = localRecord(email);
+  return finish(local);
 }
 
 /**
@@ -294,6 +357,103 @@ export async function deleteUser(email: string, admin = "admin"): Promise<void> 
 /** Synchronous read of the locally cached record (for balance maths). */
 export function localUserRecord(email: string): UserRecord {
   return localRecord(email);
+}
+
+let recordSyncStarted = false;
+let recordSyncTimer: number | null = null;
+const syncedTickByAccount = new Map<string, number>();
+
+function activeAccountEmail(): string {
+  try {
+    const profileRaw = localStorage.getItem("indy_google_user");
+    if (profileRaw) {
+      const parsed = JSON.parse(profileRaw) as { email?: unknown };
+      if (typeof parsed?.email === "string" && parsed.email) return parsed.email;
+    }
+    // rememberProfile() also stores the plain email next to the profile.
+    const emailRaw = localStorage.getItem("indy_user_email");
+    if (emailRaw && !emailRaw.startsWith("{")) return emailRaw;
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
+/**
+ * Start the record background sync exactly once per page load. Re-fetches the
+ * signed-in account's record (authoritative server value first) when:
+ * - another tab/brower writes the same account's local mirror (`storage`);
+ * - an `indy-record` (SSE or same-tab write) touches any account;
+ * - the tab becomes visible again;
+ * - every 60s, so a tab that missed events still catches up.
+ *
+ * Guarded to avoid cross-tab write loops: only the actually-touched account is
+ * re-fetched, only when its tick is newer than the last sync, and a fetch that
+ * returns identical bytes never rewrites the mirror.
+ */
+export function startRecordSync(): void {
+  if (recordSyncStarted || typeof window === "undefined") return;
+  recordSyncStarted = true;
+
+  let inFlight = false;
+
+  const syncAccount = (email: string, tickAt: number): void => {
+    const key = String(email || "").toLowerCase();
+    if (!key || inFlight) return;
+    const last = syncedTickByAccount.get(key) ?? -1;
+    if (tickAt <= last) return;
+    syncedTickByAccount.set(key, tickAt);
+    inFlight = true;
+    void fetchUserRecord(key)
+      .catch(() => undefined)
+      .finally(() => {
+        inFlight = false;
+      });
+  };
+
+  const maybeSyncTick = (): void => {
+    const tick = readRecordSyncTick();
+    if (tick) syncAccount(tick.email, tick.at);
+  };
+
+  const syncActiveAccount = (): void => {
+    const email = activeAccountEmail();
+    if (email) syncAccount(email, Date.now());
+  };
+
+  const onStorage = (event: StorageEvent): void => {
+    if (event.key === RECORD_SYNC_TICK_KEY) {
+      maybeSyncTick();
+      return;
+    }
+    if (event.key && event.key === recordKey(activeAccountEmail())) {
+      syncActiveAccount();
+    }
+  };
+
+  const onRecordEvent = (): void => {
+    const tick = readRecordSyncTick();
+    if (tick) {
+      syncAccount(tick.email, tick.at);
+      return;
+    }
+    syncActiveAccount();
+  };
+
+  const onVisible = (): void => {
+    if (document.visibilityState === "visible") {
+      syncActiveAccount();
+    }
+  };
+
+  window.addEventListener("storage", onStorage);
+  window.addEventListener("indy-record", onRecordEvent);
+  document.addEventListener("visibilitychange", onVisible);
+  if (recordSyncTimer === null) {
+    recordSyncTimer = window.setInterval(syncActiveAccount, 60_000);
+  }
+  maybeSyncTick();
+  syncActiveAccount();
 }
 
 /** The signed-in client's own record (Settings, widget, card display). */

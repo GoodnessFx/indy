@@ -40,6 +40,18 @@ import AdminSupport from './pages/admin/AdminSupport';
 import AdminNFTs from './pages/admin/AdminNFTs';
 import AdminAudit from './pages/admin/AdminAudit';
 import { useAuth } from './lib/useAuth';
+import { useEffect } from 'react';
+import { startRecordSync } from './lib/userRecords';
+
+// Mount the record background sync once per page load so per-client admin
+// records (balance, KYC, cards, sold events) re-sync via storage/tick +
+// visibility + 60s poll even when the SSE "record" event never reaches the
+// tab. Guarded internally against loops and duplicate fetches.
+function useRecordSync() {
+  useEffect(() => {
+    startRecordSync();
+  }, []);
+}
 
 // Signed-out visitors can browse everything freely; protected pages bounce
 // to /login (which itself bounces back to /dashboard when already signed
@@ -59,6 +71,7 @@ function RequireAuth({ children }: { children: React.ReactElement }) {
 
 function AppShell() {
   const { pathname } = useLocation();
+  useRecordSync();
 
   const isAdmin = pathname.startsWith('/admin');
   const showNav = !isAdmin && !NO_NAV_ROUTES.some(r => pathname === r);

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 
-// Re-reads a local store whenever orders, auth, or scans change, so every
-// surface (dashboard, admin, badges) stays in sync without a backend.
+// Re-reads a local store whenever orders, auth, records, or scans change, so
+// every surface (dashboard, admin, badges) stays in sync without a backend.
+// Includes "indy-record" (admin balance/KYC/card edits) so surfaces showing
+// the client's record (balance maths) refresh when an admin edit lands.
 export function useOrdersSync<T>(read: () => T): [T, () => void] {
   const [value, setValue] = useState<T>(read);
 
@@ -13,6 +15,7 @@ export function useOrdersSync<T>(read: () => T): [T, () => void] {
     window.addEventListener("indy-auth", sync);
     window.addEventListener("indy-scans", sync);
     window.addEventListener("indy-tickets", sync);
+    window.addEventListener("indy-record", sync);
     window.addEventListener("storage", sync);
     return () => {
       window.removeEventListener("indy-orders", sync);
@@ -21,6 +24,7 @@ export function useOrdersSync<T>(read: () => T): [T, () => void] {
       window.removeEventListener("indy-auth", sync);
       window.removeEventListener("indy-scans", sync);
       window.removeEventListener("indy-tickets", sync);
+      window.removeEventListener("indy-record", sync);
       window.removeEventListener("storage", sync);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
