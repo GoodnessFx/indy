@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Download, Calendar, ArrowDownLeft, ArrowUpRight, BarChart2, DollarSign, X, TrendingUp, TrendingDown, Clock, CheckCircle, AlertCircle, Package } from 'lucide-react';
 import { myOrders } from '../lib/orders';
-import { myDeposits } from '../lib/wallet';
+import { myDeposits, myWithdrawals } from '../lib/wallet';
 import { getWalletSync } from '../lib/walletSync';
 import { useOrdersSync } from '../lib/useOrdersSync';
 import { currentAccount } from '../lib/notes';
@@ -85,6 +85,19 @@ export default function TransactionHistory() {
     rate: null as string | null,
   }));
 
+  const withdrawalRows = myWithdrawals().map(w => ({
+    id: w.id,
+    type: 'withdrawal',
+    description: `Withdrawal to ${w.destination} ****${w.last4}`,
+    asset: w.currency,
+    amount: w.amount,
+    direction: 'out',
+    status: w.status === 'completed' ? 'completed' : 'pending',
+    date: w.at,
+    fee: w.fee,
+    rate: null as string | null,
+  }));
+
   const walletSync = getWalletSync();
 
   const walletRows = (walletSync?.activity ?? []).map(a => ({
@@ -100,7 +113,7 @@ export default function TransactionHistory() {
     rate: null as string | null,
   }));
 
-  const transactions = [...orderRows, ...depositRows, ...soldRows, ...walletRows]
+  const transactions = [...orderRows, ...depositRows, ...soldRows, ...withdrawalRows, ...walletRows]
     .sort((a, b) => (a.date < b.date ? 1 : -1));
 
   const [selectedTx, setSelectedTx] = useState<typeof transactions[0] | null>(null);

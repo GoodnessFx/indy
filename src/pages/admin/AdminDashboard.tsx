@@ -5,7 +5,7 @@ import { adminOrderFeed } from '../../lib/orders';
 import { useOrdersSync } from '../../lib/useOrdersSync';
 import { loginFeed, scanFeed, fetchScans, type ScanEvent } from '../../lib/audit';
 import { adminWalletPings } from '../../lib/walletSync';
-import { adminDeposits } from '../../lib/wallet';
+import { adminDeposits, adminWithdrawals } from '../../lib/wallet';
 import { useEffect, useState } from 'react';
 
 // Real activity only — derived from what actually happened on this install
@@ -50,6 +50,14 @@ function deriveActivity(scanList: ScanEvent[]): ActivityRow[] {
       user: `${d.account} · $${d.amount.toLocaleString()}`,
       iso: d.at,
       type: 'success',
+    });
+  }
+  for (const w of adminWithdrawals()) {
+    rows.push({
+      action: 'Withdrawal initiated',
+      user: `${w.account} · $${w.amount.toLocaleString()} → ${w.destination} ****${w.last4}`,
+      iso: w.at,
+      type: 'warning',
     });
   }
 

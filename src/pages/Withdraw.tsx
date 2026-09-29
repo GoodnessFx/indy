@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Check, Info, AlertCircle, ScanLine, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Info, AlertCircle, ScanLine, RefreshCw, CreditCard } from 'lucide-react';
 import { getPayoutMethods, type PayoutMethod } from '../lib/payoutMethods';
 import { getFXRate, getFXSymbol } from '../lib/fxRates';
+import { useOrdersSync } from '../lib/useOrdersSync';
+import { accountBalance, recordWithdrawal } from '../lib/wallet';
+import { pushUserNote } from '../lib/notes';
 
 type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -25,6 +28,9 @@ export default function Withdraw() {
   const [scanComplete, setScanComplete] = useState(false);
   const [rateRefreshed] = useState(0);
   const [failed] = useState(false);
+  // The client's real available balance (deposits − invested − withdrawn ± admin
+  // adjustments / admin-set portfolio value), so the amount is validated for real.
+  const [balance] = useOrdersSync(() => accountBalance());
 
   const selectedSource = sources.find(s => s.id === source) || sources[0];
   const selectedDest = methods.find(a => a.id === destination) || methods[0];
@@ -34,10 +40,30 @@ export default function Withdraw() {
   const serviceFee = amt * 0.004;
   const taxEstimate = amt * 0.02;
   const net = (amt - serviceFee - taxEstimate) * fxRate;
+  const amountValid = amt > 0 && amt <= balance;
 
   const next = () => {
+    // Step 1 needs a real, affordable amount before moving on.
+    if (step === 1 && !amountValid) return;
     // Step 3 needs a real destination: the client adds a card in Settings.
     if (step === 3 && !selectedDest) return;
+    // Step 5 confirms: actually record the withdrawal before showing "Done", so
+    // the balance drops and it lands in transaction history + the admin feed.
+    if (step === 5) {
+      if (!selectedDest || !amountValid) return;
+      recordWithdrawal({
+        amount: amt,
+        fee: serviceFee,
+        tax: taxEstimate,
+        net,
+        currency: selectedDest.currency,
+        destination: selectedDest.label,
+        last4: selectedDest.last4,
+      });
+      pushUserNote(`Withdrawal of $${amt.toLocaleString()} to ${selectedDest.label} ****${selectedDest.last4} initiated`);
+      setStep(6);
+      return;
+    }
     if (step === 4) {
       setScanProgress(0);
       setScanComplete(false);
@@ -71,6 +97,17 @@ export default function Withdraw() {
         </div>
 
         <div className="glass rounded-2xl border border-black/8 p-8">
+          {/* No saved payout method — guide the client to add one instead of crashing */}
+          {!selectedDest && (
+            <div>
+              <h2 className="font-display font-600 text-xl text-[#0A0B0D] mb-3">Add a payout method to withdraw</h2>
+              <p className="text-sm text-black/40 mb-6">You need a saved card or bank account before withdrawing. Add one in Settings — it only takes a minute.</p>
+              <Link to="/settings" className="btn-primary w-full py-3 rounded-xl text-sm flex items-center justify-center gap-2">
+                <CreditCard size={16} /> Add payout method
+              </Link>
+            </div>
+          )}
+
           {/* Step 1, Source & Amount */}
           {step === 1 && (
             <div>
@@ -83,7 +120,7 @@ export default function Withdraw() {
                     }`}>
                     <div className="text-left">
                       <p className="text-sm font-medium text-[#0A0B0D]">{src.label}</p>
-                      <p className="text-xs text-black/30 mt-0.5 font-mono">Available: ${src.balance.toLocaleString()}</p>
+                      <p className="text-xs text-black/30 mt-0.5 font-mono">Available: ${balance.toLocaleString()}</p>
                     </div>
                     <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${source === src.id ? 'border-[#2F6BFF] bg-[#2F6BFF]' : 'border-black/20'}`}>
                       {source === src.id && <div className="w-2 h-2 rounded-full bg-white" />}
@@ -98,7 +135,9 @@ export default function Withdraw() {
                   <input type="number" value={amount} onChange={e => setAmount(e.target.value)}
                     className="flex-1 bg-transparent font-mono font-700 text-2xl text-[#0A0B0D] outline-none" />
                 </div>
-                <p className="text-xs text-black/25 mt-1.5">Available: ${selectedSource.balance.toLocaleString()}</p>
+                <p className={`text-xs mt-1.5 ${amt > 0 && amt > balance ? 'text-[#EF4444]' : 'text-black/25'}`}>
+                  Available: ${balance.toLocaleString()}{amt > 0 && amt > balance ? ' — exceeds available balance' : ''}
+                </p>
               </div>
             </div>
           )}
@@ -121,9 +160,9 @@ export default function Withdraw() {
                 <div className="flex justify-between text-sm">
                   <div className="flex items-center gap-1.5">
                     <span className="text-black/50">Live FX rate</span>
-                    <span className="text-[10px] chip-accent px-1.5 py-0.5 rounded-full font-mono">{selectedDest.currency}</span>
+                    <span className="text-[10px] chip-accent px-1.5 py-0.5 rounded-full font-mono">{selectedDest?.currency}</span>
                   </div>
-                  <span className="font-mono text-[#0A0B0D]">1 USD = {fxRate} {selectedDest.currency}</span>
+                  <span className="font-mono text-[#0A0B0D]">1 USD = {fxRate} {selectedDest?.currency}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <div className="flex items-center gap-1.5">
@@ -259,7 +298,7 @@ export default function Withdraw() {
               <div className="bg-black/3 rounded-2xl border border-black/8 p-5 space-y-4 mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-black/50">To</span>
-                  <span className="text-[#0A0B0D]">{selectedDest.label} ****{selectedDest.last4}</span>
+                  <span className="text-[#0A0B0D]">{selectedDest?.label} ****{selectedDest?.last4}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-black/50">Amount</span>
@@ -267,7 +306,7 @@ export default function Withdraw() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-black/50">FX rate (locked in)</span>
-                  <span className="font-mono text-[#0A0B0D]">1 USD = {fxRate} {selectedDest.currency}</span>
+                  <span className="font-mono text-[#0A0B0D]">1 USD = {fxRate} {selectedDest?.currency}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-black/50">Fees & tax est.</span>
@@ -280,7 +319,7 @@ export default function Withdraw() {
                 <div className="flex justify-between pt-3 border-t border-black/10">
                   <span className="font-display font-700 text-base text-[#0A0B0D]">Landing amount</span>
                   <span className="font-mono font-800 text-2xl text-[#22C55E]">
-                    {selectedDest.currency === 'GBP' ? 'GBP ' : 'EUR '}{net.toFixed(2)}
+                    {selectedDest?.currency === 'GBP' ? 'GBP ' : 'EUR '}{net.toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -309,7 +348,7 @@ export default function Withdraw() {
               </div>
               <h2 className="font-display font-700 text-2xl text-[#0A0B0D] mb-3">Withdrawal initiated</h2>
               <p className="text-black/40 text-sm mb-3">
-                {selectedDest.currency === 'GBP' ? 'GBP ' : 'EUR '}{net.toFixed(2)} is on its way to {selectedDest.label} ****{selectedDest.last4}
+                {selectedDest?.currency === 'GBP' ? 'GBP ' : 'EUR '}{net.toFixed(2)} is on its way to {selectedDest?.label} ****{selectedDest?.last4}
               </p>
               <p className="text-black/30 text-xs mb-8">Estimated arrival: 1 to 3 business days</p>
               <div className="flex flex-col gap-3">
@@ -320,14 +359,14 @@ export default function Withdraw() {
           )}
 
           {/* Navigation */}
-          {step < 6 && step !== 4 && (
+          {selectedDest && step < 6 && step !== 4 && (
             <div className="flex items-center gap-3 mt-8">
               {step > 1 && (
                 <button onClick={back} className="btn-ghost px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                   <ArrowLeft size={14} /> Back
                 </button>
               )}
-              <button onClick={next} disabled={step === 3 && !selectedDest} className="btn-primary flex-1 py-3 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40">
+              <button onClick={next} disabled={(step === 1 && !amountValid) || (step === 3 && !selectedDest)} className="btn-primary flex-1 py-3 rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-40">
                 {step === 5 ? 'Confirm withdrawal' : 'Continue'} <ArrowRight size={14} />
               </button>
             </div>

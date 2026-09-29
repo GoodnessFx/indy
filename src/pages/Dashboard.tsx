@@ -65,7 +65,9 @@ export default function Dashboard() {
   // otherwise it is derived from the client's holdings.
   const adminPortfolio = localUserRecord(currentAccount().account).portfolioValue;
   const holdingsTotal = holdings.reduce((s, h) => s + h.value, 0);
-  const totalBalance = typeof adminPortfolio === "number" ? adminPortfolio : holdingsTotal;
+  // Admin-set accounts: use accountBalance() so a withdrawal reduces both the
+  // total portfolio headline and available cash (money leaving the account).
+  const totalBalance = typeof adminPortfolio === "number" ? accountBalance() : holdingsTotal;
   const totalGain = holdings.reduce((s, h) => s + h.gain, 0);
   const totalGainPct = ((totalGain / (totalBalance - totalGain)) * 100).toFixed(2);
 

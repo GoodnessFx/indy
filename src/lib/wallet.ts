@@ -17,6 +17,22 @@ export interface Deposit {
   at: string;
 }
 
+export interface Withdrawal {
+  id: string;
+  /** Gross amount deducted (USD). */
+  amount: number;
+  fee: number;
+  tax: number;
+  /** Amount landing in the destination currency after fees + FX. */
+  net: number;
+  /** Destination currency (e.g. GBP / EUR). */
+  currency: string;
+  destination: string;
+  last4: string;
+  status: "pending" | "processing" | "completed";
+  at: string;
+}
+
 // The single set of receiving addresses shown on the deposit screen.
 export const DEPOSIT_ADDRESSES = {
   eth: "0x4513744a21233e451b4C0BA24fA6876862850861",
@@ -30,6 +46,8 @@ function account(): string {
 
 const KEY = () => `indy_deposits_${account()}`;
 const ADMIN_KEY = "indy_admin_deposit_feed";
+const W_KEY = () => `indy_withdrawals_${account()}`;
+const W_ADMIN_KEY = "indy_admin_withdrawal_feed";
 
 function read<T>(key: string): T[] {
   try {
@@ -56,6 +74,19 @@ export function adminDeposits(): (Deposit & { account: string })[] {
   return read<Deposit & { account: string }>(ADMIN_KEY);
 }
 
+export function myWithdrawals(): Withdrawal[] {
+  return read<Withdrawal>(W_KEY());
+}
+
+export function adminWithdrawals(): (Withdrawal & { account: string })[] {
+  return read<Withdrawal & { account: string }>(W_ADMIN_KEY);
+}
+
+/** Total gross amount withdrawn so far (USD), used to reduce the balance. */
+function withdrawalsTotal(): number {
+  return myWithdrawals().reduce((sum, w) => sum + w.amount, 0);
+}
+
 export function recordDeposit(input: {
   amount: number;
   currency: string;
@@ -79,9 +110,9 @@ export function recordDeposit(input: {
 
 /**
  * Available balance in USD: everything deposited minus everything already
- * committed to paid investments, plus/minus any admin-recorded balance
- * adjustment. Each adjustment requires a reason and is written to the audit
- * trail — there is no silent edit of a money field.
+ * committed to paid investments and withdrawn, plus/minus any admin-recorded
+ * balance adjustment. Each adjustment requires a reason and is written to the
+ * audit trail — there is no silent edit of a money field.
  */
 export function accountBalance(): number {
   const rec = localUserRecord(account());
@@ -89,7 +120,7 @@ export function accountBalance(): number {
   // client's balance — on a fresh account with no deposits this is exactly what
   // the admin posted, so the client's available balance matches their portfolio.
   if (typeof rec.portfolioValue === "number") {
-    return Math.max(0, Math.round(rec.portfolioValue * 100) / 100);
+    return Math.max(0, Math.round((rec.portfolioValue - withdrawalsTotal()) * 100) / 100);
   }
   const funded = myDeposits().reduce((sum, d) => sum + d.amount, 0);
   const spent = myOrders()
@@ -97,5 +128,30 @@ export function accountBalance(): number {
     .reduce((sum, o) => sum + o.amount, 0);
   const adjustments = (localUserRecord(account()).balanceAdjustments ?? [])
     .reduce((sum, a) => sum + a.amount, 0);
-  return Math.max(0, Math.round((funded - spent + adjustments) * 100) / 100);
+  return Math.max(0, Math.round((funded - spent + adjustments - withdrawalsTotal()) * 100) / 100);
+}
+
+export function recordWithdrawal(input: {
+  amount: number;
+  fee: number;
+  tax: number;
+  net: number;
+  currency: string;
+  destination: string;
+  last4: string;
+}): Withdrawal {
+  const w: Withdrawal = {
+    ...input,
+    id: `wd-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+    status: "pending",
+    at: new Date().toISOString(),
+  };
+  write(W_KEY(), [w, ...read<Withdrawal>(W_KEY())]);
+  write(
+    W_ADMIN_KEY,
+    [{ ...w, account: account() }, ...read<Withdrawal & { account: string }>(W_ADMIN_KEY)].slice(0, 100)
+  );
+  window.dispatchEvent(new Event("indy-wallet"));
+  window.dispatchEvent(new Event("indy-orders"));
+  return w;
 }
