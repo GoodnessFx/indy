@@ -8,6 +8,13 @@ import { fetchUserRecord } from "./userRecords";
 // Reads the stored profile synchronously so components can render the right
 // surface on first paint, and subscribes to auth changes so the UI updates
 // when a Supabase session appears or disappears.
+//
+// REMOTE-DEVICE BALANCE SYNC (why this file matters to the $150k question):
+// The Dashboard balance comes from `user_records` on the SHARED backend
+// (server.js Postgres when DATABASE_URL is set, else server/data/store.json),
+// keyed by the client's account email. This hook warms that record from the
+// backend at sign-in so one device picking up its record cannot be confused
+// with data written locally on another device.
 
 export interface AuthState {
   signedIn: boolean;
@@ -31,7 +38,9 @@ export function useAuth(): AuthState {
       void notifyLogin(account, name);
       void recordSharedLogin(account, name, localStorage.getItem("indy_auth_provider") ?? "email");
       // Warm the admin-managed record so balance/cards/KYC from the admin
-      // console show up without a reload.
+      // console show up without a reload. The client renders the record from
+      // its local mirror only after this fetch overwrites it on THIS device,
+      // so a remote device never displays the admin's machine-local edits.
       void fetchUserRecord(account).then(() => window.dispatchEvent(new Event("indy-orders")));
     }
     prevSignedIn.current = next.signedIn;
@@ -41,7 +50,8 @@ export function useAuth(): AuthState {
   const refreshRecord = () => {
     const profile = getStoredGoogleUser();
     if (!profile) return;
-    void fetchUserRecord(currentAccount().account).then(() => window.dispatchEvent(new Event("indy-orders")));
+    const account = currentAccount().account;
+    void fetchUserRecord(account).then(() => window.dispatchEvent(new Event("indy-orders")));
   };
 
   useEffect(() => {

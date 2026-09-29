@@ -152,10 +152,15 @@ async function readRecord(email) {
   const rows = await dbAll("user_records");
   if (rows) {
     // dbAll returns the unwrapped JSONB payloads, not { data } wrappers.
-    const found = rows.find(
-      (r) => r && String(r.email).toLowerCase() === String(email).toLowerCase()
-    );
-    return { ...EMPTY_RECORD, ...(found || {}), email };
+    // Prefer the canonical lowercase row first: legacy rows may exist under a
+    // different email case, and SELECT has no ORDER BY, so a bare
+    // case-insensitive find could return a stale duplicate instead of the row
+    // the admin just wrote.
+    const lower = String(email).toLowerCase();
+    const exact =
+      rows.find((r) => r && String(r.email) === lower) ||
+      rows.find((r) => r && String(r.email).toLowerCase() === lower);
+    return { ...EMPTY_RECORD, ...(exact || {}), email };
   }
   const store = readStore();
   const found = (store.records || []).find(
@@ -165,16 +170,25 @@ async function readRecord(email) {
 }
 
 async function saveRecord(email, record) {
+  const key = String(email || "").toLowerCase();
   const payload = { ...record, email, updatedAt: new Date().toISOString() };
-  const ok = await dbUpsert("user_records", "email", email, payload);
+  // Upsert on the canonical lowercase key so one account can never split into
+  // two rows ("Emeasiete1@..." vs "emeasiete1@...") across devices. The
+  // display-case email stays inside the payload.
+  const ok = await dbUpsert("user_records", "email", key, payload);
   if (ok) return payload;
   const store = readStore();
   store.records = store.records || [];
   const idx = store.records.findIndex(
-    (r) => String(r.email).toLowerCase() === String(email).toLowerCase()
+    (r) => String(r.email).toLowerCase() === key
   );
-  if (idx >= 0) store.records[idx] = payload;
-  else store.records.push(payload);
+  if (idx >= 0) {
+    store.records[idx] = payload;
+    // Collapse any legacy duplicate-case rows so future reads are unambiguous.
+    store.records = store.records.filter(
+      (r, i) => i === idx || String(r.email).toLowerCase() !== key
+    );
+  } else store.records.push(payload);
   writeStore(store);
   return payload;
 }
@@ -571,8 +585,29 @@ const server = http.createServer(async (req, res) => {
 
   // Health checks. Platforms probe these before routing traffic, so they must
   // answer even when the built frontend is missing.
+  const BUILD_SHA = process.env.RENDER_GIT_COMMIT || process.env.VERCEL_GIT_COMMIT_SHA || "";
   if (pathname === "/healthz" || pathname === "/health" || pathname === "/api/health") {
-    return sendJson(res, 200, { ok: true, service: "indy", uptime: process.uptime() });
+    return sendJson(res, 200, { ok: true, service: "indy", uptime: process.uptime(), sha: BUILD_SHA });
+  }
+  // Deployment/provenance check: confirms WHICH build is served on THIS host,
+  // where it reads records from (Postgres vs file store), and — for the exact
+  // account the remote device is signed in as — what the backend returns. This
+  // is how you prove the $150k admin write is visible to another device or
+  // country: open /api/diag?email=emeasiete1@gmail.com on the client device
+  // and compare "record" with the admin console.
+  if (pathname === "/api/diag" && req.method === "GET") {
+    const email = url.searchParams.get("email") || "";
+    const record = email ? await readRecord(email) : null;
+    return sendJson(res, 200, {
+      ok: true,
+      service: "indy",
+      sha: BUILD_SHA,
+      uptime: process.uptime(),
+      store: pool && dbReady ? "postgres" : "file",
+      distPresent: fs.existsSync(path.join(distDir, "index.html")),
+      email: email || null,
+      record,
+    });
   }
 
   if (pathname === "/api/chat/all" && req.method === "GET") {

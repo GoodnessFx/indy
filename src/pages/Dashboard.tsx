@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, EyeOff, TrendingUp, TrendingDown, ArrowDownLeft, ArrowUpRight, MessageCircle, BarChart2, Wallet, RefreshCw, PieChart, BellRing, Receipt } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -11,7 +11,7 @@ import { useOrdersSync } from '../lib/useOrdersSync';
 import { useAuth } from '../lib/useAuth';
 import { accountBalance } from '../lib/wallet';
 import { currentAccount } from '../lib/notes';
-import { localUserRecord } from '../lib/userRecords';
+import { localUserRecord, fetchUserRecord } from '../lib/userRecords';
 import { getConnectedWallet, getWalletSync, syncWallet, openSeaKeyConfigured, recordWalletSync } from '../lib/walletSync';
 import ConnectWallet from '../components/ConnectWallet';
 import WalletPanel from '../components/WalletPanel';
@@ -22,6 +22,7 @@ const skeletonRows = 3;
 
 export default function Dashboard() {
   const [hideBalance, setHideBalance] = useState(false);
+  const [syncNote, setSyncNote] = useState('');
   const [segment, setSegment] = useState<'All' | 'NFTs' | 'Stocks' | 'Other'>('All');
   const [timeRange, setTimeRange] = useState('1M');
   const [loading] = useState(false);
@@ -33,6 +34,38 @@ export default function Dashboard() {
   const [syncError, setSyncError] = useState('');
   const { profile } = useAuth();
   const firstName = (profile?.given_name || profile?.name || 'Investor').split(' ')[0];
+
+  // Force a fresh pull of THIS device's authoritative record whenever the
+  // dashboard mounts or the signed-in account changes, and whenever the
+  // realtime/support layer says the admin edited it. This is the guarantee
+  // that a remote device logging in as emeasiete1@gmail.com sees the admin's
+  // $150k: it never trusts a stale or empty browser mirror, it asks the
+  // backend and then lets the normal useOrdersSync listeners re-render.
+  const accountKey = currentAccount().account;
+  useEffect(() => {
+    if (!accountKey || accountKey === 'guest') return;
+    let cancelled = false;
+    const pull = () => {
+      void fetchUserRecord(accountKey)
+        .then(() => {
+          if (cancelled) return;
+          window.dispatchEvent(new Event('indy-orders'));
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setSyncNote('Could not reach the server \u2014 showing this device\u2019s last saved balance.');
+          window.setTimeout(() => { if (!cancelled) setSyncNote(''); }, 8000);
+        });
+    };
+    pull();
+    const onRecord = () => pull();
+    window.addEventListener('indy-record', onRecord);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('indy-record', onRecord);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
 
   const orderHoldings = orders.map(o => ({
     id: o.id,
@@ -96,6 +129,9 @@ export default function Dashboard() {
                     {hideBalance ? <Eye size={18} /> : <EyeOff size={18} />}
                   </button>
                 </div>
+                {syncNote && (
+                  <p className="text-[11px] text-black/35 mt-1 font-mono">{syncNote}</p>
+                )}
               </div>
               <div className="pb-2">
                 <p className="text-xs text-black/30 mb-1 font-mono">AVAILABLE BALANCE</p>
