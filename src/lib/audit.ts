@@ -4,7 +4,7 @@
 // function names stay the same when it does.
 
 import { getStoredGoogleUser } from "./googleAuth";
-import { API_BASE } from "./config";
+import { apiFetch } from "./config";
 
 export interface LoginEvent {
   id: string;
@@ -105,12 +105,11 @@ export function recordScan(scan: {
 
 async function pushScanRemote(entry: ScanEvent): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/scans`, {
+    await apiFetch("/api/scans", {
       method: "POST",
-      headers: { "content-type": "application/json" },
       body: JSON.stringify(entry),
     });
-    return res.ok;
+    return true;
   } catch {
     return false;
   }
@@ -127,9 +126,7 @@ export function scanFeed(): ScanEvent[] {
 export async function fetchScans(): Promise<ScanEvent[]> {
   const local = scanFeed();
   try {
-    const res = await fetch(`${API_BASE}/scans?t=${Date.now()}`);
-    if (!res.ok) return local;
-    const rows = (await res.json()) as ScanEvent[];
+    const rows = (await apiFetch(`/api/scans?t=${Date.now()}`)) as ScanEvent[];
     if (!Array.isArray(rows) || rows.length === 0) return local;
     const byId = new Map<string, ScanEvent>();
     for (const row of [...local, ...rows]) {

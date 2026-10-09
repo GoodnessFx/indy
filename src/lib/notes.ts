@@ -32,7 +32,7 @@
 // `src/lib/userRecords.ts` and stays device/backend-neutral.
 
 import { getStoredGoogleUser } from "./googleAuth";
-import { API_BASE } from "./config";
+import { apiFetch } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
 import type { Attachment } from "./uploads";
 
@@ -92,13 +92,9 @@ export function currentAccount(): { account: string; name: string } {
 // --- JSON API helpers (same-origin server.js /api) ---
 
 async function apiRequest(path: string, init?: RequestInit): Promise<unknown> {
-  const url = path.startsWith("/api/") ? `${API_BASE}${path.slice(4)}` : path;
-  const res = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
-  if (!res.ok) throw new Error(`Chat API ${res.status}`);
-  return res.json();
+  // Same-origin first, then the deployed backend — so chat, logins and the
+  // shared user list land in the SAME store no matter which host served the UI.
+  return apiFetch(path, init);
 }
 
 function toAttachment(row: {

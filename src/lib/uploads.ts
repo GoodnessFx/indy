@@ -11,7 +11,7 @@
 //   2. an inline data URL carried inside the message itself, for small files,
 //      when the API cannot be reached — a message is never silently dropped.
 
-import { API_BASE } from "./config";
+import { apiFetch } from "./config";
 
 export interface Attachment {
   name: string;
@@ -173,24 +173,17 @@ export async function uploadFile(
     if (attempt > 0) await wait(700 * attempt);
     try {
       options.onProgress?.(`Uploading ${file.name}`);
-      const res = await fetch(`${API_BASE}/upload`, {
+      const saved = (await apiFetch("/api/upload", {
         method: "POST",
-        headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, type, dataUrl, account: options.account || "" }),
-      });
-      if (res.ok) {
-        const saved = (await res.json()) as { id?: string; url?: string; size?: number };
-        const url = saved.url || (saved.id ? `/api/file/${saved.id}` : "");
-        if (url) return { name, type, size: saved.size || size, kind, url };
-        lastError = new Error("The server did not return a file reference.");
-        continue;
-      }
-      const detail = (await res.json().catch(() => ({}))) as { error?: string };
-      lastError = new Error(detail?.error || `Upload failed (${res.status}).`);
-      if (res.status === 413) throw lastError;
+      })) as { id?: string; url?: string; size?: number };
+      const url = saved.url || (saved.id ? `/api/file/${saved.id}` : "");
+      if (url) return { name, type, size: saved.size || size, kind, url };
+      lastError = new Error("The server did not return a file reference.");
+      continue;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error("Upload failed.");
-      if (/limit|too large/i.test(lastError.message)) throw lastError;
+      if (/limit|too large|413/i.test(lastError.message)) throw lastError;
     }
   }
 

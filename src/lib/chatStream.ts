@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { API_BASE } from "./config";
+import { apiBases, apiFetch } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 // Shared realtime chat transport — ShieldSafeBank-style.
@@ -96,14 +96,20 @@ export function useChatStream({
     }
     let source: EventSource | null = null;
     let closed = false;
+    // SSE candidates: same-origin first, then the deployed backend, so the
+    // live stream (chat + admin record events) attaches to the shared store
+    // even when the UI is served from a preview/dev host.
+    const bases = apiBases();
+    let baseIdx = 0;
 
     const connect = () => {
       if (closed) return;
       try {
         source?.close();
       } catch { /* ignore */ }
+      const base = bases[Math.min(baseIdx, bases.length - 1)];
       const url =
-        `${API_BASE}/chat/stream?account=${encodeURIComponent(accountRef.current)}&t=${Date.now()}`;
+        `${base}/chat/stream?account=${encodeURIComponent(accountRef.current)}&t=${Date.now()}`;
       try {
         source = new EventSource(url);
       } catch {
@@ -147,6 +153,9 @@ export function useChatStream({
         try {
           source?.close();
         } catch { /* ignore */ }
+        // Try the next candidate base (e.g. same-origin is dead, fall to the
+        // deployed backend) before backing off.
+        if (baseIdx < bases.length - 1) baseIdx += 1;
         scheduleRetry();
       };
     };
@@ -190,9 +199,8 @@ export function useChatStream({
 /** Tell the other side "I'm typing" (fire-and-forget, throttled by caller). */
 export function sendTyping(account: string, role: "client" | "agent"): void {
   if (!account) return;
-  void fetch(`${API_BASE}/chat/typing`, {
+  void apiFetch("/api/chat/typing", {
     method: "POST",
-    headers: { "content-type": "application/json" },
     body: JSON.stringify({ account, role }),
   }).catch(() => { /* stream will still deliver messages */ });
 }

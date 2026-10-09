@@ -5,7 +5,7 @@
 // NFTItem so the existing gallery + detail pages render them unchanged).
 
 import { useEffect, useState } from "react";
-import { API_BASE } from "./config";
+import { apiFetch } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
 import { allNFTs, type NFTItem } from "../data/catalog";
 
@@ -41,13 +41,9 @@ function dbReady(): boolean {
 }
 
 async function api(path: string, init?: RequestInit): Promise<any> {
-  const url = path.startsWith("/api/") ? `${API_BASE}${path.slice(4)}` : path;
-  const res = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
-  if (!res.ok) throw new Error(`items API ${res.status}`);
-  return res.json();
+  // Same-origin first, then the deployed backend, so listings added by the
+  // admin reach every client regardless of which host served the console.
+  return apiFetch(path, init) as Promise<any>;
 }
 
 /** Fetch admin-added NFTs. Server first, then shared DB, then local mirror. */
