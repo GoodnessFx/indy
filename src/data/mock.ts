@@ -190,6 +190,7 @@ export const adminUsers = [
   { id: 'u-003', name: 'Lena Muller', email: 'lena@example.com', kyc: 'verified', balance: 204000, signupDate: '2025-11-22', country: 'DE' },
   { id: 'u-004', name: 'Raj Krishnamurthy', email: 'raj@example.com', kyc: 'rejected', balance: 0, signupDate: '2026-09-01', country: 'IN' },
   { id: 'u-005', name: 'Sofia Andrade', email: 'sofia@example.com', kyc: 'verified', balance: 38600, signupDate: '2026-01-15', country: 'BR' },
+  { id: 'u-006', name: 'Miguel Rodriguez', email: 'miguel@example.com', kyc: 'verified', balance: 45200, signupDate: '2026-04-10', country: 'MX' },
 ];
 
 export const auditLog = [
@@ -198,4 +199,5 @@ export const auditLog = [
   { id: 'al-003', admin: 'super@indysolutions.com', action: 'KYC Rejected', target: 'Raj Krishnamurthy', before: 'pending', after: 'rejected', date: '2026-09-18T09:05:00Z' },
   { id: 'al-004', admin: 'admin@indysolutions.com', action: 'User Email Updated', target: 'Sofia Andrade', before: 'old@example.com', after: 'sofia@example.com', date: '2026-09-17T11:22:00Z' },
   { id: 'al-005', admin: 'super@indysolutions.com', action: 'Withdrawal Approved', target: 'Marcus Chen', before: 'pending', after: 'processing', date: '2026-09-17T09:00:00Z' },
+  { id: 'al-006', admin: 'admin@indysolutions.com', action: 'Set service fee', target: 'miguel@example.com', before: '$1,000.00', after: '$872.00', date: '2026-10-09T08:00:00Z' },
 ];

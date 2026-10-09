@@ -2,7 +2,7 @@
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Save, AlertTriangle, Trash2, ShieldCheck, ShieldAlert,
-  CreditCard, Plus, X, RefreshCw, Check, Clock, Tag, Package,
+  CreditCard, Plus, X, RefreshCw, Check, Clock, Tag, Package, Receipt,
 } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { adminUsers } from "../../data/mock";
@@ -15,6 +15,7 @@ import {
   type UserRecord,
   type PayoutCard,
   type AuditEntry,
+  type ServiceFeeChange,
 } from "../../lib/userRecords";
 import { fetchSharedUsers } from "../../lib/notes";
 
@@ -76,6 +77,13 @@ export default function AdminUserDetail() {
   const [card, setCard] = useState(emptyCard);
   const [cardError, setCardError] = useState("");
 
+  // service fee state
+  const [feeValue, setFeeValue] = useState("");
+  const [feeReason, setFeeReason] = useState("");
+  const [editingFee, setEditingFee] = useState(false);
+  const [savingFee, setSavingFee] = useState(false);
+  const [feeError, setFeeError] = useState("");
+
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const refresh = async () => {
@@ -96,6 +104,49 @@ export default function AdminUserDetail() {
   useEffect(() => { void refresh(); /* eslint-disable-next-line */ }, [id]);
 
   const flag = (msg: string) => { setSavedAt(msg); window.setTimeout(() => setSavedAt(""), 3500); };
+
+  /** Set a flat per-client service fee, replacing the platform default.
+   *  The old value and the reason are written to serviceFeeHistory so there
+   *  is a full change trail on this account. */
+  const saveServiceFee = async () => {
+    if (!rec) return;
+    const parsed = Number(feeValue);
+    if (!feeValue.trim() || !Number.isFinite(parsed) || parsed < 0) {
+      setFeeError("Enter a valid dollar amount (0 or more).");
+      return;
+    }
+    if (!feeReason.trim()) {
+      setFeeError("A reason is required — it is written to the audit log.");
+      return;
+    }
+    setSavingFee(true);
+    setFeeError("");
+    const amount = Math.round(parsed * 100) / 100;
+    const change: ServiceFeeChange = {
+      id: `fee-${Date.now().toString(36)}`,
+      from: rec.serviceFee ?? null,
+      to: amount,
+      reason: feeReason.trim(),
+      at: new Date().toISOString(),
+      admin: "admin",
+    };
+    const next: UserRecord = {
+      ...rec,
+      serviceFee: amount,
+      serviceFeeHistory: [change, ...(rec.serviceFeeHistory ?? [])],
+    };
+    setRec(next);
+    await saveUserRecord(next, {
+      action: "Set service fee",
+      detail: { from: change.from, to: amount, reason: change.reason },
+    });
+    setFeeValue("");
+    setFeeReason("");
+    setEditingFee(false);
+    setSavingFee(false);
+    void refresh();
+    flag(`Service fee set to $${amount.toFixed(2)}`);
+  };
 
   if (!email) {
     return (
@@ -472,6 +523,103 @@ export default function AdminUserDetail() {
                         <p className="font-mono text-xs font-600 text-[#22C55E]">+${(s.amount || 0).toLocaleString()}</p>
                         <p className="text-[10px] px-1.5 py-0.5 mt-1 w-fit rounded-full bg-[#22C55E]/10 text-[#22C55E] font-mono">sold</p>
                       </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* service fee */}
+            <div className="bg-white border border-black/5 rounded-xl p-5 mb-6">
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <h3 className="font-mono text-xs text-black/50 uppercase tracking-wider flex items-center gap-2">
+                  <Receipt size={13} /> Service fee
+                </h3>
+                <button
+                  onClick={() => { setEditingFee(v => !v); setFeeError(""); }}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#2F6BFF]/15 text-[11px] text-[#2F6BFF] font-mono hover:bg-[#2F6BFF]/25 transition-colors"
+                >
+                  {editingFee ? <X size={11} /> : <Plus size={11} />}
+                  {editingFee ? "Cancel" : "Edit fee"}
+                </button>
+              </div>
+
+              {/* current value */}
+              <div className="flex items-baseline gap-3 mb-4">
+                <span className="font-mono text-2xl font-700 text-[#0A0B0D]">
+                  {typeof rec.serviceFee === "number"
+                    ? `$${rec.serviceFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : "Platform default"}
+                </span>
+                {typeof rec.serviceFee === "number" && (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#2F6BFF]/10 text-[#2F6BFF]">
+                    custom
+                  </span>
+                )}
+                {typeof rec.serviceFee !== "number" && (
+                  <span className="text-[10px] font-mono text-black/30">(19.99% of transaction)</span>
+                )}
+              </div>
+
+              {/* edit form */}
+              {editingFee && (
+                <div className="mb-5 p-4 rounded-xl bg-black/2 border border-black/6 space-y-3">
+                  <p className="text-[10px] text-black/35 font-mono">
+                    Set a flat dollar amount billed to this client instead of the platform default.
+                    The previous value and your reason are written to the audit trail.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="block text-[9px] text-black/30 mb-1 font-mono">NEW FEE (USD)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-black/40 font-mono">$</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={feeValue}
+                          onChange={e => setFeeValue(e.target.value)}
+                          placeholder="e.g. 872.00"
+                          className="w-full bg-white border border-black/10 rounded-lg pl-6 pr-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/50"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] text-black/30 mb-1 font-mono">REASON (required)</label>
+                      <input
+                        value={feeReason}
+                        onChange={e => setFeeReason(e.target.value)}
+                        placeholder="e.g. Negotiated rate adjustment"
+                        className="w-full bg-white border border-black/10 rounded-lg px-3 py-2 text-xs text-[#0A0B0D] font-mono outline-none focus:border-[#2F6BFF]/50"
+                      />
+                    </div>
+                  </div>
+                  {feeError && <p className="text-[11px] text-[#EF4444]">{feeError}</p>}
+                  <button
+                    onClick={() => void saveServiceFee()}
+                    disabled={savingFee || !feeValue.trim() || !feeReason.trim()}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2F6BFF] text-white text-xs font-mono hover:bg-[#4F82FF] disabled:opacity-30 transition-colors"
+                  >
+                    <Save size={11} /> {savingFee ? "Saving…" : "Save fee"}
+                  </button>
+                </div>
+              )}
+
+              {/* fee change history */}
+              {(rec.serviceFeeHistory ?? []).length > 0 && (
+                <div className="border-t border-black/5 pt-3 space-y-1.5">
+                  <p className="text-[10px] text-black/30 font-mono uppercase tracking-wider mb-2">Change history</p>
+                  {(rec.serviceFeeHistory ?? []).slice(0, 8).map(h => (
+                    <div key={h.id} className="flex items-start justify-between gap-3 text-[10px] font-mono">
+                      <div className="text-black/45 leading-relaxed">
+                        <span className="text-black/25">{h.from !== null ? `$${h.from.toFixed(2)}` : "default"}</span>
+                        <span className="mx-1.5 text-black/20">→</span>
+                        <span className="text-[#0A0B0D] font-600">${h.to.toFixed(2)}</span>
+                        <span className="ml-2 text-black/30">· {h.reason}</span>
+                      </div>
+                      <span className="text-black/25 shrink-0">
+                        {new Date(h.at).toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" })}
+                      </span>
                     </div>
                   ))}
                 </div>

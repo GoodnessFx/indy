@@ -19,7 +19,7 @@
 // platform at risk; if a card ever needs charging, a processor's hosted field
 // / tokenization must handle it.
 
-import { API_BASE } from "./config";
+import { apiFetch } from "./config";
 import { isSupabaseConfigured, supabase } from "./supabase";
 
 export interface PayoutCard {
@@ -71,9 +71,24 @@ export interface UserRecord {
    *  present it drives the client's "TOTAL PORTFOLIO VALUE" headline on the
    *  dashboard, overriding the holdings-derived value. */
   portfolioValue?: number | null;
+  /** Per-client service fee (USD flat amount). When set by an admin this
+   *  overrides the platform default and is the amount billed to that client.
+   *  Null / undefined means the platform default applies. */
+  serviceFee?: number | null;
+  /** History of service fee changes for this client, newest first. */
+  serviceFeeHistory?: ServiceFeeChange[];
   deleted?: boolean;
   deletedAt?: string;
   updatedAt?: string;
+}
+
+export interface ServiceFeeChange {
+  id: string;
+  from: number | null;
+  to: number;
+  reason: string;
+  at: string;
+  admin: string;
 }
 
 export interface AuditEntry {
@@ -92,7 +107,7 @@ const DELETED_KEY = "indy_deleted_users";
 const RECORD_SYNC_TICK_KEY = "indy_record_sync_tick";
 
 function emptyRecord(email: string): UserRecord {
-  return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], soldEvents: [], portfolioValue: null, deleted: false };
+  return { email, profile: {}, kyc: "", payout: [], balanceAdjustments: [], soldEvents: [], portfolioValue: null, serviceFee: null, serviceFeeHistory: [], deleted: false };
 }
 
 function recordKey(email: string): string {
@@ -185,13 +200,9 @@ function dbReady(): boolean {
 }
 
 async function api(path: string, init?: RequestInit): Promise<unknown> {
-  const url = path.startsWith("/api/") ? `${API_BASE}${path.slice(4)}` : path;
-  const res = await fetch(url, {
-    ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
-  });
-  if (!res.ok) throw new Error(`record API ${res.status}`);
-  return res.json();
+  // Shared store, same-origin first with an automatic fallback to the deployed
+  // backend, so a record the admin saves from ANY host reaches every device.
+  return apiFetch(path, init);
 }
 
 /** Fetch one client's record. Server first, then local mirror. */
@@ -381,15 +392,18 @@ function activeAccountEmail(): string {
 
 /**
  * Start the record background sync exactly once per page load. Re-fetches the
- * signed-in account's record (authoritative server value first) when:
- * - another tab/brower writes the same account's local mirror (`storage`);
- * - an `indy-record` (SSE or same-tab write) touches any account;
- * - the tab becomes visible again;
- * - every 60s, so a tab that missed events still catches up.
+ * signed-in account's record (authoritative server value first — with the
+ * deployed-backend fallback in `config.ts`) so a client on ANY device/country
+ * ends up showing the balance the admin set, with nothing for them to do:
+ * - on start, and every 15s (a tab that missed an event still catches up);
+ * - when another tab writes the same account's mirror (`storage`);
+ * - on `indy-record` (SSE or a same-tab write);
+ * - when the tab becomes visible, regains focus, or the network returns;
+ * - on `pageshow` (back/forward restore from the bfcache).
  *
- * Guarded to avoid cross-tab write loops: only the actually-touched account is
- * re-fetched, only when its tick is newer than the last sync, and a fetch that
- * returns identical bytes never rewrites the mirror.
+ * Guarded against cross-tab write loops: only the touched account is
+ * re-fetched, only when its tick is newer than the last sync, and an identical
+ * fetch never rewrites the mirror.
  */
 export function startRecordSync(): void {
   if (recordSyncStarted || typeof window === "undefined") return;
@@ -448,9 +462,14 @@ export function startRecordSync(): void {
 
   window.addEventListener("storage", onStorage);
   window.addEventListener("indy-record", onRecordEvent);
+  window.addEventListener("focus", syncActiveAccount);
+  window.addEventListener("online", syncActiveAccount);
+  window.addEventListener("pageshow", syncActiveAccount);
   document.addEventListener("visibilitychange", onVisible);
   if (recordSyncTimer === null) {
-    recordSyncTimer = window.setInterval(syncActiveAccount, 60_000);
+    // Fast enough that a brand-new device shows the admin's balance almost
+    // immediately, cheap enough to leave running (one small JSON GET).
+    recordSyncTimer = window.setInterval(syncActiveAccount, 15_000);
   }
   maybeSyncTick();
   syncActiveAccount();
