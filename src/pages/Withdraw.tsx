@@ -8,15 +8,20 @@ import { useOrdersSync } from '../lib/useOrdersSync';
 import { accountBalance, recordWithdrawal, DEPOSIT_ADDRESSES } from '../lib/wallet';
 import { pushUserNote, currentAccount } from '../lib/notes';
 import { uploadFile, type Attachment } from '../lib/uploads';
+import { fetchUserRecord, localUserRecord, type UserRecord } from '../lib/userRecords';
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
-// Withdrawal flow: pick amount -> convert USD to EUR -> pay a flat $1,200
-// conversion fee in BTC to the company wallet (leave & return) -> upload the
-// payment screenshot -> success. There is no card scanning in this flow.
+// Withdrawal flow: pick amount -> convert USD to EUR -> pay the conversion (service) fee in BTC to the company wallet (leave & return) -> upload the payment screenshot -> success. There is no card scanning in this flow. The fee AMOUNT comes from the signed-in client's record (the per-client service fee the admin set, e.g. $872); the flat default below applies only when that client has no custom fee on record.
 const steps = ['Source', 'Convert USD \u2192 EUR', 'BTC Payment', 'Upload proof', 'Done'];
-const CONVERSION_FEE_USD = 1200;
+const DEFAULT_CONVERSION_FEE_USD = 1200;
 const PROGRESS_KEY = 'indy_withdraw_progress';
+
+/** The custom service fee on a record, or null when the platform default applies. */
+function feeOrNull(rec: UserRecord): number | null {
+  const fee = rec.serviceFee;
+  return typeof fee === 'number' && Number.isFinite(fee) && fee >= 0 ? fee : null;
+}
 
 const sources = [
   { id: 'nft', label: 'NFT Proceeds' },
@@ -60,6 +65,45 @@ export default function Withdraw() {
 
   // The client's real available balance, so the amount is validated for real.
   const [balance] = useOrdersSync(() => accountBalance());
+
+  // Per-client service fee: the admin-set amount on THIS account's record
+  // (e.g. $872) so every device/country signed in as this client shows the
+  // same number. First paint uses the local mirror, then the authoritative
+  // record is pulled from the backend and re-read on every sync event.
+  const accountKey = currentAccount().account;
+  const [customFee, setCustomFee] = useState<number | null>(
+    () => feeOrNull(localUserRecord(currentAccount().account))
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    const apply = (rec: UserRecord) => {
+      if (!cancelled) setCustomFee(feeOrNull(rec));
+    };
+    const refresh = () => apply(localUserRecord(accountKey));
+    if (accountKey && accountKey !== 'guest') {
+      void fetchUserRecord(accountKey).then(apply).catch(() => refresh());
+    }
+    // Admin edit landed (SSE / same-tab write / another tab / back in focus).
+    window.addEventListener('indy-record', refresh);
+    window.addEventListener('indy-orders', refresh);
+    window.addEventListener('storage', refresh);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('indy-record', refresh);
+      window.removeEventListener('indy-orders', refresh);
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountKey]);
+
+  // Effective fee shown and charged in this flow: the client's custom fee
+  // when set, otherwise the platform default.
+  const CONVERSION_FEE_USD = customFee ?? DEFAULT_CONVERSION_FEE_USD;
 
   // Persist progress on every change (unless finished) — enables resume.
   useEffect(() => {

@@ -157,6 +157,8 @@ function snapshotOf(rec: UserRecord): string {
       payout: rec.payout ?? [],
       adjustments: rec.balanceAdjustments ?? [],
       sold: rec.soldEvents ?? [],
+      serviceFee: rec.serviceFee ?? null,
+      serviceFeeHistory: rec.serviceFeeHistory ?? [],
       deleted: Boolean(rec.deleted),
     });
   } catch {
