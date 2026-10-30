@@ -399,7 +399,7 @@ async function saveUserLogin(email, name, method) {
 // report "upstream connection refused" if nothing answers there. So: listen on
 // every candidate we can get, and report clearly in the logs which one worked.
 const CANDIDATES = [
-  Number(process.env.PORT),
+  Number(process.env.PORT) || 8443,
   Number(process.env.APP_PORT),
   Number(process.env.SERVER_PORT),
   8080,
